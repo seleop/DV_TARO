@@ -12,7 +12,7 @@ import { Button, Card, ErrorBox, Field, inputCls, TopBar } from "./ui";
 
 function Segmented<T extends string>({ value, onChange, options }: { value: T; onChange: (v: T) => void; options: Array<{ value: T; label: string }> }) {
   return (
-    <div className="grid rounded-2xl bg-white/5 p-1" style={{ gridTemplateColumns: `repeat(${options.length}, 1fr)` }} role="radiogroup">
+    <div className="grid rounded-2xl bg-tile p-1" style={{ gridTemplateColumns: `repeat(${options.length}, 1fr)` }} role="radiogroup">
       {options.map((o) => (
         <button
           key={o.value}
@@ -145,7 +145,7 @@ export function BirthForm({ mode, initial, embedded }: { mode: "profile" | "othe
         )}
         <div className="flex shrink-0 justify-center gap-1.5 py-2" aria-label={`${STEPS.length}단계 중 ${step + 1}단계: ${STEPS[step]}`}>
           {STEPS.map((l, i) => (
-            <span key={l} className={`h-1.5 rounded-full transition-all ${i <= step ? "w-5 bg-accent" : "w-1.5 bg-white/25"}`} />
+            <span key={l} className={`h-1.5 rounded-full transition-all ${i <= step ? "w-5 bg-accent" : "w-1.5 bg-ink-2/30"}`} />
           ))}
         </div>
 <Card className={`shrink-0 space-y-4 ${step === 0 ? "" : "hidden"}`}>

@@ -6,10 +6,31 @@ import { durationMs, frameAt, framePosition } from "@/lib/mascot";
 
 const FADE_MS = 140;
 
-/** 시트 이미지 불러오기·디코딩 (여러 마스코트가 같은 이미지를 공유). 디코딩까지 끝나야 바꿔 끼울 때 빈 화면이 안 생긴다 */
-const loading = new Map<string, Promise<boolean>>();
+/**
+ * 시트 이미지. 여러 마스코트가 같은 이미지를 공유한다.
+ * - prefetchSheet: 내려받기만 (디코딩 안 함). 미리 불러올 시트가 메모리를 차지하지 않게 — 시트 한 장 디코딩 ≈ 수십 MB
+ * - loadSheet: 화면에 올리기 직전에 내려받기 + 디코딩. 디코딩이 끝나야 바꿔 끼울 때 빈 화면이 안 생긴다
+ */
+const fetched = new Map<string, Promise<boolean>>();
+const decoded = new Map<string, Promise<boolean>>();
+function prefetchSheet(src: string) {
+  let p = fetched.get(src);
+  if (!p) {
+    p = new Promise<boolean>((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(true);
+      img.onerror = () => {
+        fetched.delete(src); // 다음에 다시 시도
+        resolve(false);
+      };
+      img.src = src;
+    });
+    fetched.set(src, p);
+  }
+  return p;
+}
 function loadSheet(src: string) {
-  let p = loading.get(src);
+  let p = decoded.get(src);
   if (!p) {
     p = new Promise<boolean>((resolve) => {
       const img = new Image();
@@ -18,12 +39,14 @@ function loadSheet(src: string) {
         else resolve(true);
       };
       img.onerror = () => {
-        loading.delete(src); // 다음에 다시 시도
+        decoded.delete(src);
         resolve(false);
       };
       img.src = src;
     });
-    loading.set(src, p);
+    decoded.set(src, p);
+    // 디코딩한 이미지는 오래 붙잡지 않는다 (같은 시트를 다시 쓰면 브라우저 캐시에서 빠르게 다시 디코딩)
+    setTimeout(() => decoded.delete(src), 30_000);
   }
   return p;
 }
@@ -148,7 +171,7 @@ export function FortuneMascot({
   const preloadKey = preload.join(",");
   useEffect(() => {
     if (!animate || !near || !shown || !preloadKey) return;
-    const t = setTimeout(() => preloadKey.split(",").forEach((s) => void loadSheet(MASCOT_SHEETS[s as MascotState].src)), 600);
+    const t = setTimeout(() => preloadKey.split(",").forEach((s) => void prefetchSheet(MASCOT_SHEETS[s as MascotState].src)), 600);
     return () => clearTimeout(t);
   }, [animate, near, shown, preloadKey]);
 

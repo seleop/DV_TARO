@@ -8,6 +8,7 @@ import { ApiError, api, errorText } from "@/lib/client";
 import { DISPLAY_NAME_MAX, splitServerError, validateLogin, validateSignup, type SignupField, type SignupValues } from "@/lib/auth/validate";
 import type { MascotState } from "@/config/mascot-assets";
 import { FortuneMascot } from "../FortuneMascot";
+import { SceneArt } from "../app/SceneArt";
 import { SafeForm } from "../SafeForm";
 import { Button, inputCls } from "../ui";
 import { Constellation } from "./Constellation";
@@ -229,8 +230,11 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
   return (
     // 키보드가 오르내릴 때 높이가 툭 바뀌지 않게 부드럽게 따라간다
     <div className="fixed inset-x-0 top-0 z-10 mx-auto flex h-dvh w-full max-w-[440px] flex-col overflow-hidden transition-[height,top] duration-300 ease-out motion-reduce:transition-none" style={boxStyle}>
+      {/* 위: 별빛 정원 장면(뒤로·진행 표시·복이·별자리) / 아래: 크림색 시트(버튼·입력) */}
+      <div className="scene-dark relative flex min-h-0 flex-1 flex-col">
+      <SceneArt kind="garden" className="absolute inset-0 h-full w-full" />
       {/* 상단: 뒤로 + 진행 표시 */}
-      <div className="flex h-14 shrink-0 items-center px-3 pt-[env(safe-area-inset-top)]">
+      <div className="relative flex h-14 shrink-0 items-center px-3 pt-[env(safe-area-inset-top)]">
         {mode !== "choose" && (
           <button type="button" onClick={back} aria-label="뒤로" className="flex h-11 w-11 items-center justify-center rounded-full text-ink active:bg-white/10">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -248,7 +252,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
       </div>
 
       {/* 무대: 복이 + 하늘 */}
-      <div ref={stageRef} className="relative min-h-0 flex-1 overflow-hidden">
+      <div ref={stageRef} className="relative min-h-0 flex-1 overflow-hidden pb-6">
         <div className={`absolute inset-x-0 top-0 text-center ${ease} ${mode === "choose" ? "translate-y-[6%] opacity-100" : "-translate-y-full opacity-0"}`}>
           <p className="text-[15px] text-ink-2">우리끼리 보는 운세</p>
           <h1 className="text-gradient mt-1 text-[34px] font-extrabold leading-tight">{BRAND.appName}</h1>
@@ -308,9 +312,10 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
           </div>
         )}
       </div>
+      </div>
 
-      {/* 하단: 버튼 또는 입력 */}
-      <div className="shrink-0 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+      {/* 하단: 버튼 또는 입력 (시트) */}
+      <div className="relative -mt-6 shrink-0 rounded-t-[28px] bg-[var(--bg)] px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-5 shadow-[0_-12px_24px_-16px_rgba(30,20,70,0.6)]">
         {mode === "choose" ? (
           <>
             <div className="grid grid-cols-2 gap-3">

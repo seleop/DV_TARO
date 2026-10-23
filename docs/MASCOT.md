@@ -178,3 +178,14 @@ FFMPEG_PATH=<ffmpeg.exe 경로> node scripts/mascot/encode.mjs
 - 렌더 640px → 모든 동작·의상 프레임의 캐릭터 영역(알파) 합집합으로 여백을 잘라 낸 뒤 칸 높이 512px로 축소(lanczos), WebP 품질 90.
 - 같은 영역으로 자르므로 동작·의상을 바꿔도 위치가 어긋나지 않는다. 시트 한 변은 4096px 이하(모바일 사파리 안전 범위).
 - 화면 크기는 `CharacterStage` 의 `size`(상자) × `zoom`(그림 배율, `brand.ts` 의 `mascotZoom`). 갤러리 "크기 시안"에서 A~D 비교.
+
+## 14. 2.5D 스타일·천막 배경 (2026-10-24)
+
+- 사용자 선택: **4 소프트 2.5D** (시안 6종: 플랫 2D·셀 2D·3단 셀·소프트 2.5D·스티커·라이트 클레이). `build_mascot.py --style soft25d`
+  - 툰 셰이딩(Diffuse → Shader to RGB → 부드러운 램프, 그림자는 살짝 보랏빛) + 직교(원근 없는) 카메라, 30° 비스듬히
+  - 지금 렌더 명령: `blender -b --factory-startup -P scripts/mascot/build_mascot.py -- --style soft25d --states all --stills assets/mascot/reference --out assets/mascot/render --res 640`
+  - 인코딩: `node scripts/mascot/encode.mjs --height 448 --quality 85` → 시트 181~499KB (이전 대비 약 30% 감소), 칸 266×448
+- 렉 줄이기: 미리 불러올 시트는 내려받기만 하고 디코딩은 바꿔 끼우기 직전에(`prefetchSheet`/`loadSheet`), 움직이는 복이 주변의 흐림·그림자 필터 제거, 우주 배경 애니메이션·유리 카드 흐림(backdrop-filter) 제거
+- 배경: `src/components/app/SceneArt.tsx`(SVG 일러스트, 애니메이션 없음) + `src/lib/scene.ts`(경로별 장면)
+  - 홈·오늘의 운세 = 해질녘 천막 입구, 사주 목록·타로 = 천막 안, 별자리·로그인/가입 = 별빛 정원, 그 밖 = 크림색
+  - `Screen` 의 `scene` 을 주면 "장면 + 시트" 화면: 위는 일러스트 위 제목·복이, 아래는 크림색 둥근 시트

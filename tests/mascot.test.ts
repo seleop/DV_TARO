@@ -87,3 +87,17 @@ describe("마스코트 에셋", () => {
     expect(fs.existsSync(path.join(pub, MASCOT_POSTER))).toBe(true);
   });
 });
+
+describe("화면별 장면", () => {
+  it("경로에 맞는 장면을 고른다", async () => {
+    const { sceneForPath } = await import("@/lib/scene");
+    expect(sceneForPath("/")).toBe("entrance");
+    expect(sceneForPath("/today")).toBe("entrance");
+    expect(sceneForPath("/saju")).toBe("inside");
+    expect(sceneForPath("/saju/new")).toBe("plain");
+    expect(sceneForPath("/tarot")).toBe("inside");
+    expect(sceneForPath("/horoscope")).toBe("garden");
+    expect(sceneForPath("/login")).toBe("garden");
+    expect(sceneForPath("/me")).toBe("plain");
+  });
+});

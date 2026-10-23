@@ -20,7 +20,7 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
-- 진행 중: lucid-solomon/`claude/lucid-solomon-5113d2` — 복이 소프트 2.5D 스타일 재렌더·시트 경량화(`scripts/mascot`, `public/mascot`, `FortuneMascot`), 우주 배경 → 천막 일러스트 배경 교체(홈·오늘의 운세=천막 입구, 사주·타로=천막 안, 별자리=별빛 정원; `CosmicBackdrop`·루트 `layout.tsx`·각 화면·로그인/가입 배경). 사용자 결정(2026-10-24): 로그인 화면 배경도 이 세션이 교체
+- **복이 소프트 2.5D·천막 배경 (main 미반영, 2026-10-24)**: `claude/lucid-solomon-5113d2`. 복이를 소프트 2.5D(툰 셰이딩·직교 카메라)로 다시 렌더·시트 경량화(약 30%↓, 미리 불러오기는 디코딩 안 함). 우주 배경(`CosmicBackdrop`)을 지우고 장면 일러스트로: 홈·오늘의 운세=천막 입구, 사주 목록·타로=천막 안, 별자리·로그인/가입=별빛 정원, 나머지=크림색(`SceneArt`, `lib/scene.ts`). 테마 토큰을 밝은 크림색으로, 장면 위 글자는 `.scene-light/.scene-dark`. `Screen` 의 `scene` 으로 장면 + 시트 화면(`docs/MASCOT.md` 14절)
 - **진입 화면·복이 연출·스크롤 없는 화면 완료(2026-10-24 main 반영)**: 브랜치 `claude/youthful-shamir-aa9bf7`
 - **우주 배경·로그인 화면 다듬기(main 미반영, 2026-10-24)**: 앱 전체 배경을 은하수(성운·반짝이는 별·십자 빛 별·SVG 별똥별)로 교체(`src/components/app/CosmicBackdrop.tsx`, 루트 `layout.tsx`의 `.stars` 대체). 진입 화면 복이 400px(작은 화면은 무대에 맞춤), 로그인 복이 약 500px(키보드가 올라와도 유지, 사용자 요청). 키보드는 줌인 연출(0.7초) 뒤 올라오고 화면 높이는 부드럽게 변함, iOS에서 자동으로 안 뜨면 입력칸이 반짝이며 눌러 달라고 안내
   - `/login` 진입 화면 = 작은 복이 + 로그인·회원가입 두 버튼(손 흔들기). 누르면 한 칸씩 순차 입력(`src/components/auth/AuthFlow.tsx`), 입력칸 하나를 재사용해 단계가 바뀌어도 키보드 유지

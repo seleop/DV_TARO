@@ -73,7 +73,7 @@ export function MeClient({
       </div>
       <ErrorBox message={error} />
 
-      <div className="grid shrink-0 grid-cols-3 rounded-2xl bg-white/5 p-1" role="tablist">
+      <div className="grid shrink-0 grid-cols-3 rounded-2xl bg-tile p-1" role="tablist">
         {(
           [
             ["calcs", `사주 ${calcs.length}`],
@@ -108,7 +108,7 @@ export function MeClient({
           ) : (
             <Pager key="calcs" labels={calcPages.map((_, i) => `${i + 1}쪽`)}>
               {calcPages.map((page, pi) => (
-                <ul key={pi} className="glass divide-y divide-white/10 overflow-hidden rounded-[24px]">
+                <ul key={pi} className="glass divide-y divide-line overflow-hidden rounded-[24px]">
                   {page.map((c) => (
                     <li key={c.id} className={row}>
                       <Link href={`/saju/${c.id}`} className="min-w-0 flex-1">
@@ -143,7 +143,7 @@ export function MeClient({
           ) : (
             <Pager key="others" labels={otherPages.map((_, i) => `${i + 1}쪽`)}>
               {otherPages.map((page, pi) => (
-                <ul key={pi} className="glass divide-y divide-white/10 overflow-hidden rounded-[24px]">
+                <ul key={pi} className="glass divide-y divide-line overflow-hidden rounded-[24px]">
                   {page.map((o) => (
                     <li key={o.id} className={row}>
                       <span className="text-xl" aria-hidden>

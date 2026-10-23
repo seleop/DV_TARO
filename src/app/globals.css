@@ -1,30 +1,99 @@
 @import "tailwindcss";
 
-/* 우주 테마(항상 어두운 화면). 레퍼런스: 보랏빛 밤하늘 + 가운데 캐릭터 + 유리 카드 */
+/* 복이네 점집 테마 (2026-10-24): 따뜻한 크림색 시트 + 장면 일러스트. 레퍼런스: 위는 캐릭터 장면, 아래는 조작 시트 */
 :root {
-  --bg: #0a0820;
-  --bg-2: #160d3a;
-  --surface: rgba(255, 255, 255, 0.07);
-  --surface-2: rgba(255, 255, 255, 0.11);
-  --tile: rgba(88, 80, 140, 0.45);
-  --ink: #f4f1ff;
-  --ink-2: #b8b0d8;
-  --line: rgba(255, 255, 255, 0.1);
-  --accent: #b18cff;
-  --accent-2: #8f7bff;
+  --bg: #fff7ec;
+  --bg-2: #fff1e0;
+  --surface: #ffffff;
+  --surface-2: #fff3e4;
+  --tile: #f7ebdc;
+  --ink: #3d2a5c;
+  --ink-2: #86708f;
+  --line: rgba(61, 42, 92, 0.12);
+  --accent: #7a5ac6;
+  --accent-2: #9a7ad8;
   --accent-ink: #ffffff;
-  --primary-from: #b04df0;
-  --primary-to: #8b5cf6;
-  --blue: #4f7cf0;
-  --ok: #7ee2a8;
-  --warn: #ffc46b;
-  --bad: #ff8a80;
-  --wood: #74d99f;
-  --fire: #ff7a6b;
-  --earth: #f2c46b;
-  --metal: #d5d9e3;
-  --water: #7fb2ff;
-  color-scheme: dark;
+  --primary-from: #8b63d6;
+  --primary-to: #7a5ac6;
+  --blue: #f08a6b;
+  --ok: #3a9f6a;
+  --warn: #c97a1c;
+  --bad: #d9534a;
+  --wood: #3a9f6a;
+  --fire: #e0614f;
+  --earth: #c9962c;
+  --metal: #8c93a3;
+  --water: #3f7fd9;
+  color-scheme: light;
+}
+
+/* 장면(일러스트) 위 글자색: 밝은 장면은 진한 보라, 어두운 장면(천막 안·밤 정원)은 크림색 */
+.scene-light {
+  --ink: #4a2f75;
+  --ink-2: #7d5f8f;
+  --line: rgba(74, 47, 117, 0.18);
+  --surface: rgba(255, 255, 255, 0.72);
+}
+.scene-dark {
+  --ink: #fff8ee;
+  --ink-2: #eadff7;
+  --line: rgba(255, 255, 255, 0.25);
+  --surface: rgba(255, 255, 255, 0.16);
+}
+.scene-dark .text-gradient {
+  background: linear-gradient(90deg, #fff1d6, #ffffff 55%, #ffd9c4);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-tile: var(--tile);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-blue: var(--blue);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --font-sans: "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  word-break: keep-all;
+  overscroll-behavior-y: none;
+}
+
+.hanja {
+  font-family: "Noto Serif KR", "Batang", serif;
+}
+
+/* 예전 우주 배경 클래스 (호환용, 크림색 바탕) */
+.cosmic-bg {
+  background: var(--bg);
+}
+.stars,
+.stars::after {
+  display: none;
+}
+
+.text-gradient {
+  background: linear-gradient(90deg, #fff1d6, #ffffff 55%, #ffd9c4);
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 
 @theme inline {
@@ -93,22 +162,22 @@ body {
 }
 
 .text-gradient {
-  background: linear-gradient(90deg, #c9b3ff, #9c86ff 60%, #b98cff);
+  background: linear-gradient(90deg, #7a5ac6, #a06ad8 55%, #f08a6b);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
+/* 카드: 흐림 효과(backdrop-filter)는 모바일에서 무거워 쓰지 않는다 */
 .glass {
   background: var(--surface);
   border: 1px solid var(--line);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 6px 18px -12px rgba(90, 50, 40, 0.35);
 }
 
 .btn-primary {
   background: linear-gradient(90deg, var(--primary-from), var(--primary-to));
-  box-shadow: 0 8px 24px -8px rgba(176, 77, 240, 0.7);
+  box-shadow: 0 8px 20px -10px rgba(122, 90, 198, 0.7);
 }
 
 /* 캐릭터 무대 */

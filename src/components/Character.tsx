@@ -44,7 +44,7 @@ export function CharacterStage({
   pose = "default",
   mood = null,
   size: baseSize = 240,
-  orbs = true,
+  orbs = false,
   interactive = baseSize >= 120,
   expression: fixedExpression,
   character = BRAND.character.renderer,
@@ -243,8 +243,8 @@ export function CharacterStage({
 
   return (
     <div className={`relative mx-auto flex items-center justify-center ${className}`} style={{ width: size, height: size }}>
-      {/* 바닥 글로우 */}
-      <div className="absolute inset-[12%] rounded-full bg-[radial-gradient(circle,rgba(177,140,255,0.45),transparent_70%)] blur-2xl animate-glow" />
+      {/* 바닥 글로우 (SVG 별토끼만. 3D 복이는 움직이는 흐림 효과가 무거워 쓰지 않음) */}
+      {!is3d && <div className="absolute inset-[12%] rounded-full bg-[radial-gradient(circle,rgba(177,140,255,0.45),transparent_70%)] blur-2xl animate-glow" />}
       {orbs && <Orbs size={size} />}
       {showBubble && (
         <div key={bubble.id} className="char-bubble pointer-events-none absolute left-1/2 top-0 z-10 w-max max-w-[min(240px,80vw)] rounded-2xl bg-white px-3.5 py-2 text-center text-[14px] font-semibold leading-snug text-[#2a2440] shadow-[0_8px_24px_-6px_rgba(80,40,160,0.6)]">
@@ -252,8 +252,9 @@ export function CharacterStage({
           <span className="absolute -bottom-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 bg-white" aria-hidden />
         </div>
       )}
-      <div className={`relative ${is3d ? "" : "animate-float"} drop-shadow-[0_14px_28px_rgba(120,80,220,0.45)]`} style={{ width: box, height: box }}>
-        {is3d && <div className="absolute bottom-[6%] left-1/2 h-[6%] w-[42%] -translate-x-1/2 rounded-[50%] bg-[#0b0624]/45 blur-[6px]" aria-hidden />}
+      {/* 그림자 필터는 움직이는 스프라이트에 걸면 매 프레임 다시 그려져 무거우므로 SVG 별토끼에만 */}
+      <div className={`relative ${is3d ? "" : "animate-float drop-shadow-[0_14px_28px_rgba(120,80,220,0.45)]"}`} style={{ width: box, height: box }}>
+        {is3d && <div className="absolute bottom-[5%] left-1/2 h-[7%] w-[46%] -translate-x-1/2 rounded-[50%] bg-[#3a1f3a]/25" aria-hidden />}
         <div className={`relative h-full w-full ${is3d ? "" : `char-loop-${base.loop}`}`}>
           <div ref={actorRef} className="h-full w-full">
             {interactive ? (

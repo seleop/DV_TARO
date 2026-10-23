@@ -31,7 +31,7 @@ const EXPRESSION_LABEL: Record<Expression, string> = {
 
 const OUTFIT_LABEL = { saju: "사주 복이 · 갓·안경·사주책", tarot: "타로 복이 · 마법사 모자·망토·카드", star: "별자리 복이 · 베레모·목도리·망원경" } as const;
 
-const chip = (on: boolean) => `rounded-full px-3 py-1.5 text-[13px] font-semibold transition ${on ? "bg-white text-[#2a2440]" : "bg-white/10 text-ink-2"}`;
+const chip = (on: boolean) => `rounded-full px-3 py-1.5 text-[13px] font-semibold transition ${on ? "bg-accent text-white" : "bg-tile text-ink-2"}`;
 
 export function CharacterLab() {
   const [scene, setScene] = useState<Scene>("default");

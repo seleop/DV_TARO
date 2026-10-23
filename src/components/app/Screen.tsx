@@ -1,26 +1,54 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { Children, useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
+import { SCENE_INK, sceneForPath } from "@/lib/scene";
 import { CharacterStage } from "../Character";
+import { SceneArt } from "./SceneArt";
 
 /**
  * 스크롤 없는 화면 틀: 머리(header) · 본문(남는 높이만 사용) · 하단 버튼(footer).
  * 본문은 화면 높이를 넘지 않게 만들고, 내용이 길면 Pager로 나눠 좌우로 넘긴다.
  * scroll=true는 사주 설명처럼 길게 읽는 화면에서만 쓴다.
+ *
+ * scene 을 주면 "장면 + 시트" 화면이 된다 (레퍼런스: 위는 캐릭터가 서 있는 일러스트, 아래는 조작 시트).
+ *  - 장면: 경로별 일러스트(SceneArt) 위에 header·scene 을 그린다. 남는 높이를 모두 쓰고, 복이는 바닥에 맞춘다
+ *  - 시트: 크림색 둥근 판. children·footer 를 담고, 장면 아래를 살짝 덮어 둘이 이어져 보이게 한다
  */
 export function Screen({
   header,
   footer,
   children,
+  scene,
   scroll = false,
   className = "",
 }: {
   header?: ReactNode;
   footer?: ReactNode;
-  children: ReactNode;
+  children?: ReactNode;
+  /** 장면 영역 내용 (제목·복이). 주면 장면 + 시트 화면 */
+  scene?: ReactNode;
   scroll?: boolean;
   className?: string;
 }) {
+  const kind = sceneForPath(usePathname());
+  if (scene !== undefined && kind !== "plain") {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className={`relative -mx-5 -mt-[env(safe-area-inset-top)] flex min-h-0 flex-1 flex-col px-5 pt-[env(safe-area-inset-top)] ${SCENE_INK[kind]}`}>
+          <SceneArt kind={kind} className="absolute inset-0 h-full w-full" />
+          <div className="relative flex min-h-0 flex-1 flex-col pb-6">
+            {header}
+            {scene}
+          </div>
+        </div>
+        <div className={`relative -mx-5 -mt-6 flex shrink-0 flex-col rounded-t-[28px] bg-[var(--bg)] px-5 pt-4 shadow-[0_-12px_24px_-16px_rgba(110,60,40,0.45)] ${className}`}>
+          {children}
+          {footer && <div className="shrink-0 space-y-2 pb-3 pt-2">{footer}</div>}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {header}
@@ -130,7 +158,7 @@ export function Pager({ labels, children, className = "" }: { labels: string[]; 
               aria-current={i === page ? "step" : undefined}
               className="flex h-9 items-center justify-center px-1"
             >
-              <span className={`block h-1.5 rounded-full transition-all ${i === page ? "w-5 bg-accent" : "w-1.5 bg-white/30"}`} />
+              <span className={`block h-1.5 rounded-full transition-all ${i === page ? "w-5 bg-accent" : "w-1.5 bg-ink-2/35"}`} />
             </button>
           ))}
           <button

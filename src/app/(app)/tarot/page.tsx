@@ -87,34 +87,40 @@ export default function TarotPage() {
     const c = result.content;
     return (
       <Screen
-        footer={<ShareBar targetRef={captureRef} fileName="타로" shareTitle={`타로 · ${c.question}`} shareText={`${c.drawn.map((d) => d.nameKo).join(", ")}\n${c.overall}`} />}
-      >
-        <Pager labels={["카드 요약", ...c.drawn.map((d) => d.position), "조언"]}>
-          {/* 1장: 질문·카드·총평 (공유 이미지로 저장되는 부분) */}
-          <div ref={captureRef} className="flex min-h-0 flex-1 flex-col pb-2 pt-[clamp(0.5rem,3dvh,2rem)] text-center">
+        // 위: 천막 안 탁자에 펼친 카드 / 아래: 카드 풀이 (좌우로 넘김)
+        scene={
+          <div className="flex min-h-0 flex-1 flex-col items-center pt-[clamp(3rem,7dvh,4.25rem)] text-center">
             <p className="shrink-0 text-sm text-ink-2">“{c.question}”</p>
-            <h1 className="mt-1 shrink-0 text-[clamp(20px,3.2dvh,24px)] font-bold">카드가 답했어요</h1>
-            <div
-              className={`mx-auto mt-3 grid shrink-0 gap-3 ${c.drawn.length === 1 ? "w-[min(9rem,15dvh)] grid-cols-1" : "w-[min(100%,calc(44dvh+24px))] grid-cols-3"}`}
-            >
-              {c.drawn.map((d, i) => (
-                <TarotCard key={d.id} card={d} flipped={flipped} delay={i * 250} />
-              ))}
-            </div>
-            <FitCharacter pose="tarot" mood={moodFromTarot(c.drawn)} orbs={false} min={70} max={170} className="w-full" />
-            <Card className="shrink-0 text-left">
-              <p className="text-[15px] leading-relaxed">{c.overall}</p>
-            </Card>
-            <MockNotice provider={result.provider} />
-          </div>
-
-          {/* 카드별 해석: 한 장에 한 카드 */}
-          {c.drawn.map((d) => (
-            <div key={d.id} className="flex flex-col gap-3 pt-4">
-              <div className="mx-auto w-[min(8rem,22dvh)]">
-                <TarotCard card={d} flipped delay={0} />
+            <h1 className="mt-0.5 shrink-0 text-[clamp(20px,3.2dvh,24px)] font-extrabold text-ink">카드가 답했어요</h1>
+            <div className="flex min-h-0 w-full flex-1 items-end justify-center gap-1">
+              <FitCharacter pose="tarot" mood={moodFromTarot(c.drawn)} min={70} max={180} className="max-w-[40%] items-end" />
+              <div className={`mb-2 grid shrink-0 gap-2 ${c.drawn.length === 1 ? "w-[min(6rem,12dvh)] grid-cols-1" : "w-[min(58%,calc(32dvh+16px))] grid-cols-3"}`}>
+                {c.drawn.map((d, i) => (
+                  <TarotCard key={d.id} card={d} flipped={flipped} delay={i * 250} />
+                ))}
               </div>
-              <Card>
+            </div>
+          </div>
+        }
+        footer={<ShareBar targetRef={captureRef} fileName="타로" shareTitle={`타로 · ${c.question}`} shareText={`${c.drawn.map((d) => d.nameKo).join(", ")}
+${c.overall}`} />}
+      >
+        <div className="flex h-[min(42dvh,320px)] flex-col">
+          <Pager labels={["총평", ...c.drawn.map((d) => d.position), "조언"]}>
+            {/* 1장: 총평 (공유 이미지로 저장되는 부분) */}
+            <div ref={captureRef} className="flex flex-col gap-2 bg-[var(--bg)] pb-1">
+              <p className="text-center text-xs text-ink-2">
+                {c.drawn.map((d) => `${d.nameKo}${d.reversed ? "(역)" : ""}`).join(" · ")}
+              </p>
+              <Card className="text-left">
+                <p className="text-[15px] leading-relaxed">{c.overall}</p>
+              </Card>
+              <MockNotice provider={result.provider} />
+            </div>
+
+            {/* 카드별 해석: 한 장에 한 카드 */}
+            {c.drawn.map((d) => (
+              <Card key={d.id}>
                 <p className="text-xs text-accent">{d.position}</p>
                 <p className="mt-0.5 font-semibold">
                   {d.nameKo} {d.reversed && <span className="text-xs text-warn">(역방향)</span>}
@@ -122,21 +128,20 @@ export default function TarotPage() {
                 <p className="mt-1 text-xs text-ink-2">{d.keywords.join(" · ")}</p>
                 <p className="mt-2 text-[15px] leading-relaxed">{c.cards.find((x) => x.position === d.position)?.interpretation}</p>
               </Card>
-            </div>
-          ))}
+            ))}
 
-          {/* 조언 */}
-          <div className="flex flex-col gap-3 pt-4">
-            <FitCharacter pose="tarot" mood={moodFromTarot(c.drawn)} orbs={false} min={80} max={180} className="w-full" />
-            <Card className="shrink-0">
-              <p className="text-[15px] leading-relaxed">💡 {c.advice}</p>
-            </Card>
-            <button className="mx-auto shrink-0 text-sm text-ink-2 underline underline-offset-4" onClick={() => setResult(null)}>
-              새 질문하기
-            </button>
-            <Disclaimer className="shrink-0 pb-2" />
-          </div>
-        </Pager>
+            {/* 조언 */}
+            <div className="flex flex-col gap-3">
+              <Card>
+                <p className="text-[15px] leading-relaxed">💡 {c.advice}</p>
+              </Card>
+              <button className="mx-auto text-sm text-ink-2 underline underline-offset-4" onClick={() => setResult(null)}>
+                새 질문하기
+              </button>
+              <Disclaimer className="pb-2" />
+            </div>
+          </Pager>
+        </div>
       </Screen>
     );
   }
@@ -144,6 +149,28 @@ export default function TarotPage() {
   return (
     <SafeForm onSubmit={draw} className="flex min-h-0 flex-1 flex-col">
       <Screen
+        // 위: 천막 안에서 카드를 든 복이 / 아래: 펼치는 방식·질문 입력
+        scene={
+          <div className="flex min-h-0 flex-1 flex-col items-center pt-[clamp(3.25rem,8dvh,4.75rem)] text-center">
+            <p className="shrink-0 text-[clamp(15px,2.4dvh,18px)] font-semibold leading-snug text-ink">
+              마음속 질문을 떠올리면 {josa(BRAND.characterName, "이/가")} 카드를 펼쳐 줄게요
+            </p>
+            <h1 className="text-gradient mt-1 shrink-0 text-[clamp(28px,4.6dvh,36px)] font-extrabold">타로</h1>
+            {busy ? (
+              <div className="flex min-h-0 w-full flex-1 items-end justify-center pb-4">
+                <div className="grid w-[min(100%,calc(30dvh+24px))] grid-cols-3 gap-3">
+                  {Array.from({ length: n }, (_, i) => (
+                    <div key={i} className="animate-float" style={{ animationDelay: `${i * 200}ms` }}>
+                      <TarotCard card={null} flipped={false} delay={0} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <FitCharacter pose="tarot" min={80} max={260} className="w-full items-end" />
+            )}
+          </div>
+        }
         footer={
           <>
             <ErrorBox message={error} />
@@ -153,54 +180,31 @@ export default function TarotPage() {
           </>
         }
       >
-        <div className="flex min-h-0 flex-1 flex-col items-center pt-[clamp(0.75rem,4dvh,2.5rem)] text-center">
-          <p className="shrink-0 text-[clamp(16px,2.5dvh,19px)] font-semibold leading-snug">
-            마음속 질문을 떠올리면
-            <br />
-            {josa(BRAND.characterName, "이/가")} 카드를 펼쳐 줄게요
-          </p>
-          <h1 className="text-gradient mt-1 shrink-0 text-[clamp(28px,4.6dvh,36px)] font-extrabold">타로</h1>
-
-          {busy ? (
-            <div className="flex min-h-0 w-full flex-1 items-center justify-center">
-              <div className="grid w-[min(100%,calc(36dvh+24px))] grid-cols-3 gap-3">
-                {Array.from({ length: n }, (_, i) => (
-                  <div key={i} className="animate-float" style={{ animationDelay: `${i * 200}ms` }}>
-                    <TarotCard card={null} flipped={false} delay={0} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <FitCharacter pose="tarot" min={80} max={210} className="w-full py-1" />
-          )}
-
-          <div className="grid w-full shrink-0 grid-cols-3 gap-2.5">
-            {SPREADS.map((s) => (
-              <button
-                type="button"
-                key={s.id}
-                onClick={() => setSpread(s.id)}
-                className={`rounded-[20px] px-2 py-2.5 transition ${spread === s.id ? "bg-white/20 ring-2 ring-accent" : "bg-tile"}`}
-              >
-                <span className="block text-sm font-semibold">{s.label}</span>
-                <span className="text-[11px] text-ink-2">{s.desc}</span>
-              </button>
-            ))}
-          </div>
-          <textarea
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            required
-            minLength={2}
-            maxLength={300}
-            rows={2}
-            enterKeyHint="done"
-            placeholder="예: 이번 분기 프로젝트는 어떻게 흘러갈까요?"
-            className="mt-3 w-full shrink-0 resize-none rounded-[22px] border border-line bg-white/5 px-4 py-3 text-base outline-none placeholder:text-ink-2/60 focus:border-accent"
-          />
-          <p className="mt-1 w-full shrink-0 text-right text-[11px] text-ink-2">{question.length}/300 · 질문은 암호화되어 내 기록에만 저장돼요</p>
+        <div className="grid w-full shrink-0 grid-cols-3 gap-2.5">
+          {SPREADS.map((s) => (
+            <button
+              type="button"
+              key={s.id}
+              onClick={() => setSpread(s.id)}
+              className={`rounded-[20px] px-2 py-2.5 transition ${spread === s.id ? "bg-white ring-2 ring-accent" : "bg-tile"}`}
+            >
+              <span className="block text-sm font-semibold">{s.label}</span>
+              <span className="text-[11px] text-ink-2">{s.desc}</span>
+            </button>
+          ))}
         </div>
+        <textarea
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          required
+          minLength={2}
+          maxLength={300}
+          rows={2}
+          enterKeyHint="done"
+          placeholder="예: 이번 분기 프로젝트는 어떻게 흘러갈까요?"
+          className="mt-3 w-full shrink-0 resize-none rounded-[22px] border border-line bg-white px-4 py-3 text-base outline-none placeholder:text-ink-2/60 focus:border-accent"
+        />
+        <p className="mt-1 w-full shrink-0 text-right text-[11px] text-ink-2">{question.length}/300 · 질문은 암호화되어 내 기록에만 저장돼요</p>
       </Screen>
     </SafeForm>
   );

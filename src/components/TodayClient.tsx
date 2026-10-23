@@ -51,9 +51,33 @@ export function TodayClient({ calculationId, displayName, aiProvider }: { calcul
     ? { love: r.love, work: r.work, luck: r.luck, food: `${r.food.name} — ${r.food.reason}` }[tab]
     : "";
 
+  // 위: 천막 입구 장면(복이) / 아래: 크림색 시트(결과)
+  const scene = (
+    <div className="flex min-h-0 flex-1 flex-col items-center text-center">
+      {loading && !r ? (
+        <>
+          <p className="mt-1 shrink-0 text-[17px] font-semibold text-ink">{josa(BRAND.characterName, "이/가")} 점치는 중…</p>
+          <p className="mt-0.5 shrink-0 text-sm text-ink-2">오늘의 일진을 살펴보고 있어요</p>
+          <FitCharacter pose="thinking" min={100} max={280} className="w-full items-end" />
+        </>
+      ) : error && !r ? (
+        <FitCharacter pose="default" min={90} max={240} className="w-full items-end" />
+      ) : r ? (
+        <>
+          <p className="shrink-0 text-[14px] font-semibold text-ink-2">
+            {y}년 {Number(m)}월 {Number(d)}일 {josa(displayName, "은/는")}
+          </p>
+          <h1 className="mt-0.5 shrink-0 text-[clamp(22px,3.4dvh,28px)] font-extrabold leading-tight text-ink">{r.headline}</h1>
+          <FitCharacter pose="happy" mood={r.mood} min={80} max={260} className="w-full items-end" />
+        </>
+      ) : null}
+    </div>
+  );
+
   return (
     <Screen
       header={<TopBar back="/" />}
+      scene={scene}
       footer={
         r ? (
           <ShareBar
@@ -66,85 +90,75 @@ export function TodayClient({ calculationId, displayName, aiProvider }: { calcul
       }
     >
       {loading && !r ? (
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center text-center">
-          <FitCharacter pose="thinking" min={100} max={250} className="w-full" />
-          <p className="mt-4 shrink-0 text-[17px] font-semibold">{josa(BRAND.characterName, "이/가")} 점치는 중…</p>
-          <p className="mb-8 mt-1 shrink-0 text-sm text-ink-2">오늘의 일진을 살펴보고 있어요</p>
-        </div>
+        <p className="pb-6 pt-2 text-center text-sm text-ink-2">잠시만 기다려 주세요</p>
       ) : error && !r ? (
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 text-center">
-          <FitCharacter pose="default" orbs={false} min={90} max={200} className="w-full" />
-          <div className="shrink-0 space-y-3 pb-8">
-            <ErrorBox message={error} />
-            <Button variant="ghost" onClick={() => load(false)}>
-              다시 시도
-            </Button>
-          </div>
+        <div className="space-y-3 pb-4">
+          <ErrorBox message={error} />
+          <Button variant="ghost" className="w-full" onClick={() => load(false)}>
+            다시 시도
+          </Button>
         </div>
       ) : r ? (
-        <Pager labels={["오늘의 운세 요약", "분야별 운세", "행운과 풀이"]}>
-          {/* 1장: 요약 (공유 이미지로 저장되는 부분) */}
-          <div ref={captureRef} className="flex min-h-0 flex-1 flex-col items-center px-1 pb-2 pt-1 text-center">
-            <p className="shrink-0 text-[15px] text-ink-2">
-              {y}년 {Number(m)}월 {Number(d)}일 {josa(displayName, "은/는")}
-            </p>
-            <h1 className="mt-1 shrink-0 text-[clamp(22px,3.4dvh,28px)] font-bold leading-tight">{r.headline}</h1>
-            <FitCharacter pose="happy" mood={r.mood} orbs={false} min={80} max={220} className="w-full py-1" />
-            <p className="mb-2 shrink-0 text-xs text-ink-2">
-              오늘 일진 {data!.today.day}
-              {data!.today.tenGod ? ` · ${data!.today.tenGod}의 날` : ""}
-            </p>
-            <Card className="w-full shrink-0 space-y-2.5 text-left">
-              {r.highlights.map((h, i) => (
-                <p key={i} className="flex items-start gap-3 text-[15px] leading-relaxed">
-                  <span className="text-xl leading-6" aria-hidden>
-                    {h.emoji}
-                  </span>
-                  <span>{h.text}</span>
-                </p>
-              ))}
-            </Card>
-            <MockNotice provider={data!.reading.provider ?? aiProvider} />
-          </div>
-
-          {/* 2장: 분야별 */}
-          <div className="flex flex-col pt-2">
-            <div className="grid grid-cols-4 gap-2.5">
-              {TABS.map((t) => (
-                <Tile key={t.key} emoji={t.emoji} label={t.label} active={tab === t.key} onClick={() => setTab(t.key)} />
-              ))}
-            </div>
-            <Card className="mt-3 animate-rise" key={tab}>
-              <p className="mb-1 text-[13px] font-semibold text-accent">{TABS.find((t) => t.key === tab)!.label}</p>
-              <p className="text-[15px] leading-relaxed">{detail}</p>
-            </Card>
-          </div>
-
-          {/* 3장: 행운·풀이 근거 */}
-          <div className="flex flex-col gap-3 pt-2">
-            <Card>
-              <div className="flex flex-wrap gap-2 text-sm">
-                <span className="rounded-full bg-white/10 px-3 py-1">🎨 행운 색 · {r.lucky.color}</span>
-                <span className="rounded-full bg-white/10 px-3 py-1">🍀 행운 아이템 · {r.lucky.item}</span>
-              </div>
-              <p className="mt-3 text-[15px] leading-relaxed">💡 {r.tip}</p>
-            </Card>
-            <div className="rounded-[22px] bg-white/5 px-5 py-3 text-sm text-ink-2">
-              <p className="mb-1.5 font-semibold text-ink">이렇게 풀이했어요</p>
-              <ul className="space-y-1">
-                {r.evidence.map((e, i) => (
-                  <li key={i}>
-                    <b className="text-ink">{e.claim}</b> — {e.basis}
-                  </li>
+        <div className="flex h-[min(46dvh,340px)] flex-col">
+          <Pager labels={["오늘의 운세 요약", "분야별 운세", "행운과 풀이"]}>
+            {/* 1장: 요약 (공유 이미지로 저장되는 부분) */}
+            <div ref={captureRef} className="flex flex-col gap-2 bg-[var(--bg)] pb-1">
+              <p className="text-center text-xs text-ink-2">
+                {r.headline} · 오늘 일진 {data!.today.day}
+                {data!.today.tenGod ? ` · ${data!.today.tenGod}의 날` : ""}
+              </p>
+              <Card className="w-full space-y-2.5 text-left">
+                {r.highlights.map((h, i) => (
+                  <p key={i} className="flex items-start gap-3 text-[15px] leading-relaxed">
+                    <span className="text-xl leading-6" aria-hidden>
+                      {h.emoji}
+                    </span>
+                    <span>{h.text}</span>
+                  </p>
                 ))}
-              </ul>
+              </Card>
+              <MockNotice provider={data!.reading.provider ?? aiProvider} />
             </div>
-            <button className="mx-auto text-xs text-ink-2 underline underline-offset-4" onClick={() => load(true)} disabled={loading}>
-              {loading ? "다시 점치는 중…" : "오늘 운세 다시 받기"}
-            </button>
-            <Disclaimer />
-          </div>
-        </Pager>
+
+            {/* 2장: 분야별 */}
+            <div className="flex flex-col">
+              <div className="grid grid-cols-4 gap-2.5">
+                {TABS.map((t) => (
+                  <Tile key={t.key} emoji={t.emoji} label={t.label} active={tab === t.key} onClick={() => setTab(t.key)} />
+                ))}
+              </div>
+              <Card className="mt-3 animate-rise" key={tab}>
+                <p className="mb-1 text-[13px] font-semibold text-accent">{TABS.find((t) => t.key === tab)!.label}</p>
+                <p className="text-[15px] leading-relaxed">{detail}</p>
+              </Card>
+            </div>
+
+            {/* 3장: 행운·풀이 근거 */}
+            <div className="flex flex-col gap-3">
+              <Card>
+                <div className="flex flex-wrap gap-2 text-sm">
+                  <span className="rounded-full bg-tile px-3 py-1">🎨 행운 색 · {r.lucky.color}</span>
+                  <span className="rounded-full bg-tile px-3 py-1">🍀 행운 아이템 · {r.lucky.item}</span>
+                </div>
+                <p className="mt-3 text-[15px] leading-relaxed">💡 {r.tip}</p>
+              </Card>
+              <div className="rounded-[22px] bg-tile px-5 py-3 text-sm text-ink-2">
+                <p className="mb-1.5 font-semibold text-ink">이렇게 풀이했어요</p>
+                <ul className="space-y-1">
+                  {r.evidence.map((e, i) => (
+                    <li key={i}>
+                      <b className="text-ink">{e.claim}</b> — {e.basis}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <button className="mx-auto text-xs text-ink-2 underline underline-offset-4" onClick={() => load(true)} disabled={loading}>
+                {loading ? "다시 점치는 중…" : "오늘 운세 다시 받기"}
+              </button>
+              <Disclaimer />
+            </div>
+          </Pager>
+        </div>
       ) : null}
     </Screen>
   );

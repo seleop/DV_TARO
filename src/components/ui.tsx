@@ -64,7 +64,7 @@ export function Field({ label, hint, children }: { label: string; hint?: ReactNo
 }
 
 export const inputCls =
-  "w-full h-12 rounded-2xl border border-line bg-white/5 px-4 text-base text-ink placeholder:text-ink-2/60 outline-none focus:border-accent focus:bg-white/8 disabled:opacity-40 [color-scheme:dark]";
+  "w-full h-12 rounded-2xl border border-line bg-white px-4 text-base text-ink placeholder:text-ink-2/60 outline-none focus:border-accent disabled:opacity-40 [color-scheme:light]";
 
 export function ErrorBox({ message }: { message: string | null }) {
   if (!message) return null;
@@ -108,11 +108,11 @@ export function Disclaimer({ className = "" }: { className?: string }) {
 /** 레퍼런스의 카테고리 타일 (이모지 + 라벨) */
 export function Tile({ emoji, label, href, active, onClick }: { emoji: string; label: string; href?: string; active?: boolean; onClick?: () => void }) {
   const cls = `flex aspect-square flex-col items-center justify-center gap-2 rounded-[22px] text-[13px] font-semibold transition active:scale-95 ${
-    active ? "bg-white/20 ring-2 ring-accent" : "bg-tile"
+    active ? "bg-white ring-2 ring-accent" : "bg-tile"
   }`;
   const inner = (
     <>
-      <span className="text-[34px] leading-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.35)]" aria-hidden>
+      <span className="text-[34px] leading-none drop-shadow-[0_3px_4px_rgba(90,50,40,0.2)]" aria-hidden>
         {emoji}
       </span>
       <span>{label}</span>
@@ -135,7 +135,7 @@ export function BottomActions({ children, withTabBar }: { children: ReactNode; w
     <>
       <div className="h-28" aria-hidden />
       <div
-        className={`fixed inset-x-0 z-20 mx-auto w-full max-w-[440px] bg-gradient-to-t from-[#090717] via-[#090717]/95 to-transparent px-5 pt-6 ${
+        className={`fixed inset-x-0 z-20 mx-auto w-full max-w-[440px] bg-gradient-to-t from-[var(--bg)] via-[var(--bg)]/95 to-transparent px-5 pt-6 ${
           withTabBar ? "bottom-[68px] pb-3" : "bottom-0 pb-safe"
         }`}
       >
@@ -148,9 +148,9 @@ export function BottomActions({ children, withTabBar }: { children: ReactNode; w
 /** 상단 앱 바 (뒤로 가기 + 제목) */
 export function TopBar({ title, back = "/", right }: { title?: string; back?: string | null; right?: ReactNode }) {
   return (
-    <header className="sticky top-0 z-20 -mx-5 flex h-14 items-center bg-[#0d0926]/70 px-3 backdrop-blur-md">
+    <header className="sticky top-0 z-20 -mx-5 flex h-14 shrink-0 items-center bg-[var(--bg)] px-3 [.scene-dark_&]:bg-transparent [.scene-light_&]:bg-transparent">
       {back ? (
-        <Link href={back} aria-label="뒤로" className="flex h-10 w-10 items-center justify-center rounded-full text-ink active:bg-white/10">
+        <Link href={back} aria-label="뒤로" className="flex h-10 w-10 items-center justify-center rounded-full text-ink active:bg-black/5">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
             <path d="M15 18l-6-6 6-6" />
           </svg>

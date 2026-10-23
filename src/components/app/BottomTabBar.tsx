@@ -17,7 +17,7 @@ export function BottomTabBar() {
   if (!TABS.some((t) => t.href === path)) return null;
   return (
     <>
-      <nav className="z-30 w-full shrink-0 border-t border-white/10 bg-[#0c0924]/90 backdrop-blur-xl pb-safe">
+      <nav className="z-30 w-full shrink-0 border-t border-line bg-white pb-safe">
         <ul className="grid grid-cols-5">
           {TABS.map((t) => {
             const active = t.href === path;

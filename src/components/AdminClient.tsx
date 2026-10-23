@@ -24,7 +24,7 @@ export function AdminClient({ adminId }: { adminId: string }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 pb-3">
       <p className="shrink-0 text-xs text-ink-2">집계와 오류 진단 정보만 표시됩니다. 개인의 사주·질문·해석 내용은 볼 수 없습니다.</p>
-      <div className="grid shrink-0 grid-cols-4 gap-1 rounded-2xl bg-white/5 p-1 text-[13px]" role="tablist">
+      <div className="grid shrink-0 grid-cols-4 gap-1 rounded-2xl bg-tile p-1 text-[13px]" role="tablist">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -59,7 +59,7 @@ function useLoad<T>(path: string) {
 
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-2xl bg-white/7 p-3">
+    <div className="rounded-2xl bg-tile p-3">
       <div className="text-xs text-ink-2">{label}</div>
       <div className="mt-1 text-xl font-semibold tabular-nums">{value}</div>
       {sub && <div className="text-xs text-ink-2">{sub}</div>}

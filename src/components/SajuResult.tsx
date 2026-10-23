@@ -39,7 +39,7 @@ function PillarCell({ field, view }: { field: "hour" | "day" | "month" | "year";
   const tg = view.canonical.stemTenGods;
   const tenGod = field === "day" ? "일간" : field === "hour" ? tg?.hour : tg?.[field];
   return (
-    <div className={`flex flex-col items-center gap-1 rounded-2xl px-1 py-3 text-center ${field === "day" ? "bg-white/12 ring-1 ring-accent/50" : "bg-white/5"}`}>
+    <div className={`flex flex-col items-center gap-1 rounded-2xl px-1 py-3 text-center ${field === "day" ? "bg-white ring-1 ring-accent/50" : "bg-tile"}`}>
       <span className="text-[11px] text-ink-2">{FIELD_LABEL[field]}</span>
       {p ? (
         <>
@@ -155,7 +155,7 @@ export function SajuResult({
         <StatusBadge status={view.status} withDesc />
       </div>
       {view.reasons.length > 0 && (
-        <ul className="mt-3 space-y-1 rounded-2xl bg-white/5 px-4 py-3 text-[13px] text-ink-2">
+        <ul className="mt-3 space-y-1 rounded-2xl bg-tile px-4 py-3 text-[13px] text-ink-2">
           {view.reasons.map((r) => (
             <li key={r}>· {REASON_TEXT[r] ?? r}</li>
           ))}
@@ -182,7 +182,7 @@ export function SajuResult({
                 <span className="w-5 font-semibold" style={{ color: ELEMENT_COLOR[k] }}>
                   {k}
                 </span>
-                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-tile">
                   <div className="h-full rounded-full" style={{ width: `${(n / maxEl) * 100}%`, background: ELEMENT_COLOR[k] }} />
                 </div>
                 <span className="w-5 text-right tabular-nums">{n}</span>
@@ -202,7 +202,7 @@ export function SajuResult({
         {c.daewoon ? (
           <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
             {c.daewoon.pillars.map((p, i) => (
-              <div key={i} className="min-w-[58px] rounded-2xl bg-white/7 px-3 py-2.5 text-center">
+              <div key={i} className="min-w-[58px] rounded-2xl bg-tile px-3 py-2.5 text-center">
                 <div className="text-[10px] text-ink-2">{i + 1}번째</div>
                 <div className="mt-0.5 font-semibold">{p}</div>
               </div>
@@ -225,7 +225,7 @@ export function SajuResult({
               key={f}
               type="button"
               onClick={() => setFocus((s) => (s.includes(f) ? s.filter((x) => x !== f) : [...s, f]))}
-              className={`rounded-full px-3.5 py-1.5 text-sm transition ${focus.includes(f) ? "bg-white text-[#2a2440]" : "bg-white/8 text-ink-2"}`}
+              className={`rounded-full px-3.5 py-1.5 text-sm transition ${focus.includes(f) ? "bg-accent text-white" : "bg-tile text-ink-2"}`}
             >
               {f}
             </button>
@@ -264,7 +264,7 @@ export function SajuResult({
                 {(["year", "month", "day", "hour"] as const).map((f) => {
                   const v = view.fields[f];
                   return (
-                    <tr key={f} className="border-t border-white/10">
+                    <tr key={f} className="border-t border-line">
                       <td className="py-1.5 pr-2">{FIELD_LABEL[f]}</td>
                       {view.engines.map((e) => {
                         const ex = v.excluded.find((x) => x.engine === e.id);
@@ -333,7 +333,7 @@ function fmtWall(w: { year: number; month: number; day: number; hour: number; mi
 function ReadingView({ reading }: { reading: NonNullable<Reading> }) {
   const r = reading.content;
   const block = (emoji: string, title: string, text: string) => (
-    <section className="rounded-2xl bg-white/5 p-4">
+    <section className="rounded-2xl bg-tile p-4">
       <h3 className="mb-1.5 font-semibold">
         <span aria-hidden>{emoji}</span> {title}
       </h3>
@@ -348,7 +348,7 @@ function ReadingView({ reading }: { reading: NonNullable<Reading> }) {
       <p className="rounded-2xl bg-gradient-to-br from-[#8b5cf6]/30 to-[#4f7cf0]/20 p-4 text-[16px] leading-relaxed">{r.summary}</p>
       {block("🌙", "성격", r.personality)}
       <div className="grid grid-cols-1 gap-3">
-        <section className="rounded-2xl bg-white/5 p-4">
+        <section className="rounded-2xl bg-tile p-4">
           <h3 className="mb-1.5 font-semibold">💪 강점</h3>
           <ul className="space-y-1">
             {r.strengths.map((s, i) => (
@@ -356,7 +356,7 @@ function ReadingView({ reading }: { reading: NonNullable<Reading> }) {
             ))}
           </ul>
         </section>
-        <section className="rounded-2xl bg-white/5 p-4">
+        <section className="rounded-2xl bg-tile p-4">
           <h3 className="mb-1.5 font-semibold">⚠️ 주의할 점</h3>
           <ul className="space-y-1">
             {r.cautions.map((s, i) => (
@@ -369,7 +369,7 @@ function ReadingView({ reading }: { reading: NonNullable<Reading> }) {
       {block("💰", "재물", r.wealth)}
       {block("💘", "연애·인간관계", r.relationships)}
       {block("🗓️", `${r.yearlyOutlook.year}년${r.yearlyOutlook.yearGanji ? ` (${r.yearlyOutlook.yearGanji}년)` : ""} 흐름`, r.yearlyOutlook.text)}
-      <details className="rounded-2xl bg-white/5 px-4 py-3 text-sm text-ink-2">
+      <details className="rounded-2xl bg-tile px-4 py-3 text-sm text-ink-2">
         <summary className="cursor-pointer">해석 근거와 한계</summary>
         <ul className="mt-2 space-y-1">
           {r.evidence.map((e, i) => (
