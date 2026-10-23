@@ -133,6 +133,7 @@ export async function signUp(
   } catch (e) {
     await release();
     if (e instanceof AuthAdminError && (e.code === "EMAIL_TAKEN" || e.code === "WEAK_PASSWORD" || e.code === "INVALID_EMAIL")) throw new AuthError(e.code, e.message);
+    if (!(e instanceof AuthAdminError)) console.error(`[signup createUser] ${(e as Error)?.name ?? "Error"}: ${String((e as Error)?.message ?? "").slice(0, 200)}`);
     throw new AuthError("AUTH_FAILED", "계정을 만들지 못했습니다. 잠시 후 다시 시도해 주세요.");
   }
   try {

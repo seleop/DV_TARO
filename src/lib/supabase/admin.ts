@@ -35,6 +35,8 @@ function createSupabaseAuthAdmin(): AuthAdmin {
         if (error?.code === "email_exists" || error?.code === "user_already_exists") throw new AuthAdminError("EMAIL_TAKEN", "이미 가입된 이메일입니다.");
         if (error?.code === "email_address_invalid" || error?.code === "validation_failed") throw new AuthAdminError("INVALID_EMAIL", "사용할 수 없는 이메일 주소예요. 다른 주소를 입력해 주세요.");
         if (error?.code === "weak_password") throw new AuthAdminError("WEAK_PASSWORD", "비밀번호가 너무 약합니다. 더 길고 복잡하게 정해 주세요.");
+        // 처리하지 않은 오류는 원인 파악을 위해 서버 로그에 남긴다 (키·이메일은 남기지 않음)
+        console.error(`[auth-admin createUser] status=${error?.status ?? "-"} code=${error?.code ?? "-"} ${error?.name ?? ""}: ${String(error?.message ?? "no user returned").slice(0, 200)}`);
         throw new AuthAdminError("AUTH_ADMIN_FAILED", "계정을 만들지 못했습니다. 잠시 후 다시 시도해 주세요.");
       }
       return data.user.id;
