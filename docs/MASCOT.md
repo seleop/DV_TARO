@@ -96,54 +96,58 @@ scripts/mascot/encode.mjs  (FFmpeg)
 
 생성 이미지는 여러 시점에서 같은 캐릭터를 유지하지 못하면 기준 이미지로 채택하지 않는다. 현재 기준은 **Blender 모델 렌더**다(모든 시점·동작이 같은 모델에서 나오므로 일관성 보장).
 
-## 8. 에셋 상태표 (2026-10-23)
+## 8. 에셋 상태표 (2026-10-24)
 
 상태: `planned` 제작 예정 · `generated` 생성됨 · `reviewed` 결과 확인 · `integrated` 웹앱 통합 · `verified` 실제 화면 재생 확인
 
-| 에셋 | 상태 | 파일 | 비고 |
-|---|---|---|---|
-| 기준 이미지 정면·3/4·측면·후면 | reviewed | `assets/mascot/reference/*.png` | 같은 3D 모델 렌더라 시점 간 일관성 보장 |
-| 표정 기준(기쁨·놀람) | reviewed | `assets/mascot/reference/expression-*.png` | |
-| idle (24프레임 12fps, 2초 루프) | verified* | `public/mascot/idle.webp` 150KB | 숨쉬기·한 번 깜빡임·새싹 흔들림 |
-| walk (20프레임 20fps, 1초 루프) | verified* | `public/mascot/walk.webp` 132KB | 2관절 IK 제자리 걷기. "점치는 중" 화면 |
-| happy (20프레임 20fps 루프) | verified* | `public/mascot/happy.webp` 121KB | 콩콩 뛰며 두 팔 들기. 좋은 결과·터치 |
-| surprised (16프레임, 한 번) | verified* | `public/mascot/surprised.webp` 110KB | 연타·점프 반응, 끝나면 완료 콜백 |
-| 포스터 | integrated | `public/mascot/poster.webp` 7KB | 로딩·동작 줄이기·작은 아이콘 |
-| reveal | planned | | 복주머니에서 카드를 꺼내 보여 주는 동작 |
-| celebrate | planned | | 대길 전용 (꽃가루·점프) |
+| 동작 | 종류 | 프레임·fps | 크기 | 상태 | 쓰는 곳 |
+|---|---|---|---|---|---|
+| idle 서 있기(숨쉬기·깜빡임) | 반복 | 30 · 15 | 167KB | verified* | 기본 바탕 |
+| walk 걷기 | 반복 | 20 · 20 | 117KB | integrated | 운세 기다리는 중 |
+| think 고민(손을 턱에, 갸웃) | 반복 | 30 · 15 | 175KB | integrated | 타로·사주 화면 |
+| happy 기뻐 뛰기 | 반복 | 20 · 20 | 116KB | integrated | 좋은 결과 바탕 |
+| wave 손 흔들기 | 한 번 | 30 · 20 | 176KB | verified* | 첫 화면·로그인 인사, 터치, 가끔 |
+| nod 끄덕끄덕 | 한 번 | 20 · 20 | 114KB | integrated | 차분·쉬어가기 결과, 터치, 가끔 |
+| surprised 놀람 | 한 번 | 24 · 20 | 145KB | integrated | 연타, 터치 |
+| reveal 복주머니에서 운세 카드 꺼내 보여 주기 | 한 번 | 40 · 20 | 235KB | integrated | 좋음 결과·별자리 결과, 터치 |
+| celebrate 웅크렸다 점프·한 바퀴·꽃가루 | 한 번 | 40 · 20 | 250KB | integrated | 대길 결과, 터치(가끔) |
+| yawn 기지개·하품 | 한 번 | 36 · 18 | 207KB | integrated | 25초 이상 그대로 두면 |
+| 기준 이미지(정면·3/4·측면·후면·표정 4종) | | | | reviewed | `assets/mascot/reference` |
 
-* 개발 PC의 앱 내 Chromium(모바일 375px 에뮬레이션)에서 프레임 진행·상태 전환·완료 콜백을 확인. **Android·iOS 실기기는 아직 확인 전.**
+* 앱 내 Chromium(375px)에서 상태 전환 순서(포스터 → idle → 크로스페이드 → wave → 크로스페이드 → idle)를 확인. 나머지는 렌더 시트·이음새 수치로 확인. **Android·iOS 실기기는 확인 전.**
 
 ## 9. 품질 점검
 
 | 항목 | 결과 | 근거 |
 |---|---|---|
-| 프레임 간 외형 변화 | 없음 | 모든 프레임이 같은 모델·재질·카메라 |
-| 발 미끄러짐·땅 뚫림 | 없음(설계) | 디딤발은 발목 높이 고정, 2관절 IK로 다리 길이 안에서만 이동. 제자리 걷기라 디딤발이 일정 속도로 뒤로 간다 |
-| 가방·새싹 변형 | 없음 | 회전만 하고 형태는 고정 |
-| 루프 이음새 | 없음(설계) | 모든 움직임이 주기 함수(프레임 n = 프레임 0) |
-| 프레임 밖 이탈 | 없음 | 렌더 시트 확인 (머리 새싹 위·발 아래 여백) |
-| 투명 배경 | 유지 | ffprobe: `webp / yuva420p`, 보라 배경 합성으로 확인 |
-| 모바일 식별성 | 양호 | 375px 화면에서 150·280px 표시 확인 |
-| 동작 줄이기 | 구현, 미검증 | 브라우저 에뮬레이션 도구가 없어 화면 확인 못 함 |
-| 빌드·타입·린트·테스트 | 통과 | `npm run build`, `npm run typecheck`, `npx eslint .`, `npm test` |
+| 프레임 간 외형 변화 | 없음 | 같은 모델·재질·카메라 |
+| 다리 주름·이음새 | 없음 | 몸통·허벅지·정강이·발을 메타볼 한 덩어리로 녹여 붙임. 몸 재질 범프 제거 |
+| 반응 동작 시작·끝 | 휴식 자세와 같음 | `encode.mjs` 이음새 검사: 6개 동작 모두 첫·끝 프레임이 idle 첫 프레임과 픽셀 동일(PSNR ∞, celebrate 끝 97dB) |
+| 반복 동작 이음새 | 보이지 않음 | 끝→처음 PSNR이 평소 프레임 간 수준 (idle 27.1/26.9, walk 22.5/24.2, think 23.5/23.5, happy 21.2/20.2) |
+| 동작 전환 | 부드러움 | 0.18초 크로스페이드, 반응이 끝나면 휴식 자세에서 바탕 동작 처음으로 |
+| 키 자세 사이 움직임 | 끊김 없음 | Catmull-Rom 보간(가운데 키에서 멈추지 않음) |
+| 발 미끄러짐·땅 뚫림 | 없음(설계) | 2관절 IK, 디딤발 높이 고정 |
+| 프레임 밖 이탈 | 없음 | 점프·꽃가루 높이까지 카메라 여유 |
+| 투명 배경 | 유지 | `webp / yuva420p` |
+| 동작 줄이기 | 구현, 미검증 | 포스터만 표시, 반응 동작은 즉시 완료 처리 |
+| 빌드·타입·린트·테스트 | 통과 | |
 
-성능: 시트는 화면 근처에 올 때 불러오고(IntersectionObserver), 화면 밖·탭 숨김이면 멈춘다. 120px 미만 아이콘은 포스터만 쓴다. 디코딩 메모리는 시트당 약 9~14MB(2304×1536 RGBA)라 한 화면에 큰 동작을 여러 개 동시에 띄우지 않는다(갤러리 화면 제외).
+성능: 시트는 화면 근처에서 불러오고(관찰 결과가 1.5초 안에 오지 않으면 그냥 불러옴), 화면 밖·탭 숨김이면 멈춘다. 반응 동작 시트(wave·nod·surprised·들어올 때 동작)는 바탕 동작을 띄운 뒤 미리 불러 둔다. 120px 미만은 포스터만. 큰 시트(1920×3072)는 디코딩 약 23MB라 한 번에 바탕+반응 두 장까지만 쓴다.
 
 ## 10. 실행·교체 방법
 
 필요 도구: Blender 5.x(`%LOCALAPPDATA%ProgramsBlenderlender-5.2.3-windows-x64lender.exe`, 공식 포터블), FFmpeg(`winget install Gyan.FFmpeg`). Python 별도 설치는 필요 없다(Blender 내장).
 
 ```bash
-blender -b --factory-startup -P scripts/mascot/build_mascot.py -- --states idle,walk,happy,surprised --stills assets/mascot/reference --out assets/mascot/render --res 384 --save assets/mascot/bokki.blend
+blender -b --factory-startup -P scripts/mascot/build_mascot.py -- --states all --stills assets/mascot/reference --out assets/mascot/render --res 384 --save assets/mascot/bokki.blend
 ```
 
 ```bash
 FFMPEG_PATH=<ffmpeg.exe 경로> node scripts/mascot/encode.mjs
 ```
 
-- 렌더 약 25초(EEVEE), 인코딩 수 초. 결과: `public/mascot/*.webp`, `src/config/mascot-assets.ts`(자동 생성), 검수용 `assets/mascot/preview/*.mp4`(Git 제외).
-- 동작 추가: `build_mascot.py` 의 `STATES`·`pose()` 와 `encode.mjs` 의 `STATES` 에 같이 추가.
+- 렌더 약 75초(EEVEE, 10개 동작 310프레임), 인코딩·이음새 검사 수십 초. 결과: `public/mascot/*.webp`, `src/config/mascot-assets.ts`(자동 생성), 검수용 `assets/mascot/preview/*.mp4`(Git 제외).
+- 동작 추가: 반복 동작은 `build_mascot.py` 의 `pose()`, 한 번 재생 동작은 `CLIPS` 에 키 자세(첫·끝은 빈 dict = 휴식 자세)를 추가하고, `STATES`(두 파일)와 `src/lib/mascot.ts` 의 사용처를 같이 고친다.
 - 외부 도구로 만든 고품질 에셋으로 바꿀 때: 같은 이름의 PNG 시퀀스를 `assets/mascot/render/<동작>/0000.png…`에 넣고 `encode.mjs`만 실행하면 웹앱은 그대로 동작한다.
 - SVG 별토끼로 되돌리기: `src/config/brand.ts` 의 `renderer: "svg"`.
 
@@ -151,5 +155,4 @@ FFMPEG_PATH=<ffmpeg.exe 경로> node scripts/mascot/encode.mjs
 
 - Android·iOS 실기기에서 재생·터치 반응 확인 (배포 후 `MY → 관리자 화면 → 캐릭터`)
 - 이름 "복이"는 가칭 — 확정 필요
-- reveal·celebrate 동작 제작
 - (선택) 더 높은 품질: 디자이너가 이 모델을 다듬거나, 생성 API 키를 주면 7절 연결 지점에 생성 스크립트 추가

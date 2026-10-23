@@ -37,7 +37,8 @@
 - `npm audit` high 5건은 eslint-config-next 하위 개발 의존성(micromatch/fast-glob)이라 배포물과 무관. `audit fix --force`는 하지 않음
 - **대표 캐릭터 반영 (main 반영, `claude/lucid-solomon-5113d2`)**: 3D 마스코트 "복이"(가칭)가 기본 캐릭터 (`docs/MASCOT.md`)
   - Blender 5.2.3(포터블, `%LOCALAPPDATA%\Programs\Blender`)·FFmpeg(winget)로 `scripts/mascot/`에서 모델·idle/walk/happy/surprised 렌더 → `public/mascot/*.webp` 스프라이트 시트
-  - `FortuneMascot`(스프라이트 재생) + `CharacterStage`(말풍선·터치 반응·장면/결과→동작). 운세 대기=walk, 좋은 결과=happy, 터치=happy/surprised
+  - `FortuneMascot`(스프라이트 재생·크로스페이드) + `CharacterStage`(말풍선·터치·대기 반응·장면/결과→동작). 동작 10종: 반복 idle·walk·think·happy, 한 번 wave·nod·surprised·reveal·celebrate·yawn (한 번 재생 동작은 휴식 자세로 시작·끝, `encode.mjs`가 이음새 검사)
+  - 몸통·다리는 메타볼로 녹여 붙여 관절 주름 없음 (2026-10-24 사용자 요청 반영)
   - 오늘의 운세·별자리 AI 응답에 `mood`(great/good/calm/careful) 추가(이전 저장분 호환), 타로는 카드 방향으로 분위기 결정
   - SVG 별토끼(장면별 소품)는 대체용으로 유지: `src/config/brand.ts` `renderer: "svg"`. 관리자 화면 → "캐릭터"에서 갤러리 확인
   - 남은 일: Android·iOS 실기기 재생 확인, 이름 확정, reveal·celebrate 동작, 동작 줄이기 화면 확인

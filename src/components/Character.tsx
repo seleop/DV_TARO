@@ -5,13 +5,14 @@ import { BRAND } from "@/config/brand";
 import { StarRabbit } from "./character/StarRabbit";
 import { FortuneMascot } from "./FortuneMascot";
 import type { MascotState } from "@/config/mascot-assets";
-import { mascotStateFor } from "@/lib/mascot";
+import { idleReactionFor, introFor, mascotStateFor, nextIdleReactionDelay, tapReactionFor } from "@/lib/mascot";
 import {
   ACTION_EXPRESSION,
   ACTION_KEYFRAMES,
   DIZZY_TAPS,
   DIZZY_WINDOW_MS,
   baseLook,
+  linesFor,
   nextIdleDelay,
   pickIdleBehavior,
   pickTapReaction,
@@ -141,19 +142,57 @@ export function CharacterStage({
     };
   }, [is3d, pose, reduced, play, showExpression, later]);
 
+  // 3D 마스코트: 화면에 들어오면 한 번 인사·결과 소개, 이후 가끔(9~16초) 손 흔들기·끄덕·하품
+  const intro = is3d && size >= 120 ? introFor(pose, mood) : null;
+  useEffect(() => {
+    if (!is3d || size < 120) return;
+    let alive = true;
+    let t: ReturnType<typeof setTimeout>;
+    lastTouch.current = Date.now();
+    if (intro) {
+      t = setTimeout(() => {
+        if (!alive) return;
+        const id = Date.now();
+        setReaction({ state: intro, id });
+        if (interactive && (mood || pose === "default")) {
+          const pool = linesFor(mood ?? pose);
+          setBubble({ text: pool[Math.floor(Math.random() * pool.length)], id });
+          later(() => setBubble((b) => (b?.id === id ? null : b)), BUBBLE_MS);
+        }
+      }, 450);
+    }
+    const loop = () => {
+      t = setTimeout(() => {
+        if (!alive) return;
+        if (!document.hidden) {
+          const st = idleReactionFor(Date.now() - lastTouch.current, Math.random);
+          if (st) {
+            setReaction((cur) => cur ?? { state: st, id: Date.now() });
+            if (st === "yawn") lastTouch.current = Date.now();
+          }
+        }
+        loop();
+      }, nextIdleReactionDelay(Math.random));
+    };
+    loop();
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [is3d, size, intro, interactive, mood, pose, later]);
+
   function onTap() {
     const now = Date.now();
     lastTouch.current = now;
     taps.current = [...taps.current.filter((x) => now - x < DIZZY_WINDOW_MS), now];
-    const r = pickTapReaction(pose, mood, taps.current.length, prevLine.current, Math.random);
-    if (taps.current.length >= DIZZY_TAPS) taps.current = [];
+    const recent = taps.current.length;
+    const r = pickTapReaction(pose, mood, recent, prevLine.current, Math.random);
+    if (recent >= DIZZY_TAPS) taps.current = [];
     prevLine.current = r.line;
     setGaze(0);
     if (is3d) {
-      // 연타·점프는 놀람(한 번 재생 후 복귀), 나머지는 잠깐 기뻐하기
-      const st: MascotState = r.action === "spin" || r.action === "jump" ? "surprised" : "happy";
-      setReaction({ state: st, id: now });
-      if (st === "happy") later(() => setReaction((x) => (x?.id === now ? null : x)), 1600);
+      // 반응 동작은 휴식 자세로 끝나 바탕 동작으로 자연스럽게 돌아간다 (FortuneMascot 이 완료를 알림)
+      setReaction({ state: tapReactionFor(recent, DIZZY_TAPS, Math.random), id: now });
     } else {
       play(r.action, r.expression);
     }
@@ -171,15 +210,15 @@ export function CharacterStage({
   ) : (
     <StarRabbit expression={expression} gaze={gaze} scene={pose} mood={mood} label={BRAND.character.alt} />
   );
-  const reactionId = reaction?.id;
   const figure = is3d ? (
     <FortuneMascot
-      key={reactionId ?? "base"}
       state={reaction?.state ?? mascotStateFor(pose, mood)}
+      playId={reaction?.id ?? 0}
       size={size}
       still={size < 120}
+      preload={interactive ? ["wave", "nod", "surprised", ...(intro ? [intro] : [])] : intro ? [intro] : []}
       label={BRAND.character.alt}
-      onAnimationComplete={() => setReaction((x) => (x?.id === reactionId ? null : x))}
+      onAnimationComplete={(st) => setReaction((x) => (x?.state === st ? null : x))}
       fallback={svgFigure}
     />
   ) : (
