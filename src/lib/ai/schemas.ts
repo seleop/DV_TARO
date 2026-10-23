@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MOODS } from "../character";
 
 /**
  * AI 출력 스키마.
@@ -10,6 +11,9 @@ import { z } from "zod";
 
 const text = (max: number) => z.string().trim().min(1).max(max);
 const list = (maxItems: number, maxLen: number) => z.array(text(maxLen)).min(1).max(maxItems);
+/** 캐릭터 표정 연출용 분위기. 예전에 저장된 해석에는 없으므로 엄격 스키마에서는 선택 항목 */
+const apiMood = z.enum(MOODS).describe("전반적 분위기: great(아주 좋음) / good(좋음) / calm(무난·잔잔) / careful(쉬어가기·신중)");
+const mood = z.enum(MOODS).optional();
 
 // ── 사주 종합 해석 ──
 export const ApiSajuReadingSchema = z.object({
@@ -56,6 +60,7 @@ export const ApiDailyReadingSchema = z.object({
   lucky: z.object({ color: z.string(), item: z.string() }),
   tip: z.string(),
   evidence: z.array(z.object({ claim: z.string(), basis: z.string() })),
+  mood: apiMood,
   disclaimer: z.string(),
 });
 export const DailyReadingSchema = z.object({
@@ -68,6 +73,7 @@ export const DailyReadingSchema = z.object({
   lucky: z.object({ color: text(20), item: text(30) }),
   tip: text(300),
   evidence: z.array(z.object({ claim: text(200), basis: text(300) })).min(1).max(6),
+  mood,
   disclaimer: text(300),
 });
 export type DailyReading = z.infer<typeof DailyReadingSchema>;
@@ -95,6 +101,7 @@ export const ApiHoroscopeReadingSchema = z.object({
   work: z.string(),
   money: z.string(),
   tip: z.string(),
+  mood: apiMood,
   disclaimer: z.string(),
 });
 export const HoroscopeReadingSchema = z.object({
@@ -104,6 +111,7 @@ export const HoroscopeReadingSchema = z.object({
   work: text(500),
   money: text(500),
   tip: text(300),
+  mood,
   disclaimer: text(300),
 });
 export type HoroscopeReading = z.infer<typeof HoroscopeReadingSchema>;

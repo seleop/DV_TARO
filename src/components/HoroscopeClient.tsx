@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { Mood } from "@/lib/character";
 import { api, errorText } from "@/lib/client";
 import { CharacterStage } from "./Character";
 import { ShareBar } from "./ShareBar";
@@ -10,7 +11,7 @@ type Sign = { id: string; nameKo: string; symbol: string; element: string; range
 type Result = {
   provider: string;
   cached: boolean;
-  content: { headline: string; overall: string; love: string; work: string; money: string; tip: string; sign: { nameKo: string; symbol: string; element: string }; date: string };
+  content: { headline: string; overall: string; love: string; work: string; money: string; tip: string; mood?: Mood; sign: { nameKo: string; symbol: string; element: string }; date: string };
 };
 
 const STORAGE_KEY = "fortune.horoscope.sign";
@@ -61,7 +62,7 @@ export function HoroscopeClient({ signs, profileSignId }: { signs: Sign[]; profi
             {r.date} · {r.sign.symbol} {r.sign.nameKo}
           </p>
           <h1 className="mt-1 text-[26px] font-bold leading-tight">{r.headline}</h1>
-          <CharacterStage pose="star" size={200} orbs={false} className="my-2" />
+          <CharacterStage pose="star" mood={r.mood} size={200} orbs={false} className="my-2" />
           <Card className="w-full text-left">
             <p className="text-[15px] leading-relaxed">{r.overall}</p>
           </Card>

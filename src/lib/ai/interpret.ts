@@ -1,6 +1,7 @@
 import "server-only";
 import { getTenGod } from "manseryeok";
 import type { z } from "zod";
+import { MOODS } from "../character";
 import { hmac } from "../crypto";
 import { assertAiAllowed } from "../limits";
 import { findReadingByCacheKey, getLatestReadingForCalculation, saveReading, type StoredCalculation, type StoredReading } from "../repo/records";
@@ -226,6 +227,7 @@ export async function generateDailyReading(userId: string, calc: StoredCalculati
       lucky: { color: "보라색", item: "작은 메모장" },
       tip: "물 한 잔 마시고 시작해 보세요.",
       evidence: [{ claim: `${tenGod}의 날`, basis: `오늘 일진 ${today.day}, 일간 ${dm.stem}` }],
+      mood: MOODS[today.day.charCodeAt(0) % MOODS.length],
       disclaimer: "오락과 참고용입니다.",
     }),
     grounding: (d) => findUngroundedGanji(d, allowed),
@@ -303,6 +305,7 @@ export async function generateHoroscope(
       work: "일에 대한 예시 문장입니다.",
       money: "지출에 대한 예시 문장입니다.",
       tip: "가벼운 산책을 권합니다.",
+      mood: MOODS[(sign.id.length + Number(date.slice(-2))) % MOODS.length],
       disclaimer: "오락과 참고용입니다.",
     }),
   });

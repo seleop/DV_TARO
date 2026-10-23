@@ -143,7 +143,7 @@ export function SajuResult({
           {c.dayMaster ? `일간 ${c.dayMaster.stem}(${c.dayMaster.element})` : ""}
           {c.zodiacAnimal ? ` · ${c.zodiacAnimal}띠` : ""}
         </p>
-        <CharacterStage pose="happy" size={170} orbs={false} className="my-1" />
+        <CharacterStage pose="saju" size={170} orbs={false} className="my-1" />
         <div className="grid w-full grid-cols-4 gap-2">
           {(["hour", "day", "month", "year"] as const).map((f) => (
             <PillarCell key={f} field={f} view={view} />

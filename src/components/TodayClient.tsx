@@ -75,7 +75,7 @@ export function TodayClient({ calculationId, displayName, aiProvider }: { calcul
               {y}년 {Number(m)}월 {Number(d)}일 {josa(displayName, "은/는")}
             </p>
             <h1 className="mt-2 text-[28px] font-bold leading-tight">{r.headline}</h1>
-            <CharacterStage pose="happy" size={230} orbs={false} className="my-3" />
+            <CharacterStage pose="happy" mood={r.mood} size={230} orbs={false} className="my-3" />
             <p className="-mt-2 mb-4 text-xs text-ink-2">
               오늘 일진 {data!.today.day}
               {data!.today.tenGod ? ` · ${data!.today.tenGod}의 날` : ""}

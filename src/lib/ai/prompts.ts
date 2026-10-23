@@ -6,9 +6,9 @@ import type { DrawnCard } from "../tarot/deck";
  */
 export const PROMPT_VERSIONS = {
   saju: "saju-2026-10-23.1",
-  daily: "daily-2026-10-23.2",
+  daily: "daily-2026-10-23.3",
   tarot: "tarot-2026-10-23.1",
-  horoscope: "horoscope-2026-10-23.1",
+  horoscope: "horoscope-2026-10-23.2",
 } as const;
 
 const COMMON_RULES = `당신은 사내 동료들이 재미와 자기 성찰을 위해 보는 운세 앱의 해석 작가입니다. 한국어로, 따뜻하고 담백한 존댓말로 씁니다.
@@ -18,7 +18,8 @@ const COMMON_RULES = `당신은 사내 동료들이 재미와 자기 성찰을 �
 - 불안·공포를 주는 표현(재앙, 큰 화, 죽음, 이혼 확정 등)을 쓰지 않습니다.
 - 건강·의료·법률·투자에 대해 확정적인 판단이나 구체적 행동 지시(종목, 시술, 소송 등)를 하지 않습니다. 필요하면 전문가 상담을 권합니다.
 - 입력 데이터에 없는 사실을 만들지 않습니다.
-- 출력은 지정된 JSON 구조만 사용합니다.`;
+- 출력은 지정된 JSON 구조만 사용합니다.
+- mood 필드가 있으면 내용의 전반적 분위기를 고릅니다(캐릭터 표정 연출용). 근거가 약하면 calm을 고르고, careful도 "쉬어가기" 정도의 가벼운 의미로 씁니다.`;
 
 const SAJU_RULES = `${COMMON_RULES}
 

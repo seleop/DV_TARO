@@ -6,6 +6,7 @@ import { CharacterStage } from "@/components/Character";
 import { SafeForm } from "@/components/SafeForm";
 import { ShareBar } from "@/components/ShareBar";
 import { BottomActions, Button, Card, Disclaimer, ErrorBox, MockNotice } from "@/components/ui";
+import { moodFromTarot } from "@/lib/character";
 import { api, errorText } from "@/lib/client";
 import { josa } from "@/lib/josa";
 
@@ -94,7 +95,8 @@ export default function TarotPage() {
               <TarotCard key={d.id} card={d} flipped={flipped} delay={i * 250} />
             ))}
           </div>
-          <Card className="mt-5 text-left">
+          <CharacterStage pose="tarot" mood={moodFromTarot(c.drawn)} size={170} orbs={false} className="mt-3" />
+          <Card className="mt-1 text-left">
             <p className="text-[15px] leading-relaxed">{c.overall}</p>
           </Card>
         </div>

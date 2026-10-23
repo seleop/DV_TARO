@@ -26,7 +26,7 @@ export default async function SajuHub() {
         </Link>
       ) : (
         <div className="glass mt-6 flex flex-col items-center rounded-[28px] p-6 text-center">
-          <CharacterStage size={150} />
+          <CharacterStage pose="saju" size={150} orbs={false} />
           <p className="mt-2 font-semibold">아직 내 사주가 없어요</p>
           <p className="mt-1 text-sm text-ink-2">프로필 설정에서 생년월일을 입력하면 오늘의 운세도 볼 수 있어요</p>
           <Link href="/me/profile" className="mt-3 rounded-full bg-accent/20 px-4 py-2 text-sm font-semibold text-accent">
