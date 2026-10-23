@@ -556,12 +556,12 @@ def place_confetti(rig, progress, t_anim):
 CLIPS = {
     "wave": [
         (0.0, {}, "neutral"),
-        (0.18, {"ro": 125, "rf": 15, "headz": -6, "heady": 4, "hry": 2}, "happy"),
-        (0.3, {"ro": 145, "rf": 15, "headz": -6, "heady": 6, "hry": 3, "sprouty": -6}, "happy"),
-        (0.42, {"ro": 118, "rf": 15, "headz": -6, "heady": 3, "hry": 2, "sprouty": 5}, "happy"),
-        (0.54, {"ro": 145, "rf": 15, "headz": -6, "heady": 6, "hry": 3, "sprouty": -6}, "happy"),
-        (0.66, {"ro": 118, "rf": 15, "headz": -6, "heady": 3, "hry": 2, "sprouty": 5}, "happy"),
-        (0.8, {"ro": 60, "rf": 8, "headz": -3, "heady": 2}, "neutral"),
+        (0.18, {"lo": 125, "lf": 15, "headz": 6, "heady": -4, "hry": 2}, "happy"),
+        (0.3, {"lo": 145, "lf": 15, "headz": 6, "heady": -6, "hry": 3, "sprouty": -6}, "happy"),
+        (0.42, {"lo": 118, "lf": 15, "headz": 6, "heady": -3, "hry": 2, "sprouty": 5}, "happy"),
+        (0.54, {"lo": 145, "lf": 15, "headz": 6, "heady": -6, "hry": 3, "sprouty": -6}, "happy"),
+        (0.66, {"lo": 118, "lf": 15, "headz": 6, "heady": -3, "hry": 2, "sprouty": 5}, "happy"),
+        (0.8, {"lo": 60, "lf": 8, "headz": 3, "heady": -2}, "neutral"),
         (1.0, {}, "neutral"),
     ],
     "nod": [
@@ -594,8 +594,8 @@ CLIPS = {
     "celebrate": [
         (0.0, {}, "neutral"),
         (0.12, {"hz": -0.08, "hrx": 6, "lo": -8, "ro": -8, "lf": -15, "rf": -15, "headx": 6}, "neutral"),  # 웅크리기
-        (0.3, {"hz": 0.42, "spin": 180, "lo": 90, "ro": 90, "lf": -10, "rf": -10, "headx": -8, "sproutx": -20, "bagx": 15}, "happy"),
-        (0.45, {"hz": 0.2, "spin": 360, "lo": 105, "ro": 105, "lf": -10, "rf": -10, "headx": -6, "sproutx": 15, "bagx": -12}, "happy"),
+        (0.3, {"hz": 0.3, "spin": 180, "lo": 90, "ro": 90, "lf": -10, "rf": -10, "headx": -8, "sproutx": -20, "bagx": 15}, "happy"),
+        (0.45, {"hz": 0.14, "spin": 360, "lo": 105, "ro": 105, "lf": -10, "rf": -10, "headx": -6, "sproutx": 15, "bagx": -12}, "happy"),
         (0.52, {"hz": -0.06, "spin": 360, "hrx": 5, "lo": 60, "ro": 60, "headx": 6, "sproutx": -12, "bagx": 10}, "happy"),  # 착지
         (0.66, {"hz": 0.02, "spin": 360, "lo": 113, "ro": 113, "lf": -10, "rf": -10, "headx": -6, "sproutx": 8, "confetti": 0.0}, "happy"),
         (0.8, {"hz": 0.0, "spin": 360, "lo": 105, "ro": 105, "lf": -10, "rf": -10, "headx": -4, "sproutx": -4}, "happy"),

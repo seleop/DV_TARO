@@ -64,7 +64,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "fps": 20,
     "loop": false,
     "frameSize": 384,
-    "bytes": 179896
+    "bytes": 177950
   },
   "nod": {
     "src": "/mascot/nod.webp",
@@ -104,7 +104,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "fps": 20,
     "loop": false,
     "frameSize": 384,
-    "bytes": 256210
+    "bytes": 257180
   },
   "yawn": {
     "src": "/mascot/yawn.webp",
