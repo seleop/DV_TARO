@@ -21,22 +21,47 @@
 - `npm audit fix --force`는 하지 않는다 (high 경고는 eslint-config-next 하위 개발 의존성으로 배포물과 무관).
 
 ## Git 작업 흐름
-- 세션은 보통 `.claude/worktrees/<이름>` 작업 트리의 `claude/<이름>` 브랜치에서 작업한다. 시작 전 `git fetch origin`으로 최신 `origin/main`을 기준 삼는다.
+- 세션은 보통 `.claude/worktrees/<이름>` 작업 트리의 `claude/<이름>` 브랜치에서 작업한다 (1차 완성 전 원래 폴더 직접 작업 예외는 아래 "병렬 작업" 참고). 시작 전 `git fetch origin`으로 최신 `origin/main`을 기준 삼는다.
 - 커밋 메시지는 한국어로 쓰고 끝에 `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`를 붙인다.
 - 비밀값(`.env.local`, API 키, DB 비밀번호 등)은 절대 커밋하지 않는다.
+- `.env.local`은 체크아웃(원래 폴더·작업 트리)마다 따로 있다. 로컬 실행(`npm run dev`)이 필요한데 없으면 `npm run setup`으로 만든다 (로컬 체험 모드, 입력할 값 없음). 로컬에서 운영 Supabase에 연결하지 않는다 (운영 데이터·암호화 키와 섞임).
 - push는 사용자가 요청할 때만 한다. "main에 머지해서 push" 요청 시:
   1. `git fetch origin`
   2. `git merge-base --is-ancestor origin/main HEAD`로 fast-forward 가능한지 확인 (불가하면 먼저 origin/main을 병합하고 다시 검증)
   3. `git push origin HEAD:main`
-  4. 원래 체크아웃(`C:\Users\seleo\Documents\DV_TARO`)의 로컬 main도 바로 갱신한다: `git -C "C:/Users/seleo/Documents/DV_TARO" status -sb`로 main 브랜치이고 커밋되지 않은 변경이 없는지 확인한 뒤 `git -C "C:/Users/seleo/Documents/DV_TARO" pull --ff-only`. 변경이 있거나 main이 아니거나 fast-forward가 안 되면 pull하지 않고 사용자에게 알린다.
+  4. (작업 트리에서 push한 경우) 원래 체크아웃(`C:\Users\seleo\Documents\DV_TARO`)의 로컬 main도 바로 갱신한다: `git -C "C:/Users/seleo/Documents/DV_TARO" status -sb`로 main 브랜치이고 커밋되지 않은 변경·push 안 된 커밋이 없는지 확인한 뒤 `git -C "C:/Users/seleo/Documents/DV_TARO" pull --ff-only`. 하나라도 걸리면(다른 세션이 원래 폴더에서 작업 중이라는 뜻) pull하지 않고 멈춘 뒤 사용자에게 알린다.
 
 ## 병렬 작업 (여러 세션 동시 진행)
-여러 세션이 각자 작업 트리에서 동시에 작업한다. **작업(파일 수정)을 시작하기 전에 반드시** 아래를 확인하고, 확인한 내용을 사용자에게 짧게 알린다.
-1. 최신 main 반영: `git fetch origin` → `git log --oneline HEAD..origin/main`. 내 브랜치에 없는 커밋이 있으면 `git merge origin/main`으로 받은 뒤 시작한다.
-2. 이전 작업 내역: [HANDOFF.md](HANDOFF.md)의 현재 상태·다음 단계·미해결 사항과 `git log --oneline -10 origin/main`을 읽는다.
-3. 진행 중인 다른 작업: `git worktree list`, `git branch -a --sort=-committerdate`로 다른 작업 트리·브랜치를 보고, 최근 브랜치는 `git log --oneline origin/main..<브랜치>`, `git diff --stat origin/main...<브랜치>`로 무엇을 바꾸는 중인지 확인한다. 커밋되지 않은 변경은 `git -C <작업 트리 경로> status --short`로 본다 (읽기만, 다른 작업 트리의 파일은 수정하지 않는다).
-4. 내 작업과 같은 파일·기능을 다른 세션이 다루고 있으면 시작 전에 사용자에게 범위를 질문한다.
+여러 세션이 동시에 작업한다. 기본은 세션마다 작업 트리를 쓴다.
 
-작업 중·후:
-- push 직전에 다시 `git fetch origin`으로 그사이 main에 들어온 변경을 확인한다 (위 fast-forward 절차).
-- 작업을 마치면 다른 세션이 이어받을 수 있도록 HANDOFF.md의 현재 상태·다음 단계를 갱신한다. HANDOFF.md는 여러 세션이 고치므로 필요한 줄만 고치고, 병합 충돌이 나면 양쪽 내용을 모두 살린다.
+**예외 — 1차 완성 전까지 원래 폴더 직접 작업 허용**
+- 1차 완성 기준: 배포 주소에서 Android·iOS 접속·가입·로그인 확인 + 로그인·회원가입 UI 개선과 대표 캐릭터 반영이 main에 들어간 시점. 사용자가 1차 완성을 확인하면 이 예외를 지운다.
+- 그전까지는 원래 폴더(`C:\Users\seleo\Documents\DV_TARO`, main 체크아웃)에서 main에 바로 커밋해도 된다. 이 폴더는 여러 세션·사용자가 같이 쓰므로:
+  - 작업 전 `git -C "C:/Users/seleo/Documents/DV_TARO" status --short`로 남의 커밋되지 않은 변경이 있는지 보고, 있으면 그 파일은 건드리지 않는다 (`git stash`·`checkout`·`reset`으로 치우지 않는다). 내 작업과 겹치면 사용자에게 묻는다.
+  - 커밋할 때는 내가 고친 파일만 `git add <파일>`로 올린다 (`git add -A`·`git add .` 금지).
+  - 작업을 작게 나눠 자주 커밋해 미커밋 변경이 오래 남지 않게 한다.
+  - push 전 `git fetch origin` → origin/main에 새 커밋이 있으면 `git merge origin/main` (충돌 시 멈추고 사용자에게 알림) → 검증 → `git push origin main`.
+- 작업 트리 세션은 위 "Git 작업 흐름" 4단계에서 원래 폴더에 미커밋 변경·push 안 된 커밋이 있으면 pull하지 않고 멈춘 뒤 사용자에게 알린다 (원래 폴더 세션이 커밋·push하면 그때 pull).
+- 이미 작업 트리로 시작한 세션은 그대로 작업 트리에서 계속한다. 예외는 "원래 폴더에서 해도 된다"는 허용이지 옮기라는 뜻이 아니다.
+
+**작업(파일 수정)을 시작하기 전에 반드시** 아래를 확인하고, 확인한 내용을 사용자에게 짧게 알린다.
+1. 최신 main 반영: `git fetch origin` → `git log --oneline HEAD..origin/main`. 내 브랜치에 없는 커밋이 있으면 `git merge origin/main`으로 받은 뒤 시작한다.
+2. 이전 작업 내역: [HANDOFF.md](HANDOFF.md)의 현재 상태(특히 "진행 중" 줄)·다음 단계·미해결 사항과 `git log --oneline -10 origin/main`을 읽는다.
+3. 진행 중인 다른 작업: `git worktree list`, `git branch -a --sort=-committerdate`로 다른 작업 트리·브랜치를 보고, 최근 브랜치는 `git log --oneline origin/main..<브랜치>`, `git diff --stat origin/main...<브랜치>`로 무엇을 바꾸는 중인지 확인한다. 커밋되지 않은 변경은 `git -C <작업 트리 경로> status --short`로 본다 (원래 폴더 포함. 읽기만, 남의 작업 트리 파일은 수정하지 않는다).
+4. 내 작업과 같은 파일·기능을 다른 세션이 다루고 있으면 시작 전에 사용자에게 범위를 질문한다.
+5. 작업 범위 선언: HANDOFF.md "현재 상태"에 `진행 중: <세션 이름>/<브랜치 또는 원래 폴더> — <작업 범위(파일·기능)>` 한 줄을 넣고 바로 커밋한다 (로컬 브랜치 커밋은 모든 작업 트리에서 보인다). 끝나면 이 줄을 결과로 바꾼다.
+
+작업 중 규칙:
+- 공용 파일(`src/app/globals.css`, `src/components/ui.tsx`, `src/config/brand.ts` 등 여러 화면이 쓰는 파일)은 기존 export·클래스를 바꾸지 말고 추가만 한다. 새 스타일은 가능하면 컴포넌트 안 Tailwind 클래스로 쓴다.
+- 패키지 추가·버전 변경(`package.json`, `package-lock.json`)은 사용자 확인 후에만 한다 (lockfile 충돌 위험).
+- 개발 서버 포트는 세션마다 다르게 쓴다: 원래 폴더는 3000, 작업 트리는 3101부터 비어 있는 번호 (`npm run dev -- --port 3101`). 다른 세션이 쓰는 포트에 접속해 확인하지 않는다. `.claude/launch.json`을 만들면 그 포트를 쓰고 커밋하지 않는다.
+- DB 마이그레이션 파일명은 생성 시각 타임스탬프(`YYYYMMDDHHMMSS_설명.sql`)로 한다. push 직전 `git ls-tree --name-only origin/main supabase/migrations/`로 목록을 다시 보고 내 파일이 가장 뒤인지 확인한다 (아니면 사용자에게 알림). 운영 Supabase에 적용한 마이그레이션은 HANDOFF.md에 기록한다.
+- 작업 중에도 자주 커밋한다.
+
+push 전 체크리스트 (위 검증 명령에 추가):
+- `npx next build` 통과 확인 — 테스트가 통과해도 배포 빌드(정적 생성 등)가 실패할 수 있다. 실제로 `/login` 정적 생성 중 `DATA_ENCRYPTION_KEY` 누락으로 Vercel 빌드가 실패한 적이 있다.
+  - 로컬에서는 항상 이 명령으로 돌린다 (Bash): ``LOCAL_DEV_MODE=false DATA_ENCRYPTION_KEY=$(node -e "console.log(require('crypto').randomBytes(32).toString('base64'))") npx next build``. `.env.local`이 없으면 키 누락으로, `npm run setup`으로 만든 `.env.local`(로컬 체험 모드)이 있으면 "LOCAL_DEV_MODE는 개발 환경에서만" 오류로 실패하기 때문이다. 셸 환경변수가 `.env.local`보다 우선한다. 이 임시 키는 어디에도 저장하지 않는다.
+- 다시 `git fetch origin`으로 그사이 main에 들어온 변경을 확인한다 (위 fast-forward 절차).
+
+작업 후:
+- 다른 세션이 이어받을 수 있도록 HANDOFF.md의 현재 상태·다음 단계를 갱신한다. HANDOFF.md는 여러 세션이 고치므로 필요한 줄만 고치고, 병합 충돌이 나면 양쪽 내용을 모두 살린다.
