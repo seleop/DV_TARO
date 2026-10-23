@@ -54,7 +54,7 @@ function loadSheet(src: string) {
 type Layer = { state: MascotState; playId: number; key: number };
 
 /**
- * 3D 마스코트 "복이" (Blender 렌더 → WebP 스프라이트 시트, docs/MASCOT.md).
+ * 3D 마스코트 "별이" (Blender 렌더 → WebP 스프라이트 시트, docs/MASCOT.md).
  * - 동작이 바뀌면 새 시트를 불러온 뒤, 이전 층은 불투명하게 둔 채 새 층만 0.14초 동안 나타나게 한다.
  *   (두 층을 동시에 반투명하게 겹치면 전체가 흐려 보이므로 이전 층은 흐리게 하지 않는다)
  * - 한 번 재생 동작(wave·nod·surprised·reveal·celebrate·yawn)은 마지막 프레임(휴식 자세)에서 멈추고 onAnimationComplete 를 부른다
@@ -72,7 +72,7 @@ export function FortuneMascot({
   preload = [],
   onAnimationComplete,
   fallback = null,
-  label = "마스코트 복이",
+  label = "마스코트 별이",
   zoom = 1,
   className = "",
 }: {

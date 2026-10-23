@@ -29,7 +29,7 @@ const EXPRESSION_LABEL: Record<Expression, string> = {
   sleepy: "하품",
 };
 
-const OUTFIT_LABEL = { saju: "사주 복이 · 갓·안경·사주책", tarot: "타로 복이 · 마법사 모자·망토·카드", star: "별자리 복이 · 베레모·목도리·망원경" } as const;
+const OUTFIT_LABEL = { saju: "사주 별이 · 갓·안경·사주책", tarot: "타로 별이 · 마법사 모자·망토·카드", star: "별자리 별이 · 베레모·목도리·망원경" } as const;
 
 const chip = (on: boolean) => `rounded-full px-3 py-1.5 text-[13px] font-semibold transition ${on ? "bg-accent text-white" : "bg-tile text-ink-2"}`;
 
@@ -40,7 +40,7 @@ export function CharacterLab() {
   // 스크롤 없이: 무대 / 3D 동작 / SVG 장면 / SVG 분위기 / SVG 표정을 장으로 나눠 좌우로 넘긴다
   return (
     <div className="flex min-h-0 flex-1 flex-col pb-3">
-      <Pager labels={["무대", "의상별 복이", "3D 기본 동작", "3D 의상 동작", "SVG 장면별 소품", "SVG 결과 분위기", "SVG 표정"]}>
+      <Pager labels={["무대", "의상별 별이", "3D 기본 동작", "3D 의상 동작", "SVG 장면별 소품", "SVG 결과 분위기", "SVG 표정"]}>
         <Card className="flex min-h-0 flex-1 flex-col items-center">
           <p className="shrink-0 text-xs text-ink-2">캐릭터를 톡 눌러 보세요 · 다섯 번 연타하면 어지러워해요</p>
           <FitSize min={100} max={280} className="w-full py-2">
@@ -79,7 +79,7 @@ export function CharacterLab() {
           </div>
         </Card>
 
-        <Gallery title="의상별 복이 · 톡 누르면 반응" cols={1}>
+        <Gallery title="의상별 별이 · 톡 누르면 반응" cols={1}>
           {(["saju", "tarot", "star"] as const).map((o) => (
             <Card key={o} className="flex items-center gap-3 !p-2">
               <CharacterStage pose={o} size={130} orbs={false} />
@@ -88,13 +88,13 @@ export function CharacterLab() {
           ))}
         </Gallery>
 
-        <Gallery title="3D 마스코트 복이 · 기본 동작" cols={3}>
+        <Gallery title="3D 마스코트 별이 · 기본 동작" cols={3}>
           {SHEET_NAMES.filter((st) => MASCOT_SHEETS[st].outfit === "default").map((st) => (
             <SheetCard key={st} st={st} />
           ))}
         </Gallery>
 
-        <Gallery title="3D 마스코트 복이 · 의상 동작" cols={3}>
+        <Gallery title="3D 마스코트 별이 · 의상 동작" cols={3}>
           {SHEET_NAMES.filter((st) => MASCOT_SHEETS[st].outfit !== "default").map((st) => (
             <SheetCard key={st} st={st} />
           ))}

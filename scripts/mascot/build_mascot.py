@@ -681,6 +681,16 @@ def sample(keyposes, t):
     return out, expr
 
 
+def sample_channels(keyposes, t, channels):
+    """sample 과 같지만 채널 목록을 받는다 (build_fox.py 등 다른 캐릭터용)"""
+    out = {ch: hermite_track([(kt, kp.get(ch, 0.0)) for kt, kp, _ in keyposes], t) for ch in channels}
+    expr = keyposes[0][2]
+    for kt, _, e in keyposes:
+        if t + 1e-6 >= kt:
+            expr = e
+    return out, expr
+
+
 def apply_channels(rig, c, expr):
     rest(rig)
     rig["root"].rotation_euler = (0, 0, math.radians(rig["facing"] + c["spin"]))
@@ -1196,4 +1206,6 @@ def main():
         bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(a.save))
 
 
-main()
+# 다른 스크립트(build_fox.py)가 도우미 함수만 가져다 쓸 수 있게, 직접 실행할 때만 main()
+if __name__ == "__main__":
+    main()

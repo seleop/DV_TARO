@@ -15,11 +15,11 @@ import type { Expression } from "@/lib/character";
 export const BRAND = {
   appName: "운세 노트",
   /** 화면 문구에 쓰이는 캐릭터 이름. 예: "행운의 고양이가 ○○님의 운세를 점쳐봤대요" */
-  characterName: "복이",
+  characterName: "별이",
   character: {
     /**
      * 화면에 쓰는 캐릭터
-     *  mascot3d: 3D 마스코트 복이 (public/mascot, docs/MASCOT.md). 불러오기 실패 시 svg 로 대체
+     *  mascot3d: 3D 마스코트 별이 (public/mascot, docs/MASCOT.md). 불러오기 실패 시 svg 로 대체
      *  svg: 코드로 그린 별토끼 (장면별 소품·표정 포함)
      */
     renderer: "mascot3d" as "mascot3d" | "svg",
@@ -27,6 +27,6 @@ export const BRAND = {
     mascotZoom: 1,
     // 예: neutral: "/character/neutral.png", blink: "/character/blink.png"
     images: {} as Partial<Record<Expression, string>>,
-    alt: "마스코트 복이",
+    alt: "마스코트 별이",
   },
 };

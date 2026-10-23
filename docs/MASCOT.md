@@ -189,3 +189,15 @@ FFMPEG_PATH=<ffmpeg.exe 경로> node scripts/mascot/encode.mjs
 - 배경: `src/components/app/SceneArt.tsx`(SVG 일러스트, 애니메이션 없음) + `src/lib/scene.ts`(경로별 장면)
   - 홈·오늘의 운세 = 해질녘 천막 입구, 사주 목록·타로 = 천막 안, 별자리·로그인/가입 = 별빛 정원, 그 밖 = 크림색
   - `Screen` 의 `scene` 을 주면 "장면 + 시트" 화면: 위는 일러스트 위 제목·복이, 아래는 크림색 둥근 시트
+
+## 15. 마스코트 교체: 별이 (2026-10-24 사용자 결정)
+
+복이 대신 **"별이"** 가 앱 전체의 마스코트. 원본은 BlenderKit 의 **Aurora Fox (Rigged)** (작가 Eliška Pantůčková, 무료·Royalty Free, 뼈대 포함, 면 4,250개).
+
+- **라이선스**: 앱·상업적 사용은 되지만 모델 파일 재배포는 안 된다 → 모델은 저장소에 넣지 않고 렌더한 그림(`public/mascot/*.webp`)만 넣는다. 원본은 `node scripts/mascot/fetch_fox.mjs` 로 받는다(`assets/reference/aurora-fox.glb`, git 제외).
+- **렌더**: `blender -b --factory-startup -P scripts/mascot/build_fox.py -- --states all --stills assets/mascot/reference --out assets/mascot/render --res 640` → `node scripts/mascot/encode.mjs --height 448 --quality 85`. 이름·형식은 복이와 같아 웹앱은 그대로 쓴다. (복이는 `build_mascot.py` 로 언제든 다시 만들 수 있다)
+- **스타일**: 원본 색 텍스처 × 소프트 2.5D 명암(그림자는 보랏빛) → 발광. 눈은 원본 유광 재질.
+- **눈 자국 정리**: 원본 몸 텍스처에 눈 자리가 어두운 원으로 칠해져 있어 웃는 눈(^ ^)·깜빡임 때 자국이 보였다 → 불러올 때 눈 크기의 둥근 어두운 덩어리(둘레가 밝은 피부인 것만)를 찾아 바깥 피부색으로 채운다(`clean_eye_sockets`).
+- **뼈대**: glTF 로 가져오면 Rigify 제어(제약)가 사라지므로 변형 뼈를 직접 돌린다 — 머리 `DEF-spine.009~011`(눈은 `DEF-spine.011` 에 다시 붙임), 꼬리 `MCH-ROT-tail`(+`spine.003~001`), 앞다리 `DEF-front_thigh/shin`, 뒷다리 `DEF-thigh/shin`, 숨쉬기 `DEF-spine.005~007` 크기.
+- **동작(네 발 동물에 맞춤)**: idle(숨쉬기·꼬리·깜빡임) · walk(대각선 종종걸음) · think(갸웃) · happy(깡충·꼬리 흔들기) · wave(가까운 앞발 흔들기) · nod · surprised(뒤로 깡충·꼬리 번쩍) · reveal(머리 위로 운세 카드) · celebrate(점프 한 바퀴·꽃가루) · yawn(앞으로 쭉 기지개)
+- **의상**: 모자는 머리 뼈에 붙이고(갓·마법사 모자·베레모), 소품은 옆에 띄운다 — 사주책(read: 펼쳐지고 책장 넘어감), 타로 카드 부채(draw: 한 장이 떠올라 머리 위로), 삼각대 망원경(stargaze: 하늘을 보면 별이 반짝)

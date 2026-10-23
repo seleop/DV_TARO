@@ -53,7 +53,7 @@ export function CharacterStage({
 }: {
   /** 3D 마스코트 확대 배율 (기본값은 brand.ts). 무대 전체(레이아웃 크기 포함)를 키워 주변과 겹치지 않는다 */
   zoom?: number;
-  /** 캐릭터 종류: 3D 마스코트 복이(기본) 또는 SVG 별토끼 */
+  /** 캐릭터 종류: 3D 마스코트 별이(기본) 또는 SVG 별토끼 */
   character?: "mascot3d" | "svg";
   pose?: Scene;
   mood?: Mood | null;
@@ -243,7 +243,7 @@ export function CharacterStage({
 
   return (
     <div className={`relative mx-auto flex items-center justify-center ${className}`} style={{ width: size, height: size }}>
-      {/* 바닥 글로우 (SVG 별토끼만. 3D 복이는 움직이는 흐림 효과가 무거워 쓰지 않음) */}
+      {/* 바닥 글로우 (SVG 별토끼만. 3D 별이는 움직이는 흐림 효과가 무거워 쓰지 않음) */}
       {!is3d && <div className="absolute inset-[12%] rounded-full bg-[radial-gradient(circle,rgba(177,140,255,0.45),transparent_70%)] blur-2xl animate-glow" />}
       {orbs && <Orbs size={size} />}
       {showBubble && (

@@ -15,7 +15,7 @@ export default async function SajuHub() {
   const pages = Array.from({ length: Math.ceil(others.length / PER_PAGE) }, (_, i) => others.slice(i * PER_PAGE, (i + 1) * PER_PAGE));
   return (
     <Screen
-      // 위: 천막 안에서 사주책을 읽는 복이 / 아래: 내 사주·가족 사주 목록
+      // 위: 천막 안에서 사주책을 읽는 별이 / 아래: 내 사주·가족 사주 목록
       scene={
         <div className="flex min-h-0 flex-1 flex-col items-center pt-[clamp(3.25rem,8dvh,4.75rem)] text-center">
           <h1 className="shrink-0 text-[26px] font-extrabold text-ink">사주 풀이</h1>

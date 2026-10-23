@@ -17,7 +17,7 @@ import { useVisualViewport } from "./useVisualViewport";
 type Mode = "choose" | "login" | "signup";
 type SignupMode = "open" | "invite" | "closed";
 
-/** 단계별 입력칸 설정과 복이가 건네는 말 */
+/** 단계별 입력칸 설정과 별이가 건네는 말 */
 const STEP: Record<
   SignupField,
   {
@@ -44,7 +44,7 @@ const EMPTY: SignupValues = { email: "", password: "", passwordConfirm: "", disp
 
 /**
  * 진입 화면(로그인·회원가입 두 버튼) → 한 칸씩 순차 입력.
- * - 로그인: 카메라가 복이 얼굴로 줌인
+ * - 로그인: 카메라가 별이 얼굴로 줌인
  * - 회원가입: 카메라가 밤하늘로 올라가고, 단계마다 별이 하나씩 이어져 별자리가 된다
  * 화면은 실제로 보이는 영역 크기에 맞춰 스크롤 없이 쓴다. 입력칸은 한 개를 계속 써서 단계가 바뀌어도 키보드가 닫히지 않는다.
  */
@@ -60,7 +60,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
   const [showPw, setShowPw] = useState(false);
   const [caps, setCaps] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
-  // 복이의 한 번 재생 동작 (끝나면 대기 동작으로 돌아간다). 진입 화면에서는 손을 흔들며 맞이한다
+  // 별이의 한 번 재생 동작 (끝나면 대기 동작으로 돌아간다). 진입 화면에서는 손을 흔들며 맞이한다
   const [reaction, setReaction] = useState<{ state: MascotState; id: number } | null>(initialMode === "choose" ? { state: "wave", id: 0 } : null);
   const react = (state: MascotState) => setReaction((r) => ({ state, id: (r?.id ?? 0) + 1 }));
   const inputRef = useRef<HTMLInputElement>(null);
@@ -109,7 +109,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
     return () => clearTimeout(t);
   }, [mode, field]);
 
-  // 무대 크기를 재서 진입 화면 복이 크기를 정한다 (작은 화면에서 제목·버튼과 겹치지 않게)
+  // 무대 크기를 재서 진입 화면 별이 크기를 정한다 (작은 화면에서 제목·버튼과 겹치지 않게)
   useEffect(() => {
     const el = stageRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
@@ -213,13 +213,13 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
   const boxStyle = vv ? { height: vv.height, top: vv.top } : undefined;
   const ease = "transition-all duration-700 ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none";
 
-  // 복이 크기(px, 2026-10-24 사용자 선택): 진입 400(작은 화면이면 무대에 맞춰 줄임) · 로그인 약 500.
+  // 별이 크기(px, 2026-10-24 사용자 선택): 진입 400(작은 화면이면 무대에 맞춰 줄임) · 로그인 약 500.
   // 로그인 크기는 키보드가 올라와 무대가 줄어도 그대로 유지한다(사용자 요청) → 화면 폭만 기준으로 삼는다
   const sw = stage?.w ?? 375;
   const sh = stage?.h ?? 600;
   const chooseSize = Math.min(400, sh * 0.72, sw * 1.1);
   const loginSize = Math.min(500, sw * 1.35);
-  // 복이 위치(384px 원본 기준 배율): 진입=가운데, 로그인=다가옴, 가입=아래 구석에서 하늘을 올려다봄
+  // 별이 위치(384px 원본 기준 배율): 진입=가운데, 로그인=다가옴, 가입=아래 구석에서 하늘을 올려다봄
   const mascotPos =
     mode === "choose"
       ? { left: "50%", top: "58%", transform: `translate(-50%,-50%) scale(${chooseSize / 384})` }
@@ -230,7 +230,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
   return (
     // 키보드가 오르내릴 때 높이가 툭 바뀌지 않게 부드럽게 따라간다
     <div className="fixed inset-x-0 top-0 z-10 mx-auto flex h-dvh w-full max-w-[440px] flex-col overflow-hidden transition-[height,top] duration-300 ease-out motion-reduce:transition-none" style={boxStyle}>
-      {/* 위: 별빛 정원 장면(뒤로·진행 표시·복이·별자리) / 아래: 크림색 시트(버튼·입력) */}
+      {/* 위: 별빛 정원 장면(뒤로·진행 표시·별이·별자리) / 아래: 크림색 시트(버튼·입력) */}
       <div className="scene-dark relative flex min-h-0 flex-1 flex-col">
       <SceneArt kind="garden" className="absolute inset-0 h-full w-full" />
       {/* 상단: 뒤로 + 진행 표시 */}
@@ -251,7 +251,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
         )}
       </div>
 
-      {/* 무대: 복이 + 하늘 */}
+      {/* 무대: 별이 + 하늘 */}
       <div ref={stageRef} className="relative min-h-0 flex-1 overflow-hidden pb-6">
         <div className={`absolute inset-x-0 top-0 text-center ${ease} ${mode === "choose" ? "translate-y-[6%] opacity-100" : "-translate-y-full opacity-0"}`}>
           <p className="text-[15px] text-ink-2">우리끼리 보는 운세</p>
@@ -279,7 +279,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
           />
         </div>
 
-        {/* 복이의 말풍선 */}
+        {/* 별이의 말풍선 */}
         {mode !== "choose" && (
           <p
             key={`${mode}-${field}`}

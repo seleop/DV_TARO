@@ -51,7 +51,7 @@ export function TodayClient({ calculationId, displayName, aiProvider }: { calcul
     ? { love: r.love, work: r.work, luck: r.luck, food: `${r.food.name} — ${r.food.reason}` }[tab]
     : "";
 
-  // 위: 천막 입구 장면(복이) / 아래: 크림색 시트(결과)
+  // 위: 천막 입구 장면(별이) / 아래: 크림색 시트(결과)
   const scene = (
     <div className="flex min-h-0 flex-1 flex-col items-center text-center">
       {loading && !r ? (

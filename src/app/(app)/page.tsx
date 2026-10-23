@@ -9,14 +9,14 @@ export default async function Home() {
   const hasPrimary = !!user.primaryCalculationId;
   return (
     <Screen
-      // 위: 해질녘 천막 입구 앞에 선 복이 / 아래: 크림색 시트에 메뉴와 시작 버튼
+      // 위: 해질녘 천막 입구 앞에 선 별이 / 아래: 크림색 시트에 메뉴와 시작 버튼
       scene={
         <div className="flex min-h-0 flex-1 flex-col items-center pt-[clamp(0.5rem,3dvh,2rem)] text-center">
           <p className="animate-rise text-[clamp(15px,2.4dvh,18px)] font-semibold leading-snug text-ink">
             {josa(BRAND.characterName, "이/가")} {user.displayName}님의 운세를 점쳐봤대요
           </p>
           <h1 className="text-gradient animate-rise mt-1 text-[clamp(28px,4.6dvh,38px)] font-extrabold tracking-tight">오늘의 운세</h1>
-          {/* 남는 높이에 맞춰 복이 크기를 정하고, 천막 앞 마당에 서도록 아래에 붙인다 */}
+          {/* 남는 높이에 맞춰 별이 크기를 정하고, 천막 앞 마당에 서도록 아래에 붙인다 */}
           <FitCharacter min={90} max={300} className="w-full items-end" />
         </div>
       }

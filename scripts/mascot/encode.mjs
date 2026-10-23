@@ -142,7 +142,7 @@ for (const m of Object.values(manifest)) {
 }
 
 const ts = `// scripts/mascot/encode.mjs 가 생성한다. 직접 고치지 말 것.
-// 마스코트 "복이" 스프라이트 시트 정보 (docs/MASCOT.md)
+// 마스코트 "별이" 스프라이트 시트 정보 (docs/MASCOT.md)
 export type MascotState = ${Object.keys(manifest).map((k) => JSON.stringify(k)).join(" | ")};
 export type MascotOutfit = ${[...new Set(Object.values(manifest).map((m) => m.outfit))].map((k) => JSON.stringify(k)).join(" | ")};
 

@@ -1,5 +1,5 @@
 /**
- * 3D 마스코트 "복이" 스프라이트 재생·동작 선택 규칙 (화면 없이 테스트할 수 있는 순수 로직).
+ * 3D 마스코트 "별이" 스프라이트 재생·동작 선택 규칙 (화면 없이 테스트할 수 있는 순수 로직).
  * 에셋 정보는 src/config/mascot-assets.ts (scripts/mascot/encode.mjs 가 생성).
  *
  * 동작 종류
@@ -82,7 +82,7 @@ export function idleReactionFor(idleMs: number, rand: Rand): MascotState | null 
   );
 }
 
-// ── 의상 (장면별 복이) ──
+// ── 의상 (장면별 별이) ──
 export type Outfit = "default" | "saju" | "tarot" | "star";
 
 /** 화면 장면 → 의상. 사주는 갓·안경·사주책, 타로는 마법사 모자·망토·카드, 별자리는 베레모·목도리·망원경 */

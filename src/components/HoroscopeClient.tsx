@@ -57,7 +57,7 @@ export function HoroscopeClient({ signs, profileSignId }: { signs: Sign[]; profi
     return (
       <Screen
         header={<TopBar title="별자리 운세" back={null} right={<button onClick={() => setResult(null)} className="text-sm text-ink-2">변경</button>} />}
-        // 위: 별빛 정원에서 망원경을 든 복이 / 아래: 운세 내용 (좌우로 넘김)
+        // 위: 별빛 정원에서 망원경을 든 별이 / 아래: 운세 내용 (좌우로 넘김)
         scene={
           <div className="flex min-h-0 flex-1 flex-col items-center text-center">
             <p className="shrink-0 text-[14px] text-ink-2">
@@ -117,7 +117,7 @@ ${r.overall}`} />}
 
   return (
     <Screen
-      // 위: 별빛 정원의 복이 / 아래: 별자리 고르기
+      // 위: 별빛 정원의 별이 / 아래: 별자리 고르기
       scene={
         <div className="flex min-h-0 flex-1 flex-col items-center pt-[clamp(0.5rem,3dvh,2rem)] text-center">
           <p className="shrink-0 text-[clamp(15px,2.4dvh,18px)] font-semibold text-ink">오늘 별들이 전하는 이야기</p>

@@ -12,7 +12,7 @@ import { SceneArt } from "./SceneArt";
  * scroll=true는 사주 설명처럼 길게 읽는 화면에서만 쓴다.
  *
  * scene 을 주면 "장면 + 시트" 화면이 된다 (레퍼런스: 위는 캐릭터가 서 있는 일러스트, 아래는 조작 시트).
- *  - 장면: 경로별 일러스트(SceneArt) 위에 header·scene 을 그린다. 남는 높이를 모두 쓰고, 복이는 바닥에 맞춘다
+ *  - 장면: 경로별 일러스트(SceneArt) 위에 header·scene 을 그린다. 남는 높이를 모두 쓰고, 별이는 바닥에 맞춘다
  *  - 시트: 크림색 둥근 판. children·footer 를 담고, 장면 아래를 살짝 덮어 둘이 이어져 보이게 한다
  */
 export function Screen({
@@ -26,7 +26,7 @@ export function Screen({
   header?: ReactNode;
   footer?: ReactNode;
   children?: ReactNode;
-  /** 장면 영역 내용 (제목·복이). 주면 장면 + 시트 화면 */
+  /** 장면 영역 내용 (제목·별이). 주면 장면 + 시트 화면 */
   scene?: ReactNode;
   scroll?: boolean;
   className?: string;
@@ -58,7 +58,7 @@ export function Screen({
   );
 }
 
-/** 컨테이너에 남은 높이·너비를 재서 그 안에 맞는 크기를 돌려준다 (복이·카드 크기 맞춤용). */
+/** 컨테이너에 남은 높이·너비를 재서 그 안에 맞는 크기를 돌려준다 (별이·카드 크기 맞춤용). */
 export function FitSize({
   min,
   max,
@@ -93,7 +93,7 @@ export function FitSize({
   );
 }
 
-/** 남는 높이에 맞춘 크기의 복이 (서버 컴포넌트에서도 쓸 수 있게 함수 자식 대신 props로 받는다) */
+/** 남는 높이에 맞춘 크기의 별이 (서버 컴포넌트에서도 쓸 수 있게 함수 자식 대신 props로 받는다) */
 export function FitCharacter({
   min = 90,
   max = 280,

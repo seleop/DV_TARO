@@ -149,7 +149,7 @@ ${c.overall}`} />}
   return (
     <SafeForm onSubmit={draw} className="flex min-h-0 flex-1 flex-col">
       <Screen
-        // 위: 천막 안에서 카드를 든 복이 / 아래: 펼치는 방식·질문 입력
+        // 위: 천막 안에서 카드를 든 별이 / 아래: 펼치는 방식·질문 입력
         scene={
           <div className="flex min-h-0 flex-1 flex-col items-center pt-[clamp(3.25rem,8dvh,4.75rem)] text-center">
             <p className="shrink-0 text-[clamp(15px,2.4dvh,18px)] font-semibold leading-snug text-ink">
