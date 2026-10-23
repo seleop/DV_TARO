@@ -28,7 +28,7 @@
   1. `git fetch origin`
   2. `git merge-base --is-ancestor origin/main HEAD`로 fast-forward 가능한지 확인 (불가하면 먼저 origin/main을 병합하고 다시 검증)
   3. `git push origin HEAD:main`
-- 원래 체크아웃(`C:\Users\seleo\Documents\DV_TARO`)의 로컬 main은 자동으로 갱신되지 않으므로 필요하면 그곳에서 `git pull`을 안내한다.
+  4. 원래 체크아웃(`C:\Users\seleo\Documents\DV_TARO`)의 로컬 main도 바로 갱신한다: `git -C "C:/Users/seleo/Documents/DV_TARO" status -sb`로 main 브랜치이고 커밋되지 않은 변경이 없는지 확인한 뒤 `git -C "C:/Users/seleo/Documents/DV_TARO" pull --ff-only`. 변경이 있거나 main이 아니거나 fast-forward가 안 되면 pull하지 않고 사용자에게 알린다.
 
 ## 병렬 작업 (여러 세션 동시 진행)
 여러 세션이 각자 작업 트리에서 동시에 작업한다. **작업(파일 수정)을 시작하기 전에 반드시** 아래를 확인하고, 확인한 내용을 사용자에게 짧게 알린다.
