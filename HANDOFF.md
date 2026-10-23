@@ -20,6 +20,14 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
+- **진입 화면·복이 연출·스크롤 없는 화면 완료(main 미반영, 2026-10-24)**: 브랜치 `claude/youthful-shamir-aa9bf7`
+  - `/login` 진입 화면 = 작은 복이 + 로그인·회원가입 두 버튼(손 흔들기). 누르면 한 칸씩 순차 입력(`src/components/auth/AuthFlow.tsx`), 입력칸 하나를 재사용해 단계가 바뀌어도 키보드 유지
+  - 로그인 = 복이 얼굴 줌인(384px 원본으로 그리고 배율), 가입 = 카메라가 밤하늘로 올라가며 단계마다 별이 이어지는 별자리(`Constellation.tsx`), 완료 시 celebrate. 단계마다 끄덕임, 오류 때 놀람
+  - 화면 높이를 `visualViewport`에 맞춰 키보드가 올라와도 스크롤 없이 입력칸·버튼 표시(`useVisualViewport.ts`). `/signup` 링크는 바로 가입 입력으로
+  - **앱 전체 스크롤 없는 화면**(사주 결과 `/saju/[id]`만 예외): `(app)/layout`을 화면 높이에 고정, 하단 탭바를 흐름 안에. 공통 틀 `src/components/app/Screen.tsx` — `Screen`(머리·본문·하단), `FitCharacter`/`FitSize`(남는 높이에 맞춘 복이), `Pager`(긴 내용을 장으로 좌우 넘김), `Paged`(카드 안 목록·표 ‹ 1/3 ›)
+  - 적용: 홈, 오늘의 운세(요약·분야별·행운 3장), 타로(입력/요약·카드별·조언), 별자리(12칸 4열/요약·분야별·팁), 사주 목록(4개씩), 출생 정보 입력 3단계(사주 새로 보기·프로필 공용), 프로필, MY(탭+목록 장), 관리자(탭별 카드 장, 표 쪽 넘김, 가로 스크롤 표 제거), 캐릭터 갤러리
+  - 루트 컨테이너(`src/app/layout.tsx`)가 배경 별 효과 때문에 세로로 스크롤되던 문제 → `overflow-hidden` + 지원 브라우저는 `overflow-clip`
+  - 확인: 375×812·375×640·360×600에서 모든 화면 본문 넘침 없음, 키보드 높이(375×430)에서 로그인 입력 화면 확인. 실기기(iOS Safari·Android Chrome) 확인은 아직
 - **로그인·회원가입 개선 완료(2026-10-23 main 반영)**: 브랜치 `claude/youthful-shamir-aa9bf7`
   - `/login`·`/signup` 분리(요청 시점 렌더링, `SIGNUP_MODE`만 읽음 → 환경변수 없이도 빌드 통과). 화면은 `src/components/auth/*`
   - 로그인 필요 시 `/login?next=<경로>` → 로그인 후 복귀 (`lib/auth/next-path.ts`, 같은 사이트 경로만). 경로는 `proxy.ts`가 `x-dv-path` 요청 헤더로 넘김
@@ -45,7 +53,7 @@
 ## 다음 단계
 **1차 완성 기준** (2026-10-23 사용자 결정): 아래 1 + 로그인·회원가입 UI 개선(`claude/youthful-shamir-aa9bf7`)과 대표 캐릭터 반영(`claude/lucid-solomon-5113d2`)이 main에 들어간 시점. 그전까지는 원래 폴더에서 main 직접 작업 허용 (CLAUDE.md "병렬 작업" 예외). 사용자가 1차 완성을 확인하면 CLAUDE.md에서 예외를 지운다.
 
-0. 로그인·회원가입 개선 배포 후 확인: https://dvtarocard.vercel.app/signup 가입(동의 체크)·생년월일 입력 이동·`/login?next=` 복귀
+0. 진입 화면·스크롤 없는 화면 push 후 실기기 확인(iOS 키보드가 올라올 때 입력칸·버튼 위치, 좌우 넘김 제스처, 복이 줌인 화질). 로그인·회원가입 개선 배포 후 확인: https://dvtarocard.vercel.app/signup 가입(동의 체크)·생년월일 입력 이동·`/login?next=` 복귀
 1. Android·iOS에서 접속·가입·로그인 확인 (`docs/OPERATIONS.md` 6단계)
 2. 본격 개발 범위 결정
    - 대표 캐릭터: 3D 마스코트 복이 반영됨 — 실기기 확인·추가 동작은 `docs/MASCOT.md` 11절

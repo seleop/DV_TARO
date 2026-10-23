@@ -11,14 +11,13 @@ const TABS = [
   { href: "/me", label: "MY", icon: "M12 12a4 4 0 100-8 4 4 0 000 8zm-8 9a8 8 0 0116 0" },
 ];
 
-/** 탭 루트 화면에서만 보이는 하단 탭바 (세부 화면은 상단 뒤로 가기 + 하단 CTA 사용) */
+/** 탭 루트 화면에서만 보이는 하단 탭바 (세부 화면은 상단 뒤로 가기 + 하단 CTA 사용). 화면 틀 안에 놓여 본문 높이를 줄인다 */
 export function BottomTabBar() {
   const path = usePathname();
   if (!TABS.some((t) => t.href === path)) return null;
   return (
     <>
-      <div className="h-[68px]" aria-hidden />
-      <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-[440px] border-t border-white/10 bg-[#0c0924]/90 backdrop-blur-xl pb-safe">
+      <nav className="z-30 w-full shrink-0 border-t border-white/10 bg-[#0c0924]/90 backdrop-blur-xl pb-safe">
         <ul className="grid grid-cols-5">
           {TABS.map((t) => {
             const active = t.href === path;

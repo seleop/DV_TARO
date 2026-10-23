@@ -14,6 +14,7 @@
 - 모든 작업 중 궁금한 부분이나 질문이 필요한 부분이 있으면 적극적으로 질문한다.
 - 안드로이드와 iOS 모두 문제없이 구동이 되어야 한다.
 - 모든 DOM과 UX/UI는 모바일 이용자 기준으로 개발한다.
+- 화면은 스크롤 없이 한 화면에 들어가게 만든다 (사주 결과 설명 화면만 예외, 2026-10-24 사용자 결정). `src/components/app/Screen.tsx`의 `Screen`·`FitCharacter`·`Pager`·`Paged`를 쓰고, 긴 내용은 장·쪽으로 나눈다. 360×600에서 본문이 넘치지 않는지 확인한다.
 - Next.js 16은 이전 버전과 API가 다르다. 코드를 쓰기 전에 `node_modules/next/dist/docs/`의 해당 문서를 확인한다 ([AGENTS.md](AGENTS.md)).
 - 테스트(`npm test`)·타입 체크(`npm run typecheck`)·린트(`npx eslint .`)를 통과한 뒤 커밋한다. 실패한 테스트를 숨기지 않는다.
   - `npm run typecheck`는 `next typegen && tsc --noEmit`이다. 새 체크아웃에서 `tsc`만 돌리면 PageProps 등 `.next` 타입이 없어 실패한다.

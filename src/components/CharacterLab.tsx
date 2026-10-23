@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { EXPRESSIONS, MOODS, SCENES, type Expression, type Mood, type Scene } from "@/lib/character";
 import { MASCOT_SHEETS, type MascotState } from "@/config/mascot-assets";
 import { CharacterStage } from "./Character";
 import { FortuneMascot } from "./FortuneMascot";
 import { Card } from "./ui";
+import { FitSize, Pager } from "./app/Screen";
 
 const SCENE_LABEL: Record<Scene, string> = {
   default: "기본 · 별 지팡이",
@@ -28,14 +29,6 @@ const EXPRESSION_LABEL: Record<Expression, string> = {
   sleepy: "하품",
 };
 
-/** 크기 시안: 캐릭터 확대 배율 (src/config/brand.ts 의 mascotZoom) */
-const ZOOMS = [
-  { id: "A", zoom: 1, label: "A · 지금 크기" },
-  { id: "B", zoom: 1.15, label: "B · 115%" },
-  { id: "C", zoom: 1.3, label: "C · 130%" },
-  { id: "D", zoom: 1.45, label: "D · 145%" },
-] as const;
-
 const OUTFIT_LABEL = { saju: "사주 복이 · 갓·안경·사주책", tarot: "타로 복이 · 마법사 모자·망토·카드", star: "별자리 복이 · 베레모·목도리·망원경" } as const;
 
 const chip = (on: boolean) => `rounded-full px-3 py-1.5 text-[13px] font-semibold transition ${on ? "bg-white text-[#2a2440]" : "bg-white/10 text-ink-2"}`;
@@ -43,103 +36,123 @@ const chip = (on: boolean) => `rounded-full px-3 py-1.5 text-[13px] font-semibol
 export function CharacterLab() {
   const [scene, setScene] = useState<Scene>("default");
   const [mood, setMood] = useState<Mood | null>(null);
-  const [zoomId, setZoomId] = useState<(typeof ZOOMS)[number]["id"]>("A");
-  const zoom = ZOOMS.find((z) => z.id === zoomId)!.zoom;
 
+  // 스크롤 없이: 무대 / 3D 동작 / SVG 장면 / SVG 분위기 / SVG 표정을 장으로 나눠 좌우로 넘긴다
   return (
-    <div className="flex flex-col gap-4 pb-10">
-      <section id="size">
-        <h2 className="mb-2 px-1 text-sm font-semibold text-ink-2">크기 시안 · 로그인 화면 기준</h2>
-        <div className="mb-2 flex flex-wrap gap-2">
-          {ZOOMS.map((z) => (
-            <button key={z.id} type="button" className={chip(zoomId === z.id)} onClick={() => setZoomId(z.id)}>
-              {z.label}
-            </button>
-          ))}
-        </div>
-        <div className="glass rounded-[28px] px-5 pb-6 pt-8 text-center">
-          <p className="text-[17px] text-ink-2">우리끼리 보는 운세</p>
-          <h3 className="text-gradient mt-1 text-[38px] font-extrabold">운세 노트</h3>
-          <CharacterStage key={zoomId} size={200} zoom={zoom} className="my-3" />
-          <div className="mx-auto h-11 w-full rounded-2xl bg-white/10" />
-        </div>
-      </section>
+    <div className="flex min-h-0 flex-1 flex-col pb-3">
+      <Pager labels={["무대", "의상별 복이", "3D 기본 동작", "3D 의상 동작", "SVG 장면별 소품", "SVG 결과 분위기", "SVG 표정"]}>
+        <Card className="flex min-h-0 flex-1 flex-col items-center">
+          <p className="shrink-0 text-xs text-ink-2">캐릭터를 톡 눌러 보세요 · 다섯 번 연타하면 어지러워해요</p>
+          <FitSize min={100} max={280} className="w-full py-2">
+            {(size) => <CharacterStage key={`${scene}-${mood}`} pose={scene} mood={mood} size={size} orbs={false} />}
+          </FitSize>
+          <div className="flex shrink-0 flex-wrap justify-center gap-2">
+            {SCENES.map((s) => (
+              <button
+                key={s}
+                type="button"
+                className={chip(scene === s && !mood)}
+                onClick={() => {
+                  setScene(s);
+                  setMood(null);
+                }}
+              >
+                {SCENE_LABEL[s]}
+              </button>
+            ))}
+          </div>
+          <p className="mt-3 shrink-0 text-xs text-ink-2">운세 결과 분위기</p>
+          <div className="mt-1.5 flex shrink-0 flex-wrap justify-center gap-2">
+            {MOODS.map((m) => (
+              <button
+                key={m}
+                type="button"
+                className={chip(mood === m)}
+                onClick={() => {
+                  setScene("happy");
+                  setMood(m);
+                }}
+              >
+                {MOOD_LABEL[m]}
+              </button>
+            ))}
+          </div>
+        </Card>
 
-      <section id="outfits">
-        <h2 className="mb-2 px-1 text-sm font-semibold text-ink-2">의상별 복이 · 톡 누르면 반응</h2>
-        <div className="grid grid-cols-1 gap-2.5">
+        <Gallery title="의상별 복이 · 톡 누르면 반응" cols={1}>
           {(["saju", "tarot", "star"] as const).map((o) => (
-            <Card key={o} className="flex flex-col items-center !p-3">
-              <CharacterStage pose={o} size={220} zoom={zoom} orbs={false} />
-              <p className="pt-1 text-xs text-ink-2">{OUTFIT_LABEL[o]}</p>
+            <Card key={o} className="flex items-center gap-3 !p-2">
+              <CharacterStage pose={o} size={130} orbs={false} />
+              <p className="text-xs text-ink-2">{OUTFIT_LABEL[o]}</p>
             </Card>
           ))}
-        </div>
-      </section>
+        </Gallery>
 
-      <Card className="flex flex-col items-center">
-        <p className="text-xs text-ink-2">캐릭터를 톡 눌러 보세요 · 다섯 번 연타하면 어지러워해요</p>
-        <CharacterStage key={`${scene}-${mood}-${zoomId}`} pose={scene} mood={mood} size={280} zoom={zoom} orbs={false} className="my-3" />
-        <div className="flex flex-wrap justify-center gap-2">
+        <Gallery title="3D 마스코트 복이 · 기본 동작" cols={3}>
+          {SHEET_NAMES.filter((st) => MASCOT_SHEETS[st].outfit === "default").map((st) => (
+            <SheetCard key={st} st={st} />
+          ))}
+        </Gallery>
+
+        <Gallery title="3D 마스코트 복이 · 의상 동작" cols={3}>
+          {SHEET_NAMES.filter((st) => MASCOT_SHEETS[st].outfit !== "default").map((st) => (
+            <SheetCard key={st} st={st} />
+          ))}
+        </Gallery>
+
+        <Gallery title="SVG 별토끼 · 장면별 소품" cols={3}>
           {SCENES.map((s) => (
-            <button key={s} type="button" className={chip(scene === s && !mood)} onClick={() => (setScene(s), setMood(null))}>
-              {SCENE_LABEL[s]}
-            </button>
-          ))}
-        </div>
-        <p className="mt-3 text-xs text-ink-2">운세 결과 분위기</p>
-        <div className="mt-1.5 flex flex-wrap justify-center gap-2">
-          {MOODS.map((m) => (
-            <button key={m} type="button" className={chip(mood === m)} onClick={() => (setScene("happy"), setMood(m))}>
-              {MOOD_LABEL[m]}
-            </button>
-          ))}
-        </div>
-      </Card>
-
-      <section>
-        <h2 className="mb-2 px-1 text-sm font-semibold text-ink-2">3D 마스코트 복이 · 동작</h2>
-        <div className="grid grid-cols-2 gap-2.5">
-          {(Object.keys(MASCOT_SHEETS) as MascotState[]).map((st) => (
-            <Card key={st} className="flex flex-col items-center !p-2">
-              <FortuneMascot state={st} size={150} zoom={zoom} loop />
-              <p className="pb-1 text-xs text-ink-2">
-                {st} · {MASCOT_SHEETS[st].frames}프레임 {MASCOT_SHEETS[st].fps}fps · {Math.round(MASCOT_SHEETS[st].bytes / 1024)}KB
-              </p>
+            <Card key={s} className="flex flex-col items-center !p-1.5">
+              <CharacterStage character="svg" pose={s} size={90} orbs={false} />
+              <p className="pb-1 text-center text-[11px] text-ink-2">{SCENE_LABEL[s]}</p>
             </Card>
           ))}
-        </div>
-      </section>
+        </Gallery>
 
-      <section>
-        <h2 className="mb-2 px-1 text-sm font-semibold text-ink-2">SVG 별토끼 · 장면별 소품</h2>
-        <div className="grid grid-cols-2 gap-2.5">
-          {SCENES.map((s) => (
-            <Card key={s} className="flex flex-col items-center !p-2">
-              <CharacterStage character="svg" pose={s} size={150} orbs={false} />
-              <p className="pb-1 text-xs text-ink-2">{SCENE_LABEL[s]}</p>
-            </Card>
-          ))}
+        <Gallery title="SVG 별토끼 · 결과 분위기" cols={2}>
           {MOODS.map((m) => (
             <Card key={m} className="flex flex-col items-center !p-2">
-              <CharacterStage character="svg" pose="happy" mood={m} size={150} orbs={false} />
+              <CharacterStage character="svg" pose="happy" mood={m} size={120} orbs={false} />
               <p className="pb-1 text-xs text-ink-2">{MOOD_LABEL[m]}</p>
             </Card>
           ))}
-        </div>
-      </section>
+        </Gallery>
 
-      <section>
-        <h2 className="mb-2 px-1 text-sm font-semibold text-ink-2">SVG 별토끼 · 표정</h2>
-        <div className="grid grid-cols-3 gap-2">
+        <Gallery title="SVG 별토끼 · 표정" cols={3}>
           {EXPRESSIONS.map((e) => (
             <Card key={e} className="flex flex-col items-center !p-1.5">
-              <CharacterStage character="svg" expression={e} size={100} orbs={false} interactive={false} />
+              <CharacterStage character="svg" expression={e} size={80} orbs={false} interactive={false} />
               <p className="pb-1 text-[11px] text-ink-2">{EXPRESSION_LABEL[e]}</p>
             </Card>
           ))}
-        </div>
-      </section>
+        </Gallery>
+      </Pager>
+    </div>
+  );
+}
+
+const SHEET_NAMES = Object.keys(MASCOT_SHEETS) as MascotState[];
+
+/** 시트 하나를 반복 재생 (이름·프레임·용량 표시) */
+function SheetCard({ st }: { st: MascotState }) {
+  const s = MASCOT_SHEETS[st];
+  return (
+    <Card className="flex flex-col items-center !p-1.5">
+      <FortuneMascot state={st} size={92} loop />
+      <p className="pb-0.5 text-center text-[10px] leading-tight text-ink-2">
+        {st}
+        <br />
+        {s.frames}f · {Math.round(s.bytes / 1024)}KB
+      </p>
+    </Card>
+  );
+}
+
+function Gallery({ title, cols, children }: { title: string; cols: 1 | 2 | 3; children: ReactNode }) {
+  return (
+    <div className="flex flex-col">
+      <h2 className="mb-2 px-1 text-sm font-semibold text-ink-2">{title}</h2>
+      <div className={`grid gap-2 ${cols === 1 ? "grid-cols-1" : cols === 2 ? "grid-cols-2" : "grid-cols-3"}`}>{children}</div>
     </div>
   );
 }
