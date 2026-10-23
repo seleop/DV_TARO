@@ -6,6 +6,7 @@ import { BRAND } from "@/config/brand";
 import { PRIVACY_CONSENT } from "@/config/privacy";
 import { ApiError, api, errorText } from "@/lib/client";
 import { DISPLAY_NAME_MAX, splitServerError, validateLogin, validateSignup, type SignupField, type SignupValues } from "@/lib/auth/validate";
+import type { MascotState } from "@/config/mascot-assets";
 import { FortuneMascot } from "../FortuneMascot";
 import { SafeForm } from "../SafeForm";
 import { Button, inputCls } from "../ui";
@@ -58,6 +59,9 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
   const [showPw, setShowPw] = useState(false);
   const [caps, setCaps] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
+  // 복이의 한 번 재생 동작 (끝나면 대기 동작으로 돌아간다). 진입 화면에서는 손을 흔들며 맞이한다
+  const [reaction, setReaction] = useState<{ state: MascotState; id: number } | null>(initialMode === "choose" ? { state: "wave", id: 0 } : null);
+  const react = (state: MascotState) => setReaction((r) => ({ state, id: (r?.id ?? 0) + 1 }));
   const inputRef = useRef<HTMLInputElement>(null);
   const pushed = useRef(false);
   const submitting = useRef(false);
@@ -90,6 +94,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
       pushed.current = true;
     }
     setMode(m);
+    react("nod");
     setStep(0);
     setError(null);
     setDone(false);
@@ -115,12 +120,14 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
     const err = stepError(field);
     if (err) {
       setError(err);
+      react("surprised");
       return;
     }
     setError(null);
     if (!last) {
       setShowPw(false);
       setStep(step + 1);
+      react("nod");
       return;
     }
     submitting.current = true;
@@ -128,6 +135,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
     try {
       if (mode === "login") {
         await api("/api/auth/login", { body: { email: values.email.trim(), password: values.password } });
+        react("happy");
         router.replace(next);
       } else {
         await api("/api/auth/signup", {
@@ -156,6 +164,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
           setError(s.fields[steps[target]] ?? null);
         } else setError(s.rest);
       } else setError(errorText(e));
+      react("surprised");
       setBusy(false);
       submitting.current = false;
     }
@@ -219,7 +228,15 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
 
         <div className={`absolute h-[384px] w-[384px] origin-center ${ease}`} style={mascotPos}>
           {/* 스프라이트 원본(384px) 크기로 그리고 배율로 줄이고 키워 확대해도 덜 흐리게 한다 */}
-          <FortuneMascot state={done ? "happy" : "idle"} size={384} />
+          <FortuneMascot
+            state={done ? "celebrate" : (reaction?.state ?? "idle")}
+            playId={reaction?.id ?? 0}
+            size={384}
+            preload={["wave", "nod", "surprised", "happy", "celebrate"]}
+            onAnimationComplete={(st) => {
+              if (st !== "celebrate") setReaction((r) => (r?.state === st ? null : r));
+            }}
+          />
         </div>
 
         {/* 복이의 말풍선 */}
