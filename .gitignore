@@ -66,3 +66,6 @@ assets/mascot/preview/
 
 # 디자인 시안용 임시 파일 (저장소 제외)
 public/__design/
+
+# 파이썬 캐시
+__pycache__/
