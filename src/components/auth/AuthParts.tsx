@@ -52,7 +52,7 @@ export function describedBy(id: string, error?: string, hasHint = false) {
   } as const;
 }
 
-export const authInputCls = (error?: string) => `${inputCls} ${error ? "border-bad/70 focus:border-bad" : ""}`;
+export const authInputCls = (error?: string) => `${inputCls} ${error ? "border-bad/70! focus:border-bad!" : ""}`;
 
 /** 엔터를 누르면 폼을 제출하지 않고 다음 칸으로 이동한다 (모바일 키보드의 "다음" 버튼). */
 export function focusNextOnEnter(nextId: string) {

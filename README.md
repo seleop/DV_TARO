@@ -5,7 +5,7 @@
 
 ## 기능
 
-- 회원가입(이메일·비밀번호·비밀번호 확인·닉네임)·로그인 (Supabase Auth). 가입 방식은 `SIGNUP_MODE`(open/invite/closed)
+- 회원가입(`/signup`: 이메일·비밀번호·비밀번호 확인·닉네임·개인정보 동의)·로그인(`/login`, 로그인 후 원래 화면으로 복귀) (Supabase Auth). 가입 방식은 `SIGNUP_MODE`(open/invite/closed). 가입 직후 생년월일 입력은 필수 단계
 - 프로필 설정: 닉네임, 내 출생 정보(사주·오늘의 운세·별자리 기준)
 - 홈 화면 설치(PWA manifest·아이콘)
 - 홈: 대표 캐릭터 + 오늘 운세·사주·타로·별자리 바로가기
@@ -37,7 +37,7 @@ npm run setup
 npm run dev
 ```
 
-http://localhost:3000/login → "회원가입"에서 `admin@example.test`로 가입하면 관리자가 된다(`.env.local`의 `ADMIN_EMAILS`). 로컬 체험 모드는 내장 Postgres(PGlite)와 간이 로그인을 쓰며, 마이그레이션·RLS는 운영과 같다.
+http://localhost:3000/signup 에서 `admin@example.test`로 가입하면 관리자가 된다(`.env.local`의 `ADMIN_EMAILS`). 로컬 체험 모드는 내장 Postgres(PGlite)와 간이 로그인을 쓰며, 마이그레이션·RLS는 운영과 같다.
 
 ## 운영 배포
 
@@ -76,7 +76,7 @@ npm run test:live
 ```
 src/
   app/(app)/          로그인 후 화면 (홈, 오늘, 사주, 타로, 별자리, MY·프로필, 관리)
-  app/login/          로그인·가입
+  app/login/, signup/ 로그인·가입 (components/auth/)
   app/api/            API 라우트 (인증·출처·본문 크기 검사는 lib/api.ts)
   components/         화면 컴포넌트 (Character, ShareBar, ui …)
   config/brand.ts     앱 이름·대표 캐릭터 설정
