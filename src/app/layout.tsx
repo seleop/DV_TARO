@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { BRAND } from "@/config/brand";
+import { CosmicBackdrop } from "@/components/app/CosmicBackdrop";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -25,7 +26,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-dvh bg-[#06051a]">
         {/* PC에서는 가운데에 폰 폭(440px) 화면으로, 모바일에서는 전체 화면으로 보인다 */}
         <div className="cosmic-bg relative mx-auto flex min-h-dvh w-full max-w-[440px] flex-col overflow-hidden supports-[overflow:clip]:overflow-clip shadow-[0_0_80px_rgba(0,0,0,0.6)]">
-          <div className="stars" aria-hidden />
+          {/* 은하수·성운·별똥별 우주 배경 */}
+          <CosmicBackdrop />
           <div className="relative flex flex-1 flex-col">{children}</div>
         </div>
       </body>
