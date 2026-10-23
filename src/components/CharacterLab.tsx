@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { EXPRESSIONS, MOODS, SCENES, type Expression, type Mood, type Scene } from "@/lib/character";
+import { MASCOT_SHEETS, type MascotState } from "@/config/mascot-assets";
 import { CharacterStage } from "./Character";
+import { FortuneMascot } from "./FortuneMascot";
 import { Card } from "./ui";
 
 const SCENE_LABEL: Record<Scene, string> = {
@@ -55,17 +57,31 @@ export function CharacterLab() {
       </Card>
 
       <section>
-        <h2 className="mb-2 px-1 text-sm font-semibold text-ink-2">장면별 소품</h2>
+        <h2 className="mb-2 px-1 text-sm font-semibold text-ink-2">3D 마스코트 복이 · 동작</h2>
+        <div className="grid grid-cols-2 gap-2.5">
+          {(Object.keys(MASCOT_SHEETS) as MascotState[]).map((st) => (
+            <Card key={st} className="flex flex-col items-center !p-2">
+              <FortuneMascot state={st} size={150} loop />
+              <p className="pb-1 text-xs text-ink-2">
+                {st} · {MASCOT_SHEETS[st].frames}프레임 {MASCOT_SHEETS[st].fps}fps · {Math.round(MASCOT_SHEETS[st].bytes / 1024)}KB
+              </p>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-2 px-1 text-sm font-semibold text-ink-2">SVG 별토끼 · 장면별 소품</h2>
         <div className="grid grid-cols-2 gap-2.5">
           {SCENES.map((s) => (
             <Card key={s} className="flex flex-col items-center !p-2">
-              <CharacterStage pose={s} size={150} orbs={false} />
+              <CharacterStage character="svg" pose={s} size={150} orbs={false} />
               <p className="pb-1 text-xs text-ink-2">{SCENE_LABEL[s]}</p>
             </Card>
           ))}
           {MOODS.map((m) => (
             <Card key={m} className="flex flex-col items-center !p-2">
-              <CharacterStage pose="happy" mood={m} size={150} orbs={false} />
+              <CharacterStage character="svg" pose="happy" mood={m} size={150} orbs={false} />
               <p className="pb-1 text-xs text-ink-2">{MOOD_LABEL[m]}</p>
             </Card>
           ))}
@@ -73,11 +89,11 @@ export function CharacterLab() {
       </section>
 
       <section>
-        <h2 className="mb-2 px-1 text-sm font-semibold text-ink-2">표정</h2>
+        <h2 className="mb-2 px-1 text-sm font-semibold text-ink-2">SVG 별토끼 · 표정</h2>
         <div className="grid grid-cols-3 gap-2">
           {EXPRESSIONS.map((e) => (
             <Card key={e} className="flex flex-col items-center !p-1.5">
-              <CharacterStage expression={e} size={100} orbs={false} interactive={false} />
+              <CharacterStage character="svg" expression={e} size={100} orbs={false} interactive={false} />
               <p className="pb-1 text-[11px] text-ink-2">{EXPRESSION_LABEL[e]}</p>
             </Card>
           ))}

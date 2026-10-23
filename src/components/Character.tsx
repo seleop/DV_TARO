@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { BRAND } from "@/config/brand";
 import { StarRabbit } from "./character/StarRabbit";
+import { FortuneMascot } from "./FortuneMascot";
+import type { MascotState } from "@/config/mascot-assets";
+import { mascotStateFor } from "@/lib/mascot";
 import {
   ACTION_EXPRESSION,
   ACTION_KEYFRAMES,
@@ -37,8 +40,11 @@ export function CharacterStage({
   orbs = true,
   interactive = size >= 120,
   expression: fixedExpression,
+  character = BRAND.character.renderer,
   className = "",
 }: {
+  /** 캐릭터 종류: 3D 마스코트 복이(기본) 또는 SVG 별토끼 */
+  character?: "mascot3d" | "svg";
   pose?: Scene;
   mood?: Mood | null;
   /** 표정을 고정한다 (캐릭터 갤러리용) */
@@ -53,6 +59,8 @@ export function CharacterStage({
   const [temp, setTemp] = useState<{ expression: Expression; token: number } | null>(null);
   const [gaze, setGaze] = useState<-1 | 0 | 1>(0);
   const [bubble, setBubble] = useState<{ text: string; id: number } | null>(null);
+  const [reaction, setReaction] = useState<{ state: MascotState; id: number } | null>(null);
+  const is3d = character === "mascot3d";
   const expression = temp?.expression ?? fixedExpression ?? base.expression;
 
   const actorRef = useRef<HTMLDivElement>(null);
@@ -105,6 +113,7 @@ export function CharacterStage({
 
   // 가만히 있을 때 동작: 화면이 보일 때만, 다른 몸짓 중이 아닐 때만
   useEffect(() => {
+    if (is3d) return; // 3D 마스코트는 대기 동작(깜빡임·숨쉬기)이 영상에 들어 있다
     let alive = true;
     let t: ReturnType<typeof setTimeout>;
     lastTouch.current = Date.now();
@@ -130,7 +139,7 @@ export function CharacterStage({
       alive = false;
       clearTimeout(t);
     };
-  }, [pose, reduced, play, showExpression, later]);
+  }, [is3d, pose, reduced, play, showExpression, later]);
 
   function onTap() {
     const now = Date.now();
@@ -140,7 +149,14 @@ export function CharacterStage({
     if (taps.current.length >= DIZZY_TAPS) taps.current = [];
     prevLine.current = r.line;
     setGaze(0);
-    play(r.action, r.expression);
+    if (is3d) {
+      // 연타·점프는 놀람(한 번 재생 후 복귀), 나머지는 잠깐 기뻐하기
+      const st: MascotState = r.action === "spin" || r.action === "jump" ? "surprised" : "happy";
+      setReaction({ state: st, id: now });
+      if (st === "happy") later(() => setReaction((x) => (x?.id === now ? null : x)), 1600);
+    } else {
+      play(r.action, r.expression);
+    }
     setBubble({ text: r.line, id: now });
     later(() => setBubble((b) => (b?.id === now ? null : b)), BUBBLE_MS);
     try {
@@ -150,13 +166,27 @@ export function CharacterStage({
     }
   }
 
-  const figure = BRAND.character.images.neutral ? (
+  const svgFigure = BRAND.character.images.neutral ? (
     <ImageCharacter expression={expression} gaze={gaze} />
   ) : (
     <StarRabbit expression={expression} gaze={gaze} scene={pose} mood={mood} label={BRAND.character.alt} />
   );
-  // 몸 전체 캐릭터는 무대를 넓게 쓴다
-  const box = size * 0.86;
+  const reactionId = reaction?.id;
+  const figure = is3d ? (
+    <FortuneMascot
+      key={reactionId ?? "base"}
+      state={reaction?.state ?? mascotStateFor(pose, mood)}
+      size={size}
+      still={size < 120}
+      label={BRAND.character.alt}
+      onAnimationComplete={() => setReaction((x) => (x?.id === reactionId ? null : x))}
+      fallback={svgFigure}
+    />
+  ) : (
+    svgFigure
+  );
+  // 몸 전체 캐릭터는 무대를 넓게 쓴다 (3D 렌더는 여백이 포함돼 있어 무대 전체)
+  const box = is3d ? size : size * 0.86;
   const showBubble = interactive && size >= 140 && bubble;
 
   return (
@@ -170,8 +200,9 @@ export function CharacterStage({
           <span className="absolute -bottom-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 bg-white" aria-hidden />
         </div>
       )}
-      <div className="relative animate-float drop-shadow-[0_14px_28px_rgba(120,80,220,0.45)]" style={{ width: box, height: box }}>
-        <div className={`h-full w-full char-loop-${base.loop}`}>
+      <div className={`relative ${is3d ? "" : "animate-float"} drop-shadow-[0_14px_28px_rgba(120,80,220,0.45)]`} style={{ width: box, height: box }}>
+        {is3d && <div className="absolute bottom-[6%] left-1/2 h-[6%] w-[42%] -translate-x-1/2 rounded-[50%] bg-[#0b0624]/45 blur-[6px]" aria-hidden />}
+        <div className={`relative h-full w-full ${is3d ? "" : `char-loop-${base.loop}`}`}>
           <div ref={actorRef} className="h-full w-full">
             {interactive ? (
               <button
