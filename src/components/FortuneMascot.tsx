@@ -1,19 +1,22 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { MASCOT_POSTER, MASCOT_SHEETS, type MascotSheet, type MascotState } from "@/config/mascot-assets";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { MASCOT_POSTERS, MASCOT_SHEETS, type MascotSheet, type MascotState } from "@/config/mascot-assets";
 import { durationMs, frameAt, framePosition } from "@/lib/mascot";
 
-const FADE_MS = 180;
+const FADE_MS = 140;
 
-/** 시트 이미지 불러오기 (여러 마스코트가 같은 이미지를 공유) */
+/** 시트 이미지 불러오기·디코딩 (여러 마스코트가 같은 이미지를 공유). 디코딩까지 끝나야 바꿔 끼울 때 빈 화면이 안 생긴다 */
 const loading = new Map<string, Promise<boolean>>();
 function loadSheet(src: string) {
   let p = loading.get(src);
   if (!p) {
     p = new Promise<boolean>((resolve) => {
       const img = new Image();
-      img.onload = () => resolve(true);
+      img.onload = () => {
+        if (typeof img.decode === "function") img.decode().then(() => resolve(true), () => resolve(true));
+        else resolve(true);
+      };
       img.onerror = () => {
         loading.delete(src); // 다음에 다시 시도
         resolve(false);
@@ -29,7 +32,8 @@ type Layer = { state: MascotState; playId: number; key: number };
 
 /**
  * 3D 마스코트 "복이" (Blender 렌더 → WebP 스프라이트 시트, docs/MASCOT.md).
- * - 동작이 바뀌면 새 시트를 불러온 뒤 0.18초 동안 겹쳐 바꾼다(크로스페이드). 그동안 이전 동작은 계속 재생된다
+ * - 동작이 바뀌면 새 시트를 불러온 뒤, 이전 층은 불투명하게 둔 채 새 층만 0.14초 동안 나타나게 한다.
+ *   (두 층을 동시에 반투명하게 겹치면 전체가 흐려 보이므로 이전 층은 흐리게 하지 않는다)
  * - 한 번 재생 동작(wave·nod·surprised·reveal·celebrate·yawn)은 마지막 프레임(휴식 자세)에서 멈추고 onAnimationComplete 를 부른다
  * - 같은 동작을 다시 재생하려면 playId 를 바꾼다
  * - 시트는 화면 가까이 왔을 때 불러오고, 화면 밖·탭 숨김이면 멈춘다. 불러오기 전·실패 시 포스터, 포스터도 실패하면 fallback
@@ -46,6 +50,7 @@ export function FortuneMascot({
   onAnimationComplete,
   fallback = null,
   label = "마스코트 복이",
+  zoom = 1,
   className = "",
 }: {
   state?: MascotState;
@@ -60,6 +65,11 @@ export function FortuneMascot({
   onAnimationComplete?: (state: MascotState) => void;
   fallback?: ReactNode;
   label?: string;
+  /**
+   * 캐릭터 확대 배율. 상자(size×size)는 그대로 두고 그림만 키운다 (바닥 기준으로 위·옆으로 커짐).
+   * 1 = 캐릭터 영역 높이가 size 와 같음
+   */
+  zoom?: number;
   className?: string;
 }) {
   const prefersReduced = usePrefersReducedMotion();
@@ -79,6 +89,11 @@ export function FortuneMascot({
   useEffect(() => {
     doneRef.current = onAnimationComplete;
   }, [onAnimationComplete]);
+  /** 보이는 층의 한 번 재생 동작이 끝났을 때 (재생 중 호출되므로 ref 를 읽어도 된다) */
+  const onShownDone = useCallback(() => {
+    const st = shownRef.current?.state;
+    if (st) doneRef.current?.(st);
+  }, []);
 
   // 화면 근처에 오면 불러오기 시작, 화면 밖이면 재생 정지
   useEffect(() => {
@@ -145,30 +160,40 @@ export function FortuneMascot({
   }, [animate, loop, state, playId]);
 
   if (posterFailed && !shown) return <>{fallback}</>;
+  const cur = MASCOT_SHEETS[state];
+  const poster = MASCOT_POSTERS[cur.outfit] ?? MASCOT_POSTERS.default;
+  const frameH = size * zoom;
+  const frameW = (frameH * cur.frameW) / cur.frameH;
 
   return (
     <div ref={boxRef} role="img" aria-label={label} className={`relative select-none ${className}`} style={{ width: size, height: size }}>
+      {/* 시트 칸은 여백을 잘라 내 세로로 길다. 높이 = size×zoom, 가로 가운데·바닥 맞춤 */}
+      <div className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2" style={{ height: frameH, width: frameW }}>
       {(!animate || !shown) && (
         // eslint-disable-next-line @next/next/no-img-element -- 투명 배경 정적 포스터 (작은 WebP)
-        <img src={MASCOT_POSTER} alt="" width={size} height={size} draggable={false} className="absolute inset-0 h-full w-full" onError={() => setPosterFailed(true)} />
+        <img src={poster} alt="" draggable={false} className="absolute inset-0 h-full w-full" onError={() => setPosterFailed(true)} />
       )}
-      {animate && leaving && <Sprite key={leaving.key} sheet={MASCOT_SHEETS[leaving.state]} loop={loop ?? MASCOT_SHEETS[leaving.state].loop} playing={visible} fade="out" />}
-      {animate && shown && (
-        <Sprite
-          key={shown.key}
-          sheet={MASCOT_SHEETS[shown.state]}
-          loop={loop ?? MASCOT_SHEETS[shown.state].loop}
-          playing={visible}
-          fade={shown.key > 1 ? "in" : null}
-          onDone={() => doneRef.current?.(shown.state)}
-        />
-      )}
+      {/* 같은 목록·같은 key 로 그려야 나가는 층이 다시 만들어지지 않고 마지막 프레임을 그대로 유지한다 */}
+      {animate &&
+        [leaving, shown].map((l) =>
+          l ? (
+            <Sprite
+              key={l.key}
+              sheet={MASCOT_SHEETS[l.state]}
+              loop={loop ?? MASCOT_SHEETS[l.state].loop}
+              playing={l === shown && visible}
+              fade={l === shown && l.key > 1 ? "in" : null}
+              onDone={l === shown ? onShownDone : undefined}
+            />
+          ) : null,
+        )}
+      </div>
     </div>
   );
 }
 
 /** 시트 한 장 재생. 프레임은 requestAnimationFrame 으로 직접 넘긴다 (리렌더 없음) */
-function Sprite({ sheet, loop, playing, fade, onDone }: { sheet: MascotSheet; loop: boolean; playing: boolean; fade: "in" | "out" | null; onDone?: () => void }) {
+function Sprite({ sheet, loop, playing, fade, onDone }: { sheet: MascotSheet; loop: boolean; playing: boolean; fade: "in" | null; onDone?: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const doneRef = useRef(onDone);
   const clock = useRef({ start: 0, pausedAt: 0, finished: false });
@@ -180,7 +205,7 @@ function Sprite({ sheet, loop, playing, fade, onDone }: { sheet: MascotSheet; lo
   useEffect(() => {
     const el = ref.current;
     if (!el || !fade || typeof el.animate !== "function") return;
-    const a = el.animate(fade === "in" ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], { duration: FADE_MS, easing: "ease-out", fill: "forwards" });
+    const a = el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: FADE_MS, easing: "ease-out" });
     return () => a.cancel();
   }, [fade]);
 

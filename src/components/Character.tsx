@@ -4,8 +4,14 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { BRAND } from "@/config/brand";
 import { StarRabbit } from "./character/StarRabbit";
 import { FortuneMascot } from "./FortuneMascot";
-import type { MascotState } from "@/config/mascot-assets";
-import { idleReactionFor, introFor, mascotStateFor, nextIdleReactionDelay, tapReactionFor } from "@/lib/mascot";
+import { MASCOT_SHEETS, type MascotState } from "@/config/mascot-assets";
+import { idleReactionFor, introFor, mascotStateFor, nextIdleReactionDelay, outfitFor, resolveSheet, tapReactionFor, type Outfit } from "@/lib/mascot";
+
+const SHEET_NAMES: ReadonlySet<string> = new Set(Object.keys(MASCOT_SHEETS));
+/** 의상에 맞는 시트 이름 */
+const sheetFor = (outfit: Outfit, state: string) => resolveSheet(outfit, state, SHEET_NAMES) as MascotState;
+/** 반응으로 쓸 수 있는지 (한 번 재생 동작이어야 끝나고 바탕 동작으로 돌아온다) */
+const isOneShot = (outfit: Outfit, state: string) => !MASCOT_SHEETS[sheetFor(outfit, state)].loop;
 import {
   ACTION_EXPRESSION,
   ACTION_KEYFRAMES,
@@ -37,13 +43,16 @@ const BUBBLE_MS = 2400;
 export function CharacterStage({
   pose = "default",
   mood = null,
-  size = 240,
+  size: baseSize = 240,
   orbs = true,
-  interactive = size >= 120,
+  interactive = baseSize >= 120,
   expression: fixedExpression,
   character = BRAND.character.renderer,
+  zoom = BRAND.character.mascotZoom,
   className = "",
 }: {
+  /** 3D 마스코트 확대 배율 (기본값은 brand.ts). 무대 전체(레이아웃 크기 포함)를 키워 주변과 겹치지 않는다 */
+  zoom?: number;
   /** 캐릭터 종류: 3D 마스코트 복이(기본) 또는 SVG 별토끼 */
   character?: "mascot3d" | "svg";
   pose?: Scene;
@@ -55,6 +64,7 @@ export function CharacterStage({
   interactive?: boolean;
   className?: string;
 }) {
+  const size = character === "mascot3d" ? Math.round(baseSize * zoom) : baseSize;
   const base = baseLook(pose, mood);
   const reduced = useReducedMotion();
   const [temp, setTemp] = useState<{ expression: Expression; token: number } | null>(null);
@@ -62,6 +72,7 @@ export function CharacterStage({
   const [bubble, setBubble] = useState<{ text: string; id: number } | null>(null);
   const [reaction, setReaction] = useState<{ state: MascotState; id: number } | null>(null);
   const is3d = character === "mascot3d";
+  const outfit = outfitFor(pose);
   const expression = temp?.expression ?? fixedExpression ?? base.expression;
 
   const actorRef = useRef<HTMLDivElement>(null);
@@ -143,7 +154,8 @@ export function CharacterStage({
   }, [is3d, pose, reduced, play, showExpression, later]);
 
   // 3D 마스코트: 화면에 들어오면 한 번 인사·결과 소개, 이후 가끔(9~16초) 손 흔들기·끄덕·하품
-  const intro = is3d && size >= 120 ? introFor(pose, mood) : null;
+  const introRaw = is3d && size >= 120 ? introFor(pose, mood) : null;
+  const intro = introRaw && isOneShot(outfit, introRaw) ? introRaw : null;
   useEffect(() => {
     if (!is3d || size < 120) return;
     let alive = true;
@@ -166,7 +178,7 @@ export function CharacterStage({
         if (!alive) return;
         if (!document.hidden) {
           const st = idleReactionFor(Date.now() - lastTouch.current, Math.random);
-          if (st) {
+          if (st && isOneShot(outfit, st)) {
             setReaction((cur) => cur ?? { state: st, id: Date.now() });
             if (st === "yawn") lastTouch.current = Date.now();
           }
@@ -179,7 +191,7 @@ export function CharacterStage({
       alive = false;
       clearTimeout(t);
     };
-  }, [is3d, size, intro, interactive, mood, pose, later]);
+  }, [is3d, size, intro, interactive, mood, pose, outfit, later]);
 
   function onTap() {
     const now = Date.now();
@@ -192,7 +204,8 @@ export function CharacterStage({
     setGaze(0);
     if (is3d) {
       // 반응 동작은 휴식 자세로 끝나 바탕 동작으로 자연스럽게 돌아간다 (FortuneMascot 이 완료를 알림)
-      setReaction({ state: tapReactionFor(recent, DIZZY_TAPS, Math.random), id: now });
+      const st = tapReactionFor(recent, DIZZY_TAPS, Math.random);
+      if (isOneShot(outfit, st)) setReaction({ state: st, id: now });
     } else {
       play(r.action, r.expression);
     }
@@ -212,13 +225,13 @@ export function CharacterStage({
   );
   const figure = is3d ? (
     <FortuneMascot
-      state={reaction?.state ?? mascotStateFor(pose, mood)}
+      state={sheetFor(outfit, reaction?.state ?? mascotStateFor(pose, mood))}
       playId={reaction?.id ?? 0}
       size={size}
       still={size < 120}
-      preload={interactive ? ["wave", "nod", "surprised", ...(intro ? [intro] : [])] : intro ? [intro] : []}
+      preload={(interactive ? ["wave", "nod", "surprised", ...(intro ? [intro] : [])] : intro ? [intro] : []).map((st) => sheetFor(outfit, st))}
       label={BRAND.character.alt}
-      onAnimationComplete={(st) => setReaction((x) => (x?.state === st ? null : x))}
+      onAnimationComplete={(st) => setReaction((x) => (x && sheetFor(outfit, x.state) === st ? null : x))}
       fallback={svgFigure}
     />
   ) : (

@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { MASCOT_POSTER, MASCOT_SHEETS, type MascotState } from "@/config/mascot-assets";
-import { durationMs, frameAt, framePosition, idleReactionFor, introFor, mascotStateFor, nextIdleReactionDelay, tapReactionFor } from "@/lib/mascot";
+import { MASCOT_POSTER, MASCOT_POSTERS, MASCOT_SHEETS, type MascotState } from "@/config/mascot-assets";
+import { durationMs, frameAt, framePosition, idleReactionFor, introFor, mascotStateFor, nextIdleReactionDelay, outfitFor, resolveSheet, tapReactionFor } from "@/lib/mascot";
 
 const sheet = { frames: 20, fps: 20, cols: 5, rows: 4 };
 
@@ -47,6 +47,25 @@ describe("마스코트 프레임 계산", () => {
     expect(tapReactionFor(5, 5, () => 0)).toBe("surprised");
   });
 
+  it("장면별 의상을 고르고, 의상에 없는 동작은 가까운 동작으로 바꾼다", () => {
+    const names = new Set(Object.keys(MASCOT_SHEETS));
+    expect(outfitFor("tarot")).toBe("tarot");
+    expect(outfitFor("thinking")).toBe("default");
+    expect(resolveSheet("default", "celebrate", names)).toBe("celebrate");
+    expect(resolveSheet("saju", "wave", names)).toBe("saju-wave");
+    expect(resolveSheet("saju", "reveal", names)).toBe("saju-read");
+    expect(resolveSheet("tarot", "celebrate", names)).toBe("tarot-draw");
+    expect(resolveSheet("star", "think", names)).toBe("star-idle");
+    expect(resolveSheet("star", "yawn", names)).toBe("star-nod");
+    // 의상마다 터치·대기 반응이 모두 한 번 재생 동작으로 바뀐다 (바탕 동작으로 돌아올 수 있어야 함)
+    for (const o of ["saju", "tarot", "star"] as const) {
+      for (const st of ["wave", "nod", "surprised", "reveal", "celebrate", "yawn"]) {
+        expect(MASCOT_SHEETS[resolveSheet(o, st, names) as MascotState].loop, `${o}/${st}`).toBe(false);
+      }
+      expect(MASCOT_POSTERS[o]).toBeTruthy();
+    }
+  });
+
   it("오래 두기 전에는 하품하지 않는다", () => {
     for (let r = 0; r < 1; r += 0.01) expect(idleReactionFor(1000, () => r)).not.toBe("yawn");
     expect(nextIdleReactionDelay(() => 0)).toBe(9000);
@@ -60,8 +79,9 @@ describe("마스코트 에셋", () => {
     expect(fs.existsSync(path.join(pub, s.src))).toBe(true);
     expect(s.cols * s.rows).toBeGreaterThanOrEqual(s.frames);
     expect(s.cols * s.rows - s.frames).toBeLessThan(s.cols); // 빈 줄 없음
-    // 모바일 메모리: 시트 한 장 400KB 이하
-    expect(fs.statSync(path.join(pub, s.src)).size).toBeLessThan(400 * 1024);
+    // 모바일 네트워크·메모리: 시트 한 장 800KB 이하, 한 변 4096px 이하
+    expect(fs.statSync(path.join(pub, s.src)).size).toBeLessThan(800 * 1024);
+    expect(Math.max(s.cols * s.frameW, s.rows * s.frameH)).toBeLessThanOrEqual(4096);
   });
   it("포스터가 있다", () => {
     expect(fs.existsSync(path.join(pub, MASCOT_POSTER))).toBe(true);

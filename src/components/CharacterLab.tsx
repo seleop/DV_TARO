@@ -29,6 +29,8 @@ const EXPRESSION_LABEL: Record<Expression, string> = {
   sleepy: "하품",
 };
 
+const OUTFIT_LABEL = { saju: "사주 복이 · 갓·안경·사주책", tarot: "타로 복이 · 마법사 모자·망토·카드", star: "별자리 복이 · 베레모·목도리·망원경" } as const;
+
 const chip = (on: boolean) => `rounded-full px-3 py-1.5 text-[13px] font-semibold transition ${on ? "bg-white text-[#2a2440]" : "bg-white/10 text-ink-2"}`;
 
 export function CharacterLab() {
@@ -38,7 +40,7 @@ export function CharacterLab() {
   // 스크롤 없이: 무대 / 3D 동작 / SVG 장면 / SVG 분위기 / SVG 표정을 장으로 나눠 좌우로 넘긴다
   return (
     <div className="flex min-h-0 flex-1 flex-col pb-3">
-      <Pager labels={["무대", "3D 마스코트 동작", "SVG 장면별 소품", "SVG 결과 분위기", "SVG 표정"]}>
+      <Pager labels={["무대", "의상별 복이", "3D 기본 동작", "3D 의상 동작", "SVG 장면별 소품", "SVG 결과 분위기", "SVG 표정"]}>
         <Card className="flex min-h-0 flex-1 flex-col items-center">
           <p className="shrink-0 text-xs text-ink-2">캐릭터를 톡 눌러 보세요 · 다섯 번 연타하면 어지러워해요</p>
           <FitSize min={100} max={280} className="w-full py-2">
@@ -77,14 +79,24 @@ export function CharacterLab() {
           </div>
         </Card>
 
-        <Gallery title="3D 마스코트 복이 · 동작" cols={2}>
-          {(Object.keys(MASCOT_SHEETS) as MascotState[]).map((st) => (
-            <Card key={st} className="flex flex-col items-center !p-2">
-              <FortuneMascot state={st} size={130} loop />
-              <p className="pb-1 text-center text-[11px] text-ink-2">
-                {st} · {MASCOT_SHEETS[st].frames}프레임 {MASCOT_SHEETS[st].fps}fps · {Math.round(MASCOT_SHEETS[st].bytes / 1024)}KB
-              </p>
+        <Gallery title="의상별 복이 · 톡 누르면 반응" cols={1}>
+          {(["saju", "tarot", "star"] as const).map((o) => (
+            <Card key={o} className="flex items-center gap-3 !p-2">
+              <CharacterStage pose={o} size={130} orbs={false} />
+              <p className="text-xs text-ink-2">{OUTFIT_LABEL[o]}</p>
             </Card>
+          ))}
+        </Gallery>
+
+        <Gallery title="3D 마스코트 복이 · 기본 동작" cols={3}>
+          {SHEET_NAMES.filter((st) => MASCOT_SHEETS[st].outfit === "default").map((st) => (
+            <SheetCard key={st} st={st} />
+          ))}
+        </Gallery>
+
+        <Gallery title="3D 마스코트 복이 · 의상 동작" cols={3}>
+          {SHEET_NAMES.filter((st) => MASCOT_SHEETS[st].outfit !== "default").map((st) => (
+            <SheetCard key={st} st={st} />
           ))}
         </Gallery>
 
@@ -119,11 +131,28 @@ export function CharacterLab() {
   );
 }
 
-function Gallery({ title, cols, children }: { title: string; cols: 2 | 3; children: ReactNode }) {
+const SHEET_NAMES = Object.keys(MASCOT_SHEETS) as MascotState[];
+
+/** 시트 하나를 반복 재생 (이름·프레임·용량 표시) */
+function SheetCard({ st }: { st: MascotState }) {
+  const s = MASCOT_SHEETS[st];
+  return (
+    <Card className="flex flex-col items-center !p-1.5">
+      <FortuneMascot state={st} size={92} loop />
+      <p className="pb-0.5 text-center text-[10px] leading-tight text-ink-2">
+        {st}
+        <br />
+        {s.frames}f · {Math.round(s.bytes / 1024)}KB
+      </p>
+    </Card>
+  );
+}
+
+function Gallery({ title, cols, children }: { title: string; cols: 1 | 2 | 3; children: ReactNode }) {
   return (
     <div className="flex flex-col">
       <h2 className="mb-2 px-1 text-sm font-semibold text-ink-2">{title}</h2>
-      <div className={`grid gap-2 ${cols === 2 ? "grid-cols-2" : "grid-cols-3"}`}>{children}</div>
+      <div className={`grid gap-2 ${cols === 1 ? "grid-cols-1" : cols === 2 ? "grid-cols-2" : "grid-cols-3"}`}>{children}</div>
     </div>
   );
 }

@@ -23,6 +23,8 @@ export const BRAND = {
      *  svg: 코드로 그린 별토끼 (장면별 소품·표정 포함)
      */
     renderer: "mascot3d" as "mascot3d" | "svg",
+    /** 3D 마스코트 확대 배율 (캐릭터 갤러리의 "크기 시안"에서 비교) */
+    mascotZoom: 1,
     // 예: neutral: "/character/neutral.png", blink: "/character/blink.png"
     images: {} as Partial<Record<Expression, string>>,
     alt: "마스코트 복이",

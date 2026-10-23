@@ -47,9 +47,12 @@
   - Blender 5.2.3(포터블, `%LOCALAPPDATA%\Programs\Blender`)·FFmpeg(winget)로 `scripts/mascot/`에서 모델·idle/walk/happy/surprised 렌더 → `public/mascot/*.webp` 스프라이트 시트
   - `FortuneMascot`(스프라이트 재생·크로스페이드) + `CharacterStage`(말풍선·터치·대기 반응·장면/결과→동작). 동작 10종: 반복 idle·walk·think·happy, 한 번 wave·nod·surprised·reveal·celebrate·yawn (한 번 재생 동작은 휴식 자세로 시작·끝, `encode.mjs`가 이음새 검사)
   - 몸통·다리는 메타볼로 녹여 붙여 관절 주름 없음 (2026-10-24 사용자 요청 반영)
+  - **의상 3종** (장면에 따라 자동, `resolveSheet`): 사주(갓·안경·사주책, read) · 타로(마법사 모자·망토·카드, draw) · 별자리(베레모·목도리·망원경, stargaze). 의상마다 idle·wave·nod·surprised + 대표 동작, 의상별 포스터. 시트 이름 `<의상>-<동작>`
+  - 화질: 640px 렌더 → 좌우 여백 자르기 → 칸 318×512, WebP 90. 시트 260~710KB (`docs/MASCOT.md` 13절)
+  - 동작 전환 시 이전 층은 불투명 유지·새 층만 페이드인 (끝날 때 흐려지던 문제 수정). 크기는 사용자 결정으로 그대로(`mascotZoom: 1`)
   - 오늘의 운세·별자리 AI 응답에 `mood`(great/good/calm/careful) 추가(이전 저장분 호환), 타로는 카드 방향으로 분위기 결정
   - SVG 별토끼(장면별 소품)는 대체용으로 유지: `src/config/brand.ts` `renderer: "svg"`. 관리자 화면 → "캐릭터"에서 갤러리 확인
-  - 남은 일: Android·iOS 실기기 재생 확인, 이름 확정, reveal·celebrate 동작, 동작 줄이기 화면 확인
+  - 남은 일: Android·iOS 실기기 재생 확인(의상·화질 포함), 이름 확정, 동작 줄이기 화면 확인
 
 ## 다음 단계
 **1차 완성 기준** (2026-10-23 사용자 결정): 아래 1 + 로그인·회원가입 UI 개선(`claude/youthful-shamir-aa9bf7`)과 대표 캐릭터 반영(`claude/lucid-solomon-5113d2`)이 main에 들어간 시점. 그전까지는 원래 폴더에서 main 직접 작업 허용 (CLAUDE.md "병렬 작업" 예외). 사용자가 1차 완성을 확인하면 CLAUDE.md에서 예외를 지운다.
