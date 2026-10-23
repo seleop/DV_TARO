@@ -46,6 +46,7 @@ const meRoute = await import("@/app/api/me/route");
 const cronRoute = await import("@/app/api/cron/purge/route");
 const birthRoute = await import("@/app/api/me/birth/route");
 const { freshEnv, makeUser, rawPg } = await import("./helpers/db");
+const { PRIVACY_CONSENT } = await import("@/config/privacy");
 
 const ORIGIN = "http://localhost:3000";
 function req(method: string, body?: unknown, headers: Record<string, string> = {}) {
@@ -150,7 +151,7 @@ describe("API 라우트", () => {
 
   it("회원가입(이메일·비밀번호·비밀번호 확인·닉네임) → 바로 로그인 상태", async () => {
     const r = await signupRoute.POST(
-      req("POST", { email: "New@Example.test", password: "password-1234", passwordConfirm: "password-1234", displayName: "새사람" }),
+      req("POST", { email: "New@Example.test", password: "password-1234", passwordConfirm: "password-1234", displayName: "새사람", agreePrivacy: true }),
       ctx(),
     );
     expect(r.status).toBe(201);
@@ -160,16 +161,31 @@ describe("API 라우트", () => {
   });
 
   it("비밀번호 확인이 다르거나 짧으면 400", async () => {
-    const mismatch = await signupRoute.POST(req("POST", { email: "a@example.test", password: "password-1234", passwordConfirm: "password-9999", displayName: "에이" }), ctx());
+    const mismatch = await signupRoute.POST(req("POST", { email: "a@example.test", password: "password-1234", passwordConfirm: "password-9999", displayName: "에이", agreePrivacy: true }), ctx());
     expect(mismatch.status).toBe(400);
     expect(JSON.stringify(await mismatch.json())).toContain("비밀번호가 서로 달라요");
-    const short = await signupRoute.POST(req("POST", { email: "b@example.test", password: "short", passwordConfirm: "short", displayName: "비" }), ctx());
+    const short = await signupRoute.POST(req("POST", { email: "b@example.test", password: "short", passwordConfirm: "short", displayName: "비", agreePrivacy: true }), ctx());
     expect(short.status).toBe(400);
+  });
+
+  it("개인정보 수집·이용 동의가 없으면 400(agreePrivacy 칸 오류), 동의하면 시각·버전을 기록한다", async () => {
+    const base = { email: "consent@example.test", password: "password-1234", passwordConfirm: "password-1234", displayName: "동의" };
+    for (const body of [base, { ...base, agreePrivacy: false }]) {
+      const r = await signupRoute.POST(req("POST", body), ctx());
+      expect(r.status).toBe(400);
+      expect((await r.json()).error.issues).toEqual([expect.objectContaining({ path: "agreePrivacy" })]);
+    }
+    const ok = await signupRoute.POST(req("POST", { ...base, agreePrivacy: true }), ctx());
+    expect(ok.status).toBe(201);
+    const { user } = await ok.json();
+    const row = (await (await rawPg()).query<{ privacy_agreed_at: Date | null; privacy_version: string | null }>("select privacy_agreed_at, privacy_version from public.profiles where id = $1", [user.id])).rows[0];
+    expect(row.privacy_agreed_at).not.toBeNull();
+    expect(row.privacy_version).toBe(PRIVACY_CONSENT.version);
   });
 
   it("가입 중지(SIGNUP_MODE=closed)면 403", async () => {
     await freshEnv({ JEOMBOM_ENABLED: "false", SIGNUP_MODE: "closed" });
-    const r = await signupRoute.POST(req("POST", { email: "c@example.test", password: "password-1234", passwordConfirm: "password-1234", displayName: "씨" }), ctx());
+    const r = await signupRoute.POST(req("POST", { email: "c@example.test", password: "password-1234", passwordConfirm: "password-1234", displayName: "씨", agreePrivacy: true }), ctx());
     expect(r.status).toBe(403);
     expect((await r.json()).error.code).toBe("SIGNUP_CLOSED");
   });

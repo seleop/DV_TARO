@@ -7,7 +7,18 @@ import { BirthForm, type BirthInitial } from "./BirthForm";
 import { Button, Card, ErrorBox, H2, inputCls, TopBar } from "./ui";
 
 /** 프로필 설정: 닉네임 + 내 출생 정보(사주·오늘의 운세·별자리 기준) */
-export function ProfileClient({ displayName, email, initial, welcome }: { displayName: string; email: string; initial: BirthInitial | null; welcome: boolean }) {
+export function ProfileClient({
+  displayName,
+  email,
+  initial,
+  notice,
+}: {
+  displayName: string;
+  email: string;
+  initial: BirthInitial | null;
+  /** welcome: 가입 직후, required: 생년월일이 없어 다른 화면에서 넘어옴 */
+  notice: "welcome" | "required" | null;
+}) {
   const router = useRouter();
   const [name, setName] = useState(displayName);
   const [busy, setBusy] = useState(false);
@@ -31,11 +42,18 @@ export function ProfileClient({ displayName, email, initial, welcome }: { displa
 
   return (
     <div className="flex flex-1 flex-col">
-      <TopBar title="프로필 설정" back={welcome ? null : "/me"} />
-      {welcome && (
-        <p className="mb-3 rounded-2xl bg-accent/15 px-4 py-3 text-center text-sm text-accent">
-          가입을 환영해요! 생년월일을 입력하면 오늘의 운세를 볼 수 있어요.
-        </p>
+      <TopBar title={notice === "welcome" ? "시작하기" : "프로필 설정"} back={notice ? null : "/me"} />
+      {notice && (
+        <div className="mb-3 rounded-2xl bg-accent/15 px-4 py-3 text-center text-sm leading-relaxed text-accent">
+          {notice === "welcome" ? (
+            <>
+              <b className="block text-[15px]">{displayName}님, 가입을 환영해요!</b>
+              마지막 단계예요. 생년월일을 입력하면 바로 시작할 수 있어요.
+            </>
+          ) : (
+            <>먼저 생년월일을 입력해 주세요. 사주·오늘의 운세·별자리 모두 이 정보를 기준으로 봐요.</>
+          )}
+        </div>
       )}
       <Card>
         <H2 sub={email}>닉네임</H2>

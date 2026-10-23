@@ -25,5 +25,5 @@ export default async function ProfilePage({ searchParams }: PageProps<"/me/profi
       settings: i.settings,
     };
   }
-  return <ProfileClient displayName={user.displayName} email={user.email} initial={initial} welcome={sp.welcome === "1"} />;
+  return <ProfileClient displayName={user.displayName} email={user.email} initial={initial} notice={sp.welcome === "1" ? "welcome" : sp.required === "1" || !user.primaryCalculationId ? "required" : null} />;
 }
