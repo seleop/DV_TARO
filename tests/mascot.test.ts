@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { MASCOT_POSTER, MASCOT_SHEETS, type MascotState } from "@/config/mascot-assets";
-import { durationMs, frameAt, framePosition, mascotStateFor } from "@/lib/mascot";
+import { durationMs, frameAt, framePosition, idleReactionFor, introFor, mascotStateFor, nextIdleReactionDelay, tapReactionFor } from "@/lib/mascot";
 
 const sheet = { frames: 20, fps: 20, cols: 5, rows: 4 };
 
@@ -23,11 +23,33 @@ describe("마스코트 프레임 계산", () => {
     expect(framePosition(19, sheet)).toBe("100% 100%");
   });
 
-  it("장면·결과에 맞는 동작을 고른다", () => {
+  it("장면·결과에 맞는 바탕 동작을 고른다", () => {
     expect(mascotStateFor("thinking")).toBe("walk");
     expect(mascotStateFor("default")).toBe("idle");
+    expect(mascotStateFor("tarot")).toBe("think");
     expect(mascotStateFor("happy", "great")).toBe("happy");
     expect(mascotStateFor("star", "careful")).toBe("idle");
+  });
+
+  it("들어올 때·터치·대기 반응은 모두 한 번 재생 동작이다 (휴식 자세로 끝나 자연스럽게 복귀)", () => {
+    expect(introFor("default")).toBe("wave");
+    expect(introFor("happy", "great")).toBe("celebrate");
+    expect(introFor("happy", "good")).toBe("reveal");
+    expect(introFor("thinking")).toBeNull();
+    const oneShots = new Set<string>();
+    for (let r = 0; r < 1; r += 0.01) {
+      oneShots.add(tapReactionFor(1, 5, () => r));
+      const idle = idleReactionFor(60_000, () => r);
+      if (idle) oneShots.add(idle);
+    }
+    oneShots.add(introFor("happy", "great")!);
+    for (const st of oneShots) expect(MASCOT_SHEETS[st as MascotState].loop, st).toBe(false);
+    expect(tapReactionFor(5, 5, () => 0)).toBe("surprised");
+  });
+
+  it("오래 두기 전에는 하품하지 않는다", () => {
+    for (let r = 0; r < 1; r += 0.01) expect(idleReactionFor(1000, () => r)).not.toBe("yawn");
+    expect(nextIdleReactionDelay(() => 0)).toBe(9000);
   });
 });
 
