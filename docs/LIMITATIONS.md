@@ -7,7 +7,7 @@
 - **Supabase 실제 프로젝트**: 계정 정보가 없어 실제 Supabase에는 연결해 보지 않았다.
   - 확인한 것: 마이그레이션 SQL과 RLS 정책은 PGlite(Postgres 17)에서 실제로 실행해 검증했다 (`tests/rls.test.ts`). Supabase의 `auth` 스키마·역할은 `supabase/tests/auth_stub.sql`로 흉내 냈다.
   - 확인할 것: 실제 Supabase에서 마이그레이션 실행, `postgres` 역할로 `set local role authenticated`가 허용되는지(Supabase 기본 구성에서는 허용되는 것으로 알려져 있음), Auth 관리자 API(계정 생성·삭제·ban) 오류 코드 처리, 세션 쿠키 갱신(proxy.ts).
-- **Vercel 배포**: 빌드는 성공했지만 실제 배포·Cron 실행은 하지 않았다. 함수 최대 실행 시간은 플랜에 따라 다르다.
+- **Vercel 배포**: https://dvtarocard.vercel.app 으로 배포했다 (2026-10-23). 가입·로그인 정상 동작은 확인했고, Android·iOS 실기기와 Cron 실행은 아직 확인하지 않았다. 함수 최대 실행 시간은 플랜에 따라 다르다.
 - **Claude API 실제 호출**: API 키가 없어 모의 공급자로만 테스트했다. 거절 시 대체 모델(fallbacks)은 넣지 않았고, 거절은 `AI_REFUSED` 오류로 처리된다.
 - **이미지 저장**: 화면이 보이는 브라우저에서 PNG 생성(약 1.3초, 222KB)을 확인했다. 웹폰트는 포함하지 않아 저장 이미지는 기기 기본 한글 폰트로 그려진다. iOS Safari 실기기 확인은 하지 않았다.
 

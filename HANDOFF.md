@@ -4,6 +4,7 @@
 
 ## 기본 정보
 - 원격 저장소: https://github.com/seleop/DV_TARO.git (`origin`, 브랜치 `main`)
+- 서비스 주소: https://dvtarocard.vercel.app (main push 시 Vercel 자동 배포)
 - 로컬 경로: `C:\Users\seleo\Documents\DV_TARO`
 - 형태: 모바일 웹앱 (PWA 홈 화면 설치)
 - 기술 스택: Next.js 16 + TypeScript + Tailwind 4, Supabase(Auth + Postgres RLS), Vercel
@@ -18,13 +19,27 @@
 - 테스트 143개: PGlite로 실제 마이그레이션·RLS 검증, 외부 API는 기록된 실제 응답으로 모의. `npm run test:live`는 점봄 API 실호출
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
+## 현재 상태 (2026-10-23)
+- **배포 완료**: https://dvtarocard.vercel.app (Vercel 프로젝트 `dvtarocard`). Supabase 프로젝트 URL `https://umkqgreogwujvsrjngqv.supabase.co` (공개 값)
+- **해결됨**: 회원가입 "계정을 만들지 못했습니다. 잠시 후 다시 시도해 주세요." 오류
+  - 원인: Vercel 환경변수 `NEXT_PUBLIC_SUPABASE_URL`·`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`가 Type=Secret으로 저장돼 있었음 (Vercel이 공개 접두사 경고 표시)
+  - 조치: 두 값을 지우고 Type=Config로 다시 만든 뒤 Redeploy → 가입·로그인 정상 동작을 사용자가 확인 (`docs/OPERATIONS.md` 5단계·문제 해결)
+  - e6c86a6: 가입 실패 시 Supabase 오류 status/code/message를 서버 로그에 남김 → 재발 시 Vercel Logs에서 `[auth-admin createUser]`, `[signup createUser]` 검색
+- 1ea80a2: `npm run typecheck` = `next typegen && tsc --noEmit` (새 체크아웃에서 `.next` 타입 누락 해결)
+- `npm audit` high 5건은 eslint-config-next 하위 개발 의존성(micromatch/fast-glob)이라 배포물과 무관. `audit fix --force`는 하지 않음
+
 ## 다음 단계
-1. `docs/OPERATIONS.md` 순서대로 Supabase 프로젝트 생성 → 마이그레이션 → Vercel 배포
-2. PC·Android·iOS에서 웹 주소 접속·가입·로그인 확인 (확인되면 본격 개발 시작)
-3. 대표 캐릭터 이미지 받기 → `public/character/` + `src/config/brand.ts`
-4. Claude API 키 연결 (`AI_PROVIDER=anthropic`)
+**1차 완성 기준** (2026-10-23 사용자 결정): 아래 1 + 로그인·회원가입 UI 개선(`claude/youthful-shamir-aa9bf7`)과 대표 캐릭터 반영(`claude/lucid-solomon-5113d2`)이 main에 들어간 시점. 그전까지는 원래 폴더에서 main 직접 작업 허용 (CLAUDE.md "병렬 작업" 예외). 사용자가 1차 완성을 확인하면 CLAUDE.md에서 예외를 지운다.
+
+1. Android·iOS에서 접속·가입·로그인 확인 (`docs/OPERATIONS.md` 6단계)
+2. 본격 개발 범위 결정
+   - 대표 캐릭터 이미지 반영 → `public/character/` + `src/config/brand.ts`
+   - PWA 오프라인 지원(서비스워커)
+   - Claude API 연결 (`AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY`)
+   - 비밀번호 재설정·이메일 소유 확인
 
 ## 미해결 사항
-- 실제 Supabase·Vercel·Claude API 연동은 아직 확인하지 않음 (`docs/LIMITATIONS.md`)
+- 실제 Supabase 첫 실행에서 확인할 것: `postgres` 역할의 `set local role authenticated` 허용 여부, Auth 관리자 API 오류 코드 처리, `proxy.ts` 세션 쿠키 갱신 (`docs/LIMITATIONS.md`)
+- Vercel Cron 실제 실행, Claude API 실제 호출은 아직 확인하지 않음
 - PWA 오프라인 지원(서비스워커) 미구현 — 본격 개발 때 추가 예정
 - 비밀번호 재설정, 이메일 소유 확인 없음
