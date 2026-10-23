@@ -68,7 +68,13 @@ STATES = {
     "reveal": {"frames": 40, "fps": 20, "loop": False},
     "celebrate": {"frames": 40, "fps": 20, "loop": False},
     "yawn": {"frames": 36, "fps": 18, "loop": False},
+    # 의상별 대표 동작
+    "read": {"frames": 44, "fps": 20, "loop": False},
+    "draw": {"frames": 44, "fps": 20, "loop": False},
+    "stargaze": {"frames": 44, "fps": 20, "loop": False},
 }
+# 의상(기본 외)마다 렌더하는 동작: 바탕 idle + 터치 반응 + 대표 동작
+OUTFIT_STATES = ["idle", "wave", "nod", "surprised"]
 
 
 def srgb_to_linear(c):
@@ -126,6 +132,17 @@ def mats():
         "mouth_in": material("MouthIn", PALETTE["mouth_in"], 0.5),
         "card": material("Card", PALETTE["card"], 0.4),
         "confetti": [material(f"Confetti{i}", c, 0.4, emit=0.6) for i, c in enumerate(CONFETTI_COLORS)],
+        # 의상·소품
+        "gat": material("Gat", (0.13, 0.12, 0.15), 0.35),
+        "glasses": material("Glasses", (0.55, 0.38, 0.22), 0.3, metal=0.5),
+        "book": material("Book", (0.70, 0.22, 0.25), 0.55),
+        "page": material("Page", (0.98, 0.95, 0.86), 0.7),
+        "wizard": material("Wizard", (0.40, 0.27, 0.70), 0.5),
+        "wizard_dark": material("WizardDark", (0.24, 0.16, 0.45), 0.5),
+        "navy": material("Navy", (0.17, 0.22, 0.42), 0.6),
+        "scarf": material("Scarf", (0.98, 0.78, 0.32), 0.7),
+        "brass": material("Brass", (0.80, 0.62, 0.30), 0.3, metal=0.7),
+        "lens": material("Lens", (0.55, 0.75, 0.95), 0.1, emit=0.4),
     }
 
 
@@ -179,6 +196,27 @@ def torus(name, parent, loc, major, minor, mat, rot=(0, 0, 0)):
     o.location = loc
     o.rotation_euler = rot
     o.data.materials.append(mat)
+    return o
+
+
+def cylinder(name, parent, loc, radius, depth, mat, rot=(0, 0, 0), r2=None, bevel=0.0):
+    """r2 를 주면 원뿔대(위 반지름 r2)"""
+    if r2 is None:
+        bpy.ops.mesh.primitive_cylinder_add(vertices=64, radius=radius, depth=depth, location=(0, 0, 0))
+    else:
+        bpy.ops.mesh.primitive_cone_add(vertices=64, radius1=radius, radius2=r2, depth=depth, location=(0, 0, 0))
+    o = bpy.context.active_object
+    o.name = name
+    o.parent = parent
+    o.location = loc
+    o.rotation_euler = rot
+    o.data.materials.append(mat)
+    if bevel:
+        m = o.modifiers.new("Bevel", "BEVEL")
+        m.width = bevel
+        m.segments = 4
+        m.limit_method = "ANGLE"
+    bpy.ops.object.shade_smooth()
     return o
 
 
@@ -398,9 +436,139 @@ def build():
         o = rounded_box(f"Confetti{i}", root, (0, 0, 0), (0.05, 0.012, 0.03), M["confetti"][i % len(CONFETTI_COLORS)], bevel=0.004)
         a = rnd.uniform(0, 2 * math.pi)
         speed = rnd.uniform(1.0, 1.9)
-        pieces.append({"o": o, "v": Vector((math.cos(a) * speed * 0.55, -abs(math.sin(a)) * 0.35 - 0.15, rnd.uniform(2.2, 3.2))), "spin": rnd.uniform(4, 9), "axis": rnd.choice("XYZ")})
+        pieces.append({"o": o, "v": Vector((math.cos(a) * speed * 0.36, -abs(math.sin(a)) * 0.35 - 0.15, rnd.uniform(1.9, 2.6))), "spin": rnd.uniform(4, 9), "axis": rnd.choice("XYZ")})
     rig["confetti"] = pieces
+    build_outfits(rig, M)
     return rig
+
+
+# ── 의상 (장면별 복이) ─────────────────────────────────
+# 의상마다: 머리·몸 장식(그룹 empty 아래), 오른손에 드는 소품(손 위치를 따라가는 world 오브젝트), 휴식 자세 팔 보정, 대표 동작
+OUTFITS = {
+    "default": {"base": {}, "sprout_up": 0.0},
+    "saju": {"base": {"rf": 34, "ro": -16}, "sprout_up": 0.06, "signature": "read"},  # 갓·동그란 안경, 사주책
+    "tarot": {"base": {"rf": 34, "ro": -16}, "sprout_up": 0.2, "signature": "draw"},  # 마법사 모자·망토, 타로 카드
+    "star": {"base": {"rf": 30, "ro": -12}, "sprout_up": 0.04, "signature": "stargaze"},  # 베레모·목도리, 망원경
+}
+
+
+def build_outfits(rig, M):
+    head, hips = rig["head"], rig["hips"]
+    groups = {}
+
+    # 사주 복이: 갓(챙 + 둥근 대우), 동그란 안경. 소품: 사주책(펼침·책장 넘김)
+    g = groups["saju"] = {"wear": empty("Wear.saju", head), "held": empty("Held.saju", None)}
+    cylinder("GatBrim", g["wear"], (0, 0.02, 1.05), 0.62, 0.022, M["gat"], rot=(math.radians(-4), 0, 0), bevel=0.004)
+    cylinder("GatCrown", g["wear"], (0, 0.02, 1.17), 0.2, 0.24, M["gat"], r2=0.17, bevel=0.02)
+    torus("GatBand", g["wear"], (0, 0.02, 1.08), 0.2, 0.012, M["gat"])
+    for s in (-1, 1):
+        p, r = head_surface(s * 0.21, 0.53, 0.035)
+        torus("Lens", g["wear"], tuple(p), 0.105, 0.011, M["glasses"], rot=(r.x + math.pi / 2, r.y, r.z))
+    tube("Bridge", g["wear"], [(-0.11, -0.6, 0.56), (0, -0.62, 0.58), (0.11, -0.6, 0.56)], 0.009, M["glasses"])
+    book = g["held"]
+    for s in (-1, 1):  # 펼친 책 (양쪽 표지 + 종이). 펼침 정도는 "p1" 채널로 회전
+        half = empty(f"BookHalf.{s}", book, (0, 0, 0))
+        rounded_box("Cover", half, (s * 0.11, 0, 0), (0.22, 0.02, 0.3), M["book"], bevel=0.008)
+        rounded_box("Pages", half, (s * 0.105, -0.018, 0), (0.2, 0.02, 0.28), M["page"], bevel=0.004)
+        rig[f"book_half{s}"] = half
+    page = empty("PageHinge", book, (0, -0.03, 0))
+    rounded_box("TurnPage", page, (0.1, 0, 0), (0.2, 0.004, 0.27), M["page"], bevel=0.002)
+    rig["book_page"] = page
+    rounded_box("Label", rig["book_half1"], (0.11, 0.012, 0.05), (0.08, 0.006, 0.12), M["page"], bevel=0.002)
+
+    # 타로 복이: 마법사 모자(새싹이 꼭대기로 나옴) + 망토. 소품: 타로 카드 세 장 부채
+    g = groups["tarot"] = {"wear": empty("Wear.tarot", head), "held": empty("Held.tarot", None)}
+    hat = empty("Hat", g["wear"], (0, 0.02, 1.02), (math.radians(-6), math.radians(8), 0))
+    cylinder("HatBrim", hat, (0, 0, 0), 0.6, 0.03, M["wizard_dark"], bevel=0.012)
+    cylinder("HatCone", hat, (0, 0, 0.26), 0.36, 0.52, M["wizard"], r2=0.06, bevel=0.01)
+    torus("HatBand", hat, (0, 0, 0.06), 0.33, 0.025, M["gold"])
+    for i, (x, z) in enumerate([(-0.15, 0.22), (0.12, 0.34), (-0.05, 0.42)]):
+        star(f"HatStar{i}", hat, (x, -0.3 + z * 0.55, z), 0.05 - i * 0.008, 0.012, M["gold"], rot=(math.radians(-30), 0, 0))
+    cape_w = empty("Wear.tarot.body", hips)
+    g["wear_body"] = cape_w
+    ellipsoid("Cape", cape_w, (0, 0.17, 0.3), (0.47, 0.25, 0.46), M["wizard"])
+    torus("CapeCollar", cape_w, (0, 0, 0.66), 0.3, 0.045, M["gold"], rot=(math.radians(-8), 0, 0))
+    fan = g["held"]
+    for i, ang in enumerate((-18, 0, 18)):
+        c = empty(f"FanCard{i}", fan, (0, -i * 0.006, 0), (0, math.radians(ang), 0))
+        rounded_box("TCard", c, (0, 0, 0.13), (0.15, 0.012, 0.23), M["card"], bevel=0.01)
+        rounded_box("TEdge", c, (0, -0.008, 0.13), (0.12, 0.003, 0.19), M["gold"], bevel=0.002)
+        star("TStar", c, (0, -0.012, 0.13), 0.035, 0.008, M["glow"])
+        if i == 1:
+            rig["fan_mid"] = c
+
+    # 별자리 복이: 베레모 + 별 핀, 노란 목도리. 소품: 망원경
+    g = groups["star"] = {"wear": empty("Wear.star", head), "held": empty("Held.star", None)}
+    ellipsoid("Beret", g["wear"], (0.06, 0.02, 1.0), (0.5, 0.47, 0.14), M["navy"], rot=(0, math.radians(14), 0))
+    ellipsoid("BeretNub", g["wear"], (0.1, 0.02, 1.13), (0.05, 0.05, 0.04), M["navy"])
+    star("BeretPin", g["wear"], (0.3, -0.36, 0.96), 0.06, 0.015, M["gold"], rot=(math.radians(-25), 0, math.radians(-25)))
+    scarf_w = empty("Wear.star.body", hips)
+    g["wear_body"] = scarf_w
+    torus("Scarf", scarf_w, (0, -0.01, 0.64), 0.3, 0.07, M["scarf"], rot=(math.radians(-6), 0, 0))
+    ellipsoid("ScarfTail", scarf_w, (0.16, -0.32, 0.46), (0.08, 0.04, 0.16), M["scarf"], rot=(math.radians(-10), math.radians(-15), 0))
+    scope = g["held"]  # 망원경 축은 -Y(앞)
+    cylinder("Tube1", scope, (0, -0.1, 0), 0.055, 0.3, M["navy"], rot=(math.pi / 2, 0, 0), bevel=0.01)
+    cylinder("Tube2", scope, (0, -0.31, 0), 0.07, 0.14, M["brass"], rot=(math.pi / 2, 0, 0), bevel=0.01)
+    cylinder("Eyepiece", scope, (0, 0.08, 0), 0.035, 0.08, M["brass"], rot=(math.pi / 2, 0, 0), bevel=0.006)
+    cylinder("Lens", scope, (0, -0.385, 0), 0.06, 0.01, M["lens"], rot=(math.pi / 2, 0, 0))
+    rig["sky_stars"] = [star(f"Sky{i}", None, (0, 0, 0), 0.07 - i * 0.012, 0.015, M["glow"]) for i in range(3)]
+    rig["outfit_groups"] = groups
+
+
+def set_outfit(rig, name):
+    rig["outfit"] = name
+    for key, g in rig["outfit_groups"].items():
+        hidden = key != name
+        for root_obj in g.values():
+            for ob in [root_obj, *root_obj.children_recursive]:
+                ob.hide_render = ob.hide_viewport = hidden
+    for s in rig["sky_stars"]:
+        s.hide_render = s.hide_viewport = name != "star"
+    rig["sprout"].location = (0, -0.03, 1.08 + OUTFITS[name]["sprout_up"])
+
+
+def place_held(rig, c):
+    """의상 소품을 오른손 위치에 둔다. c: 채널 값 (p1·p2 = 의상별 소품 동작)"""
+    name = rig["outfit"]
+    if name == "default":
+        return
+    bpy.context.view_layer.update()
+    hand = rig["hand1"].matrix_world.translation
+    yaw = math.radians(rig["facing"])
+    held = rig["outfit_groups"][name]["held"]
+    p1, p2 = c.get("p1", 0.0), c.get("p2", 0.0)
+    if name == "saju":
+        # 덮었을 때는 표지가 카메라를 보게 옆으로 돌려 들고, 펼치면 정면으로
+        held.location = hand + Vector((0, -0.14, 0.12))
+        held.scale = (1.5, 1.5, 1.5)
+        held.rotation_euler = (math.radians(-10 + 25 * p1), 0, math.radians(-80) * (1 - p1))
+        opened = math.radians(88 - 73 * p1)  # 덮음 88° → 펼침 15°
+        rig["book_half-1"].rotation_euler = (0, 0, opened)
+        rig["book_half1"].rotation_euler = (0, 0, -opened)
+        rig["book_page"].rotation_euler = (0, 0, -opened + math.pi * p2)
+        rig["book_page"].scale = (1, 1, 1) if p1 > 0.3 else (0, 0, 0)
+    elif name == "tarot":
+        held.location = hand + Vector((0, -0.12, 0.06))
+        held.rotation_euler = (math.radians(-8), 0, yaw * 0.3)
+        rig["fan_mid"].location = (0, -0.006, 0.18 * p1)
+    elif name == "star":
+        pitch = math.radians(55 - 95 * p1)  # 아래로 들고 있다가(55°) 하늘로(-40°)
+        held.location = hand + Vector((0, -0.08, 0.04 + 0.1 * p1))
+        held.rotation_euler = (pitch, 0, yaw + math.radians(25) * p1)
+        for i, s in enumerate(rig["sky_stars"]):
+            k = max(0.0, min(1.0, p2 * 3 - i)) * (0.8 + 0.2 * math.sin(i * 2.1 + p2 * 9))
+            s.scale = (k, k, k)
+            s.location = Vector((0.55 + i * 0.17, -0.6, 2.05 + 0.15 * ((i * 7) % 3)))
+
+
+def outfit_rest_arms(rig):
+    """의상별 휴식 자세 팔 보정 (소품을 몸 앞에 든다)"""
+    b = OUTFITS[rig["outfit"]]["base"]
+    if not b:
+        return
+    r = rig["arm1"].rotation_euler
+    r.x -= math.radians(b.get("rf", 0))
+    r.y -= math.radians(b.get("ro", 0))
 
 
 # ── 다리 IK ──────────────────────────────────────────
@@ -471,6 +639,7 @@ CHANNELS = [
     "sproutx", "sprouty", "bagx", "bagy",
     "lfoot", "rfoot",  # 발 들기(m)
     "card", "blink", "lookx", "lookz", "confetti", "mouth",
+    "p1", "p2",  # 의상 소품 동작 (책 펼침·책장, 카드 뽑기, 망원경 조준·별)
 ]
 
 
@@ -610,10 +779,47 @@ CLIPS = {
         (0.9, {"blink": 1.0}, "neutral"),
         (1.0, {}, "neutral"),
     ],
+    # ── 의상 대표 동작 (팔 값은 의상 휴식 자세 기준 추가량) ──
+    "read": [  # 사주책을 펼쳐 읽고, 책장을 넘기고, 끄덕
+        (0.0, {}, "neutral"),
+        (0.15, {"rf": 30, "ro": -10, "p1": 0.6, "headx": 8, "lookz": -0.012}, "neutral"),
+        (0.3, {"rf": 38, "ro": -14, "p1": 1.0, "headx": 12, "lookz": -0.016, "lf": 28, "lo": -12}, "neutral"),
+        (0.5, {"rf": 38, "ro": -14, "p1": 1.0, "p2": 1.0, "headx": 12, "lookz": -0.016, "lf": 34, "lo": -14, "sproutx": -6}, "neutral"),
+        (0.62, {"rf": 38, "ro": -14, "p1": 1.0, "p2": 1.0, "headx": 2, "lf": 20, "lo": -8, "sproutx": 6}, "happy"),
+        (0.72, {"rf": 36, "ro": -14, "p1": 1.0, "p2": 1.0, "headx": 14, "sproutx": -6}, "happy"),
+        (0.84, {"rf": 18, "ro": -6, "p1": 0.25, "p2": 1.0, "headx": 4}, "neutral"),
+        (1.0, {}, "neutral"),
+    ],
+    "draw": [  # 카드 부채에서 한 장을 뽑아 높이 보여 줌
+        (0.0, {}, "neutral"),
+        (0.15, {"rf": 25, "ro": -8, "headx": 8, "lookx": 0.01, "lookz": -0.01}, "neutral"),
+        (0.3, {"rf": 25, "ro": -8, "p1": 1.0, "lf": 35, "lo": -15, "headx": 6, "sproutx": -5}, "neutral"),
+        (0.42, {"rf": 12, "ro": -4, "lf": 40, "lo": 20, "card": 1.0}, "happy"),
+        (0.6, {"lf": 40, "lo": 112, "card": 1.05, "hz": 0.02, "hrx": -3, "headx": -8, "headz": -5, "sproutx": 6}, "happy"),
+        (0.75, {"lf": 40, "lo": 108, "card": 1.0, "headx": -5, "headz": -4, "sproutx": -3}, "happy"),
+        (0.88, {"lf": 22, "lo": -4, "card": 0.0, "headz": 3}, "neutral"),
+        (1.0, {}, "neutral"),
+    ],
+    "stargaze": [  # 망원경으로 하늘을 보면 별이 반짝
+        (0.0, {}, "neutral"),
+        (0.2, {"rf": 60, "ro": 2, "p1": 0.55, "headx": -6, "lookz": 0.01}, "neutral"),
+        (0.35, {"rf": 88, "ro": 6, "p1": 1.0, "headx": -14, "headz": -8, "hrx": -4, "lookx": 0.012, "lookz": 0.02, "sproutx": 8}, "neutral"),
+        (0.55, {"rf": 88, "ro": 6, "p1": 1.0, "p2": 1.0, "headx": -14, "headz": -8, "hrx": -4, "lookx": 0.012, "lookz": 0.02}, "happy"),
+        (0.72, {"rf": 86, "ro": 6, "p1": 1.0, "p2": 1.0, "headx": -12, "headz": -6, "hz": 0.02, "sproutx": -6}, "happy"),
+        (0.86, {"rf": 26, "ro": 0, "p1": 0.2, "p2": 0.5, "headx": -4}, "happy"),
+        (1.0, {}, "neutral"),
+    ],
 }
 
 
 def pose(rig, state, f, n):
+    pose_body(rig, state, f, n)
+    if state not in CLIPS:
+        outfit_rest_arms(rig)
+        place_held(rig, {})
+
+
+def pose_body(rig, state, f, n):
     tau = 2 * math.pi
     p = f / n  # 반복 동작용 (0..1, 마지막 다음 = 처음)
     rest(rig)
@@ -622,7 +828,11 @@ def pose(rig, state, f, n):
     if state in CLIPS:
         t = f / (n - 1)  # 한 번 재생: 첫 프레임 0, 마지막 프레임 1 (둘 다 휴식 자세)
         c, expr = sample(CLIPS[state], t)
+        base = OUTFITS[rig["outfit"]]["base"]
+        c["rf"] += base.get("rf", 0)
+        c["ro"] += base.get("ro", 0)
         apply_channels(rig, c, expr)
+        place_held(rig, c)
         if state == "reveal":
             for i, s in enumerate(rig["card_sparks"]):
                 k = 0.6 + 0.4 * math.sin(tau * (2 * t + i / 3))
@@ -783,12 +993,14 @@ def main():
     ap.add_argument("--engine", default="eevee")
     ap.add_argument("--save", default="")
     ap.add_argument("--only-frame", type=int, default=-1)
+    ap.add_argument("--outfits", default="default,saju,tarot,star")
     a = ap.parse_args(argv)
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
     rig = build()
     sc = setup_scene(a.res, a.engine)
     rig["facing"] = FACING_DEG
+    set_outfit(rig, "default")
 
     if a.stills:
         os.makedirs(a.stills, exist_ok=True)
@@ -800,11 +1012,29 @@ def main():
         for st, fr in (("happy", 5), ("surprised", 7), ("reveal", 22), ("celebrate", 30)):
             pose(rig, st, fr, STATES[st]["frames"])
             render_frame(sc, os.path.abspath(os.path.join(a.stills, f"expression-{st}.png")))
+        for name in ("saju", "tarot", "star"):
+            set_outfit(rig, name)
+            pose(rig, "idle", 0, STATES["idle"]["frames"])
+            render_frame(sc, os.path.abspath(os.path.join(a.stills, f"outfit-{name}.png")))
+            sig = OUTFITS[name]["signature"]
+            pose(rig, sig, int(STATES[sig]["frames"] * 0.6), STATES[sig]["frames"])
+            render_frame(sc, os.path.abspath(os.path.join(a.stills, f"outfit-{name}-{sig}.png")))
+        set_outfit(rig, "default")
 
-    names = list(STATES) if a.states == "all" else [s for s in a.states.split(",") if s in STATES]
-    for st in names:
+    jobs = []  # (의상, 동작, 출력 이름)
+    for outfit in [o for o in a.outfits.split(",") if o in OUTFITS]:
+        allowed = [s for s in STATES if s not in ("read", "draw", "stargaze")] if outfit == "default" else OUTFIT_STATES + [OUTFITS[outfit]["signature"]]
+        wanted = allowed if a.states == "all" else [s for s in a.states.split(",") if s in allowed]
+        jobs += [(outfit, st, st if outfit == "default" else f"{outfit}-{st}") for st in wanted]
+    manifest_path = os.path.abspath(os.path.join(a.out, "manifest.json"))
+    import json
+
+    manifest = json.load(open(manifest_path, encoding="utf-8")) if os.path.exists(manifest_path) else {}
+    for outfit, st, name in jobs:
+        set_outfit(rig, outfit)
         n = STATES[st]["frames"]
-        out = os.path.abspath(os.path.join(a.out, st))
+        manifest[name] = {"outfit": outfit, "state": st, "frames": n, "fps": STATES[st]["fps"], "loop": STATES[st]["loop"]}
+        out = os.path.abspath(os.path.join(a.out, name))
         os.makedirs(out, exist_ok=True)
         for old in os.listdir(out):  # 프레임 수가 줄었을 때 남은 파일 제거
             if old.endswith(".png"):
@@ -813,7 +1043,11 @@ def main():
         for f in frames:
             pose(rig, st, f, n)
             render_frame(sc, os.path.join(out, f"{f:04d}.png"))
-        print(f"[mascot] {st}: {len(list(frames))} frames -> {out}")
+        print(f"[mascot] {name}: {len(list(frames))} frames -> {out}")
+    os.makedirs(os.path.dirname(manifest_path), exist_ok=True)
+    with open(manifest_path, "w", encoding="utf-8") as fp:
+        json.dump(manifest, fp, ensure_ascii=False, indent=1)
+    set_outfit(rig, "default")
 
     if a.save:
         n = STATES["walk"]["frames"]

@@ -49,7 +49,8 @@ export function introFor(scene: Scene, mood?: Mood | null): MascotState | null {
   if (mood === "good") return "reveal";
   if (mood) return "nod";
   if (scene === "default") return "wave";
-  if (scene === "happy" || scene === "star") return "reveal";
+  // 의상 장면(사주·타로·별자리)은 대표 동작(책 읽기·카드 뽑기·별 보기)으로 시작 → resolveSheet 가 바꿔 준다
+  if (scene === "happy" || scene === "star" || scene === "saju" || scene === "tarot") return "reveal";
   return null;
 }
 
@@ -79,6 +80,33 @@ export function idleReactionFor(idleMs: number, rand: Rand): MascotState | null 
     ],
     rand,
   );
+}
+
+// ── 의상 (장면별 복이) ──
+export type Outfit = "default" | "saju" | "tarot" | "star";
+
+/** 화면 장면 → 의상. 사주는 갓·안경·사주책, 타로는 마법사 모자·망토·카드, 별자리는 베레모·목도리·망원경 */
+export function outfitFor(scene: Scene): Outfit {
+  if (scene === "saju" || scene === "tarot" || scene === "star") return scene;
+  return "default";
+}
+
+/** 의상별 대표 동작 (기본 의상의 reveal·celebrate 자리에 쓴다) */
+export const SIGNATURE: Record<Exclude<Outfit, "default">, string> = { saju: "read", tarot: "draw", star: "stargaze" };
+
+/**
+ * (의상, 기본 의상 기준 동작 이름) → 실제 시트 이름.
+ * 의상 시트에 없는 동작은 가장 가까운 것으로 바꾼다: 결과 소개·축하 → 대표 동작, 하품 → 끄덕, 나머지 바탕 동작 → idle.
+ * available: 존재하는 시트 이름 목록 (MASCOT_SHEETS 의 키)
+ */
+export function resolveSheet(outfit: Outfit, state: string, available: ReadonlySet<string>): string {
+  if (outfit === "default") return available.has(state) ? state : "idle";
+  const direct = `${outfit}-${state}`;
+  if (available.has(direct)) return direct;
+  const sig = `${outfit}-${SIGNATURE[outfit]}`;
+  if ((state === "reveal" || state === "celebrate") && available.has(sig)) return sig;
+  if (state === "yawn" && available.has(`${outfit}-nod`)) return `${outfit}-nod`;
+  return available.has(`${outfit}-idle`) ? `${outfit}-idle` : "idle";
 }
 
 /** 다음 대기 동작까지 기다릴 시간 (9~16초) */

@@ -28,17 +28,58 @@ const EXPRESSION_LABEL: Record<Expression, string> = {
   sleepy: "하품",
 };
 
+/** 크기 시안: 캐릭터 확대 배율 (src/config/brand.ts 의 mascotZoom) */
+const ZOOMS = [
+  { id: "A", zoom: 1, label: "A · 지금 크기" },
+  { id: "B", zoom: 1.15, label: "B · 115%" },
+  { id: "C", zoom: 1.3, label: "C · 130%" },
+  { id: "D", zoom: 1.45, label: "D · 145%" },
+] as const;
+
+const OUTFIT_LABEL = { saju: "사주 복이 · 갓·안경·사주책", tarot: "타로 복이 · 마법사 모자·망토·카드", star: "별자리 복이 · 베레모·목도리·망원경" } as const;
+
 const chip = (on: boolean) => `rounded-full px-3 py-1.5 text-[13px] font-semibold transition ${on ? "bg-white text-[#2a2440]" : "bg-white/10 text-ink-2"}`;
 
 export function CharacterLab() {
   const [scene, setScene] = useState<Scene>("default");
   const [mood, setMood] = useState<Mood | null>(null);
+  const [zoomId, setZoomId] = useState<(typeof ZOOMS)[number]["id"]>("A");
+  const zoom = ZOOMS.find((z) => z.id === zoomId)!.zoom;
 
   return (
     <div className="flex flex-col gap-4 pb-10">
+      <section id="size">
+        <h2 className="mb-2 px-1 text-sm font-semibold text-ink-2">크기 시안 · 로그인 화면 기준</h2>
+        <div className="mb-2 flex flex-wrap gap-2">
+          {ZOOMS.map((z) => (
+            <button key={z.id} type="button" className={chip(zoomId === z.id)} onClick={() => setZoomId(z.id)}>
+              {z.label}
+            </button>
+          ))}
+        </div>
+        <div className="glass rounded-[28px] px-5 pb-6 pt-8 text-center">
+          <p className="text-[17px] text-ink-2">우리끼리 보는 운세</p>
+          <h3 className="text-gradient mt-1 text-[38px] font-extrabold">운세 노트</h3>
+          <CharacterStage key={zoomId} size={200} zoom={zoom} className="my-3" />
+          <div className="mx-auto h-11 w-full rounded-2xl bg-white/10" />
+        </div>
+      </section>
+
+      <section id="outfits">
+        <h2 className="mb-2 px-1 text-sm font-semibold text-ink-2">의상별 복이 · 톡 누르면 반응</h2>
+        <div className="grid grid-cols-1 gap-2.5">
+          {(["saju", "tarot", "star"] as const).map((o) => (
+            <Card key={o} className="flex flex-col items-center !p-3">
+              <CharacterStage pose={o} size={220} zoom={zoom} orbs={false} />
+              <p className="pt-1 text-xs text-ink-2">{OUTFIT_LABEL[o]}</p>
+            </Card>
+          ))}
+        </div>
+      </section>
+
       <Card className="flex flex-col items-center">
         <p className="text-xs text-ink-2">캐릭터를 톡 눌러 보세요 · 다섯 번 연타하면 어지러워해요</p>
-        <CharacterStage key={`${scene}-${mood}`} pose={scene} mood={mood} size={280} orbs={false} className="my-3" />
+        <CharacterStage key={`${scene}-${mood}-${zoomId}`} pose={scene} mood={mood} size={280} zoom={zoom} orbs={false} className="my-3" />
         <div className="flex flex-wrap justify-center gap-2">
           {SCENES.map((s) => (
             <button key={s} type="button" className={chip(scene === s && !mood)} onClick={() => (setScene(s), setMood(null))}>
@@ -61,7 +102,7 @@ export function CharacterLab() {
         <div className="grid grid-cols-2 gap-2.5">
           {(Object.keys(MASCOT_SHEETS) as MascotState[]).map((st) => (
             <Card key={st} className="flex flex-col items-center !p-2">
-              <FortuneMascot state={st} size={150} loop />
+              <FortuneMascot state={st} size={150} zoom={zoom} loop />
               <p className="pb-1 text-xs text-ink-2">
                 {st} · {MASCOT_SHEETS[st].frames}프레임 {MASCOT_SHEETS[st].fps}fps · {Math.round(MASCOT_SHEETS[st].bytes / 1024)}KB
               </p>
