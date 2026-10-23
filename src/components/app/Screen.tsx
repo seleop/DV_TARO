@@ -147,3 +147,29 @@ export function Pager({ labels, children, className = "" }: { labels: string[]; 
     </div>
   );
 }
+
+/** 카드 안의 목록·표를 몇 개씩 끊어 보여 준다 (‹ 1/3 ›). 좌우로 넘기는 Pager 안에서도 쓸 수 있다. */
+export function Paged<T>({ items, per, children, empty = "데이터 없음" }: { items: T[]; per: number; children: (slice: T[]) => ReactNode; empty?: ReactNode }) {
+  const [page, setPage] = useState(0);
+  const pages = Math.max(1, Math.ceil(items.length / per));
+  const cur = Math.min(page, pages - 1);
+  if (!items.length) return <p className="text-sm text-ink-2">{empty}</p>;
+  return (
+    <>
+      {children(items.slice(cur * per, (cur + 1) * per))}
+      {pages > 1 && (
+        <div className="mt-2 flex items-center justify-center gap-3 text-sm text-ink-2">
+          <button type="button" onClick={() => setPage(cur - 1)} disabled={cur === 0} aria-label="이전 쪽" className="h-9 w-9 rounded-full text-xl disabled:opacity-30">
+            ‹
+          </button>
+          <span className="tabular-nums">
+            {cur + 1} / {pages}
+          </span>
+          <button type="button" onClick={() => setPage(cur + 1)} disabled={cur === pages - 1} aria-label="다음 쪽" className="h-9 w-9 rounded-full text-xl disabled:opacity-30">
+            ›
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
