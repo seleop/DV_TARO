@@ -29,6 +29,8 @@
 - `npm audit` high 5건은 eslint-config-next 하위 개발 의존성(micromatch/fast-glob)이라 배포물과 무관. `audit fix --force`는 하지 않음
 
 ## 다음 단계
+**1차 완성 기준** (2026-10-23 사용자 결정): 아래 1 + 로그인·회원가입 UI 개선(`claude/youthful-shamir-aa9bf7`)과 대표 캐릭터 반영(`claude/lucid-solomon-5113d2`)이 main에 들어간 시점. 그전까지는 원래 폴더에서 main 직접 작업 허용 (CLAUDE.md "병렬 작업" 예외). 사용자가 1차 완성을 확인하면 CLAUDE.md에서 예외를 지운다.
+
 1. Android·iOS에서 접속·가입·로그인 확인 (`docs/OPERATIONS.md` 6단계)
 2. 본격 개발 범위 결정
    - 대표 캐릭터 이미지 반영 → `public/character/` + `src/config/brand.ts`
