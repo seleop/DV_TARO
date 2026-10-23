@@ -37,6 +37,7 @@ export function MeClient({
   }
 
   async function logout() {
+    if (!confirm("로그아웃할까요?")) return;
     await api("/api/auth/logout", { method: "POST", body: {} }).catch(() => null);
     router.replace("/login");
     router.refresh();

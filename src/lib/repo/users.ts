@@ -104,7 +104,7 @@ export async function revokeInvitation(adminId: string, id: string) {
  */
 export async function signUp(
   admin: AuthAdmin,
-  input: { email: string; password: string; displayName: string; inviteCode?: string | null },
+  input: { email: string; password: string; displayName: string; inviteCode?: string | null; /** 동의한 개인정보 수집·이용 문구 버전 */ privacyVersion?: string | null },
 ): Promise<User> {
   const cfg = getConfig();
   const email = input.email.trim().toLowerCase();
@@ -138,7 +138,11 @@ export async function signUp(
   }
   try {
     await asService(async (q) => {
-      await q.query("insert into public.profiles (id, display_name, role) values ($1, $2, $3)", [userId, input.displayName, role]);
+      await q.query(
+        `insert into public.profiles (id, display_name, role, privacy_agreed_at, privacy_version)
+         values ($1, $2, $3, case when $4::text is null then null else now() end, $4)`,
+        [userId, input.displayName, role, input.privacyVersion ?? null],
+      );
       if (invite) await q.query("update public.invitations set used_by = $1 where id = $2", [userId, invite.id]);
     });
   } catch (e) {

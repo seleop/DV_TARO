@@ -20,6 +20,13 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
+- **로그인·회원가입 개선 완료(2026-10-23 main 반영)**: 브랜치 `claude/youthful-shamir-aa9bf7`
+  - `/login`·`/signup` 분리(요청 시점 렌더링, `SIGNUP_MODE`만 읽음 → 환경변수 없이도 빌드 통과). 화면은 `src/components/auth/*`
+  - 로그인 필요 시 `/login?next=<경로>` → 로그인 후 복귀 (`lib/auth/next-path.ts`, 같은 사이트 경로만). 경로는 `proxy.ts`가 `x-dv-path` 요청 헤더로 넘김
+  - 비밀번호 보기/숨기기, Caps Lock 경고, 엔터로 다음 칸, 실시간·칸별 오류(서버 issues/오류 코드 매핑), 중복 제출 방지, 320px 대응, 로그아웃 확인
+  - 가입 시 [필수] 개인정보 수집·이용 동의(`src/config/privacy.ts`) → `profiles.privacy_agreed_at`·`privacy_version` 기록 (마이그레이션 `20261023231500_privacy_consent.sql` — **운영 Supabase 적용 완료 2026-10-23**, 사용자가 SQL Editor에서 실행)
+  - 생년월일 필수: 내 사주가 없으면 MY·프로필·관리자 외 화면에서 `/me/profile?required=1`로 이동(`requirePageUser`). 가입 직후 `/me/profile?welcome=1` 환영 문구
+  - 비밀번호 재설정은 사용자 결정으로 제외(로그인 화면에 "운영자에게 문의" 안내)
 - **배포 완료**: https://dvtarocard.vercel.app (Vercel 프로젝트 `dvtarocard`). Supabase 프로젝트 URL `https://umkqgreogwujvsrjngqv.supabase.co` (공개 값)
 - **해결됨**: 회원가입 "계정을 만들지 못했습니다. 잠시 후 다시 시도해 주세요." 오류
   - 원인: Vercel 환경변수 `NEXT_PUBLIC_SUPABASE_URL`·`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`가 Type=Secret으로 저장돼 있었음 (Vercel이 공개 접두사 경고 표시)
@@ -37,6 +44,7 @@
 ## 다음 단계
 **1차 완성 기준** (2026-10-23 사용자 결정): 아래 1 + 로그인·회원가입 UI 개선(`claude/youthful-shamir-aa9bf7`)과 대표 캐릭터 반영(`claude/lucid-solomon-5113d2`)이 main에 들어간 시점. 그전까지는 원래 폴더에서 main 직접 작업 허용 (CLAUDE.md "병렬 작업" 예외). 사용자가 1차 완성을 확인하면 CLAUDE.md에서 예외를 지운다.
 
+0. 로그인·회원가입 개선 배포 후 확인: https://dvtarocard.vercel.app/signup 가입(동의 체크)·생년월일 입력 이동·`/login?next=` 복귀
 1. Android·iOS에서 접속·가입·로그인 확인 (`docs/OPERATIONS.md` 6단계)
 2. 본격 개발 범위 결정
    - 대표 캐릭터: 3D 마스코트 복이 반영됨 — 실기기 확인·추가 동작은 `docs/MASCOT.md` 11절
@@ -49,3 +57,5 @@
 - Vercel Cron 실제 실행, Claude API 실제 호출은 아직 확인하지 않음
 - PWA 오프라인 지원(서비스워커) 미구현 — 본격 개발 때 추가 예정
 - 비밀번호 재설정, 이메일 소유 확인 없음
+- 생년월일 필수 이동은 페이지의 `requirePageUser`와 `(app)/layout`에서 검사한다. `tarot/page.tsx`는 클라이언트 컴포넌트라 MY에서 하단 탭으로 타로에 들어가는 클라이언트 이동은 막지 못함(새로고침·직접 접속은 막힘)
+- 배경 별 효과(`globals.css`의 `.stars::after` 애니메이션)가 루트 컨테이너 폭을 넘겨(375px 화면에서 scrollWidth 570) 프로그램으로 스크롤하면 화면이 가로로 밀릴 수 있음. 손가락 조작에서는 재현 안 됨. globals.css 담당 세션에서 `overflow-x: clip` 등 검토

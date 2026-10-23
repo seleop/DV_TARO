@@ -27,6 +27,8 @@ GitHub(seleop/DV_TARO) ──자동 배포──▶ Vercel(앱 서버) ──▶
 1. 왼쪽 메뉴 **SQL Editor** → New query
 2. 저장소의 `supabase/migrations/20261023000000_init.sql` 내용을 전부 붙여 넣고 **Run**
 3. **Table Editor**에서 `profiles`, `invitations`, `saju_calculations`, `saju_engine_results`, `fortune_readings`, `usage_logs`, `admin_audit` 7개 테이블이 보이면 성공
+4. `supabase/migrations/` 의 나머지 파일도 **파일 이름 순서대로** 같은 방법으로 실행한다. 이미 운영 중인 DB에는 새로 추가된 파일만 실행한다.
+   - `20261023231500_privacy_consent.sql`: 가입 시 개인정보 동의 기록 칸(`profiles.privacy_agreed_at`, `privacy_version`). **이 파일을 실행하지 않고 새 코드를 배포하면 회원가입이 실패한다** → 배포(push) 전에 먼저 실행
 
 ## 3단계. 로그인(Auth) 설정
 
@@ -93,8 +95,8 @@ node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"
 
 | 순서 | 확인할 것 |
 |---|---|
-| 1 | PC 브라우저로 주소 접속 → 로그인 화면이 뜬다 |
-| 2 | **회원가입**: `ADMIN_EMAILS`에 넣은 이메일, 비밀번호, 비밀번호 확인, 닉네임 → 가입 후 프로필 설정 화면으로 이동 |
+| 1 | PC 브라우저로 주소 접속 → 로그인 화면(`/login`)이 뜬다 |
+| 2 | **회원가입**(`/signup`, 로그인 화면의 "회원가입" 링크): `ADMIN_EMAILS`에 넣은 이메일, 비밀번호, 비밀번호 확인, 닉네임, [필수] 개인정보 동의 → 가입 후 "시작하기"(생년월일 입력) 화면으로 이동. 생년월일을 넣기 전에는 MY·프로필·관리자 외 화면으로 가도 이 화면으로 돌아온다 |
 | 3 | 프로필에서 생년월일·시각 저장 → 오늘의 운세가 나온다 (AI는 모의 응답) |
 | 4 | MY 화면에 **관리자 화면** 메뉴가 보인다 |
 | 5 | **Android Chrome**: 같은 주소 접속 → 다른 계정으로 가입·로그인, 사주·타로·별자리 화면 확인 |
@@ -103,7 +105,8 @@ node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"
 
 ## 7단계. 운영 시작 후
 
-- 모두 가입했으면 `SIGNUP_MODE=closed`로 바꾸고 재배포 → 새 가입이 막힌다.
+- 가입 링크는 `https://dvtarocard.vercel.app/signup` 을 그대로 공유하면 된다.
+- 모두 가입했으면 `SIGNUP_MODE=closed`로 바꾸고 재배포 → 새 가입이 막힌다 (Vercel은 환경변수 변경을 새 배포부터 적용한다. 빌드를 다시 할 필요는 없어 Redeploy만 하면 된다).
 - 초대 코드 방식이 필요하면 `SIGNUP_MODE=invite` → 관리 화면 "사용자·초대"에서 코드를 만들어 전달한다 (또는 `npm run invite`).
 - Vercel Cron(`vercel.json`, 매일 03:00 KST)이 보존 기간 지난 사용량 로그·초대·감사 로그를 지운다.
 - Claude 연결: `AI_PROVIDER=anthropic`, `ANTHROPIC_API_KEY` 추가 후 재배포. 관리 화면 "사용량·비용"에서 토큰·추정 비용 확인. 월 예산 상한은 `BUDGET_MONTHLY_USD`.
