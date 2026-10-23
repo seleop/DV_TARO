@@ -60,3 +60,6 @@ assets/reference/
 assets/mascot/render/
 assets/mascot/preview/
 *.blend1
+
+# 세션별 개발 서버 설정 (포트가 세션마다 다름)
+.claude/launch.json

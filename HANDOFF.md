@@ -27,13 +27,19 @@
   - e6c86a6: 가입 실패 시 Supabase 오류 status/code/message를 서버 로그에 남김 → 재발 시 Vercel Logs에서 `[auth-admin createUser]`, `[signup createUser]` 검색
 - 1ea80a2: `npm run typecheck` = `next typegen && tsc --noEmit` (새 체크아웃에서 `.next` 타입 누락 해결)
 - `npm audit` high 5건은 eslint-config-next 하위 개발 의존성(micromatch/fast-glob)이라 배포물과 무관. `audit fix --force`는 하지 않음
+- **대표 캐릭터 반영 (main 반영, `claude/lucid-solomon-5113d2`)**: 3D 마스코트 "복이"(가칭)가 기본 캐릭터 (`docs/MASCOT.md`)
+  - Blender 5.2.3(포터블, `%LOCALAPPDATA%\Programs\Blender`)·FFmpeg(winget)로 `scripts/mascot/`에서 모델·idle/walk/happy/surprised 렌더 → `public/mascot/*.webp` 스프라이트 시트
+  - `FortuneMascot`(스프라이트 재생) + `CharacterStage`(말풍선·터치 반응·장면/결과→동작). 운세 대기=walk, 좋은 결과=happy, 터치=happy/surprised
+  - 오늘의 운세·별자리 AI 응답에 `mood`(great/good/calm/careful) 추가(이전 저장분 호환), 타로는 카드 방향으로 분위기 결정
+  - SVG 별토끼(장면별 소품)는 대체용으로 유지: `src/config/brand.ts` `renderer: "svg"`. 관리자 화면 → "캐릭터"에서 갤러리 확인
+  - 남은 일: Android·iOS 실기기 재생 확인, 이름 확정, reveal·celebrate 동작, 동작 줄이기 화면 확인
 
 ## 다음 단계
 **1차 완성 기준** (2026-10-23 사용자 결정): 아래 1 + 로그인·회원가입 UI 개선(`claude/youthful-shamir-aa9bf7`)과 대표 캐릭터 반영(`claude/lucid-solomon-5113d2`)이 main에 들어간 시점. 그전까지는 원래 폴더에서 main 직접 작업 허용 (CLAUDE.md "병렬 작업" 예외). 사용자가 1차 완성을 확인하면 CLAUDE.md에서 예외를 지운다.
 
 1. Android·iOS에서 접속·가입·로그인 확인 (`docs/OPERATIONS.md` 6단계)
 2. 본격 개발 범위 결정
-   - 대표 캐릭터 이미지 반영 → `public/character/` + `src/config/brand.ts`
+   - 대표 캐릭터: 3D 마스코트 복이 반영됨 — 실기기 확인·추가 동작은 `docs/MASCOT.md` 11절
    - PWA 오프라인 지원(서비스워커)
    - Claude API 연결 (`AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY`)
    - 비밀번호 재설정·이메일 소유 확인
