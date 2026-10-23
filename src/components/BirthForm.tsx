@@ -6,9 +6,9 @@ import { BRAND } from "@/config/brand";
 import { api, errorText } from "@/lib/client";
 import { josa } from "@/lib/josa";
 import { BIRTHPLACES } from "@/lib/saju/input";
-import { CharacterStage } from "./Character";
+import { FitCharacter } from "./app/Screen";
 import { SafeForm } from "./SafeForm";
-import { BottomActions, Button, Card, ErrorBox, Field, inputCls, TopBar } from "./ui";
+import { Button, Card, ErrorBox, Field, inputCls, TopBar } from "./ui";
 
 function Segmented<T extends string>({ value, onChange, options }: { value: T; onChange: (v: T) => void; options: Array<{ value: T; label: string }> }) {
   return (
@@ -54,7 +54,11 @@ export interface BirthInitial {
  * 출생 정보 입력 폼.
  * - mode="profile": 프로필 설정의 "내 출생 정보" (PUT /api/me/birth). 내 사주로 지정되어 오늘의 운세 등에 쓰인다.
  * - mode="other"  : 다른 사람(가족·친구)의 사주 (POST /api/saju)
+ * 스크롤 없이 쓰도록 세 단계(생년월일 → 시각·성별 → 고급 설정·저장)로 나눈다.
+ * 모든 칸은 폼 안에 남겨 두고 지금 단계만 보여 주므로 저장할 때 한 번에 읽는다.
  */
+const STEPS = ["생년월일", "시각·성별", "확인"] as const;
+
 export function BirthForm({ mode, initial, embedded }: { mode: "profile" | "other"; initial?: BirthInitial | null; embedded?: boolean }) {
   const router = useRouter();
   const makePrimary = mode === "profile";
@@ -64,12 +68,32 @@ export function BirthForm({ mode, initial, embedded }: { mode: "profile" | "othe
   const [timeKnown, setTimeKnown] = useState(initial ? initial.time !== null : true);
   const [correction, setCorrection] = useState<"none" | "lmt" | "tst">(initial?.settings.correction ?? "none");
   const [historical, setHistorical] = useState(initial?.settings.applyHistoricalOffset ?? true);
+  const [place, setPlace] = useState(initial?.birthplaceId ?? (initial?.customLongitude ? "custom" : "seoul"));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [step, setStep] = useState(0);
+  const last = step === STEPS.length - 1;
+
+  /** 지금 단계의 필수 칸 확인 */
+  function stepError(f: FormData): string | null {
+    if (step === 0 && !f.get("date")) return "생년월일을 입력하세요.";
+    if (step === 1 && timeKnown && !f.get("time")) return "태어난 시각을 입력하거나 ‘태어난 시간을 몰라요’를 선택하세요.";
+    return null;
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
+    const err = stepError(f);
+    if (err) {
+      setError(err);
+      return;
+    }
+    setError(null);
+    if (!last) {
+      setStep(step + 1);
+      return;
+    }
     const num = (k: string) => (f.get(k) === "" || f.get(k) === null ? null : Number(f.get(k)));
     const [y, m, d] = String(f.get("date")).split("-").map(Number);
     const [hh, mm] = timeKnown ? String(f.get("time") || "").split(":").map(Number) : [null, null];
@@ -106,20 +130,25 @@ export function BirthForm({ mode, initial, embedded }: { mode: "profile" | "othe
   }
 
   return (
-    <SafeForm onSubmit={onSubmit} className="flex flex-1 flex-col">
+    <SafeForm onSubmit={onSubmit} noValidate className="flex min-h-0 flex-1 flex-col">
       {!embedded && <TopBar title="다른 사람 사주" back="/saju" />}
-      {!embedded && (
-      <div className="flex flex-col items-center pt-2 text-center">
-        <CharacterStage size={150} orbs={false} />
-        <p className="mt-1 text-[19px] font-semibold leading-snug">
-          태어난 날을 알려 주면
-          <br />
-          {josa(BRAND.characterName, "이/가")} 운세를 점쳐 줄게요
-        </p>
-      </div>
-      )}
-
-      <Card className="mt-5 space-y-4">
+      <div className="flex min-h-0 flex-1 flex-col">
+        {!embedded && step === 0 && (
+          <div className="flex min-h-0 flex-1 flex-col items-center text-center">
+            <FitCharacter orbs={false} min={70} max={150} className="w-full" />
+            <p className="shrink-0 text-[clamp(16px,2.5dvh,19px)] font-semibold leading-snug">
+              태어난 날을 알려 주면
+              <br />
+              {josa(BRAND.characterName, "이/가")} 운세를 점쳐 줄게요
+            </p>
+          </div>
+        )}
+        <div className="flex shrink-0 justify-center gap-1.5 py-2" aria-label={`${STEPS.length}단계 중 ${step + 1}단계: ${STEPS[step]}`}>
+          {STEPS.map((l, i) => (
+            <span key={l} className={`h-1.5 rounded-full transition-all ${i <= step ? "w-5 bg-accent" : "w-1.5 bg-white/25"}`} />
+          ))}
+        </div>
+<Card className={`shrink-0 space-y-4 ${step === 0 ? "" : "hidden"}`}>
         {!makePrimary && (
           <Field label="이름(별칭)" hint="기록 구분용. 예: 엄마, 친구">
             <input name="label" maxLength={30} className={inputCls} placeholder="선택 사항" />
@@ -137,6 +166,9 @@ export function BirthForm({ mode, initial, embedded }: { mode: "profile" | "othe
             윤달이에요
           </Check>
         )}
+      </Card>
+
+      <Card className={`shrink-0 space-y-4 ${step === 1 ? "" : "hidden"}`}>
         <Field label="태어난 시각">
           <input name="time" type="time" required={timeKnown} disabled={!timeKnown} defaultValue={initial?.time ?? undefined} className={inputCls} />
         </Field>
@@ -163,9 +195,9 @@ export function BirthForm({ mode, initial, embedded }: { mode: "profile" | "othe
         </div>
       </Card>
 
-      <details className="glass mt-3 rounded-[28px] px-5 py-4">
-        <summary className="cursor-pointer text-[15px] font-semibold">고급 설정</summary>
-        <div className="mt-4 space-y-4">
+      <Card className={`shrink-0 ${step === 2 ? "" : "hidden"}`}>
+        <p className="text-[15px] font-semibold">고급 설정 <span className="text-xs font-normal text-ink-2">모르면 그대로 두세요</span></p>
+        <div className="mt-3 space-y-3">
           <Field label="자시(23~01시) 처리" hint="학파마다 달라요. 모르면 기본값 그대로 두세요.">
             <select name="dayBoundary" defaultValue={initial?.settings.dayBoundary ?? "midnight"} className={inputCls}>
               <option value="midnight">자정 기준 (기본)</option>
@@ -183,7 +215,7 @@ export function BirthForm({ mode, initial, embedded }: { mode: "profile" | "othe
           {correction !== "none" && (
             <>
               <Field label="출생지">
-                <select name="birthplaceId" defaultValue={initial?.birthplaceId ?? (initial?.customLongitude ? "custom" : "seoul")} className={inputCls}>
+                <select name="birthplaceId" value={place} onChange={(e) => setPlace(e.target.value)} className={inputCls}>
                   {BIRTHPLACES.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.label} (동경 {b.longitude}°)
@@ -192,29 +224,42 @@ export function BirthForm({ mode, initial, embedded }: { mode: "profile" | "othe
                   <option value="custom">직접 입력</option>
                 </select>
               </Field>
-              <Field label="경도 직접 입력" hint="출생지에서 ‘직접 입력’을 고른 경우 (124~132)">
-                <input name="customLongitude" type="number" step="0.01" min={124} max={132} defaultValue={initial?.customLongitude ?? undefined} className={inputCls} />
-              </Field>
+              {place === "custom" && (
+                <Field label="경도 직접 입력" hint="124~132">
+                  <input name="customLongitude" type="number" inputMode="decimal" step="0.01" min={124} max={132} defaultValue={initial?.customLongitude ?? undefined} className={inputCls} />
+                </Field>
+              )}
             </>
           )}
           <Check checked={historical} onChange={setHistorical}>
             과거 표준시·서머타임 반영 (권장)
           </Check>
         </div>
-      </details>
-      <p className="mt-3 px-2 text-center text-xs text-ink-2">
-        출생 정보는 암호화되어 저장되고, MY에서 언제든 지울 수 있어요.
-        {makePrimary && initial ? " 생년월일을 바꾸면 이전 내 사주 기록과 해석은 지워져요." : ""}
-      </p>
+      </Card>
+      {last && (
+        <p className="mt-2 shrink-0 px-2 text-center text-xs text-ink-2">
+          출생 정보는 암호화되어 저장되고, MY에서 언제든 지울 수 있어요.
+          {makePrimary && initial ? " 생년월일을 바꾸면 이전 내 사주 기록과 해석은 지워져요." : ""}
+        </p>
+      )}
+      </div>
 
-      <BottomActions>
-        <div className="space-y-2">
-          <ErrorBox message={error} />
-          <Button type="submit" size="lg" loading={busy} className="w-full">
-            {busy ? "여러 엔진으로 계산·검증 중…" : makePrimary ? "저장하고 오늘의 운세 보기" : "사주 보기"}
+      <div className="shrink-0 space-y-2 pb-3 pt-2">
+        <ErrorBox message={error} />
+        <div className="flex gap-2">
+          {step > 0 && (
+            <Button type="button" variant="ghost" size="lg" className="w-24 shrink-0" onClick={() => {
+                setError(null);
+                setStep(step - 1);
+              }} disabled={busy}>
+              이전
+            </Button>
+          )}
+          <Button type="submit" size="lg" loading={busy} className="min-w-0 flex-1">
+            {!last ? "다음" : busy ? "여러 엔진으로 계산·검증 중…" : makePrimary ? "저장하고 오늘의 운세 보기" : "사주 보기"}
           </Button>
         </div>
-      </BottomActions>
+      </div>
     </SafeForm>
   );
 }
