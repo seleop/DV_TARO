@@ -68,21 +68,24 @@ node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"
 2. Framework Preset: **Next.js** (자동 인식), Root Directory: 기본값(`./`), Build/Install 명령: 기본값
 3. **Environment Variables**에 아래를 입력 (Production·Preview 모두 체크)
 
-| 이름 | 값 |
-|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | 4단계 |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | 4단계 |
-| `SUPABASE_SECRET_KEY` | 4단계 |
-| `DATABASE_URL` | 4단계 (6543 포트) |
-| `DATA_ENCRYPTION_KEY` | 4단계에서 만든 값 |
-| `CRON_SECRET` | 4단계에서 만든 값 |
-| `ADMIN_EMAILS` | 관리자로 쓸 내 이메일 (예: `me@gmail.com`) |
-| `SIGNUP_MODE` | `open` (모두 가입한 뒤 `closed`로 바꾼다) |
-| `AI_PROVIDER` | 지금은 `mock` (Claude 키가 생기면 `anthropic` + `ANTHROPIC_API_KEY`) |
+| 이름 | 값 | Type |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | 4단계 | **Config** |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | 4단계 | **Config** |
+| `SUPABASE_SECRET_KEY` | 4단계 | Secret |
+| `DATABASE_URL` | 4단계 (6543 포트) | Secret |
+| `DATA_ENCRYPTION_KEY` | 4단계에서 만든 값 | Secret |
+| `CRON_SECRET` | 4단계에서 만든 값 | Secret |
+| `ADMIN_EMAILS` | 관리자로 쓸 내 이메일 (예: `me@gmail.com`) | Secret |
+| `SIGNUP_MODE` | `open` (모두 가입한 뒤 `closed`로 바꾼다) | Config 또는 Secret |
+| `AI_PROVIDER` | 지금은 `mock` (Claude 키가 생기면 `anthropic` + `ANTHROPIC_API_KEY`) | Config 또는 Secret |
+| `ANTHROPIC_API_KEY` | (선택) Claude 키 | Secret |
+
+> **Type 주의**: `NEXT_PUBLIC_`로 시작하는 두 값은 브라우저에 공개되는 값이라 반드시 **Type=Config**로 만든다. Secret으로 저장하면 Vercel이 "공개 접두사" 경고를 띄우고 회원가입이 "계정을 만들지 못했습니다"로 실패한다 (2026-10-23 실제 운영에서 확인된 원인). 이미 Secret으로 만들었다면 **삭제 → Type=Config로 다시 추가 → Redeploy**. 나머지 값(`SUPABASE_SECRET_KEY`, `DATABASE_URL`, `DATA_ENCRYPTION_KEY`, `CRON_SECRET`, `ANTHROPIC_API_KEY` 등)은 Secret으로 둔다.
 
 `LOCAL_DEV_MODE`는 **넣지 않는다** (켜져 있으면 서버가 시작을 거부한다).
 
-4. **Deploy** → 1~3분 뒤 `https://<프로젝트>.vercel.app` 주소가 생긴다.
+4. **Deploy** → 1~3분 뒤 `https://<프로젝트>.vercel.app` 주소가 생긴다. 현재 운영 주소는 **https://dvtarocard.vercel.app** (프로젝트 `dvtarocard`). `dvtarocard-<해시>-...vercel.app` 형태는 배포마다 바뀌는 주소라 공유용이 아니다.
 
 > `NEXT_PUBLIC_`로 시작하는 값은 빌드할 때 코드에 들어간다. 이 값을 바꾸면 **Deployments → … → Redeploy**를 해야 반영된다. 다른 환경변수도 바꾼 뒤에는 재배포하는 것이 안전하다.
 
@@ -110,7 +113,8 @@ node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"
 | 증상 | 확인 | 조치 |
 |---|---|---|
 | 빌드 실패 "LOCAL_DEV_MODE는 개발 환경에서만" | Vercel 환경변수 | `LOCAL_DEV_MODE` 삭제 후 재배포 |
-| 회원가입 시 "계정을 만들지 못했습니다" | Vercel → Logs, Supabase → Auth Logs | `SUPABASE_SECRET_KEY`, `NEXT_PUBLIC_SUPABASE_URL` 확인 |
+| 회원가입 시 "계정을 만들지 못했습니다" | Vercel → 프로젝트 → **Logs**에서 `[auth-admin createUser]`, `[signup createUser]` 검색 (Supabase 오류 status·code·message가 남음), Supabase → Auth Logs | `SUPABASE_SECRET_KEY`, `NEXT_PUBLIC_SUPABASE_URL` 값 확인. **확인된 원인**: `NEXT_PUBLIC_` 두 값이 Type=Secret → 아래 항목대로 조치 |
+| Vercel 환경변수에 "공개 접두사(NEXT_PUBLIC_)" 경고 | Settings → Environment Variables에서 `NEXT_PUBLIC_` 값의 Type | 해당 변수 삭제 → **Type=Config**로 다시 추가 → Deployments → … → **Redeploy** |
 | "사용할 수 없는 이메일 주소예요" | Supabase가 테스트용 도메인(example.com 등)을 거부 | 실제 이메일 주소 사용 |
 | 가입 직후 다시 로그인 화면 | `profiles` 테이블에 행이 생겼는지 | 2단계 마이그레이션 실행 여부, `DATABASE_URL` 확인 |
 | 500 + "DATABASE_URL" | 환경변수 | transaction pooler(6543) 문자열·비밀번호 확인 |
