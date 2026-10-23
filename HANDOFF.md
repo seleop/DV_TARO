@@ -20,6 +20,7 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
+- **진행 중**: 로그인·회원가입 개선 (브랜치 `claude/youthful-shamir-aa9bf7`). 범위: `src/app/login/**`, `src/app/signup/**`, `LoginForm`·`SafeForm`, `src/app/api/auth/**`, `repo/users.ts` 가입·로그인 함수, `lib/auth/session.ts`, `proxy.ts`(로그인 리다이렉트), `(app)/layout.tsx`(생년월일 미입력 시 프로필로), `ProfileClient` 환영 문구, 개인정보 동의 마이그레이션, 관련 테스트·문서
 - **배포 완료**: https://dvtarocard.vercel.app (Vercel 프로젝트 `dvtarocard`). Supabase 프로젝트 URL `https://umkqgreogwujvsrjngqv.supabase.co` (공개 값)
 - **해결됨**: 회원가입 "계정을 만들지 못했습니다. 잠시 후 다시 시도해 주세요." 오류
   - 원인: Vercel 환경변수 `NEXT_PUBLIC_SUPABASE_URL`·`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`가 Type=Secret으로 저장돼 있었음 (Vercel이 공개 접두사 경고 표시)
