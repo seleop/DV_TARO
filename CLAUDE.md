@@ -24,6 +24,7 @@
 - 세션은 보통 `.claude/worktrees/<이름>` 작업 트리의 `claude/<이름>` 브랜치에서 작업한다 (1차 완성 전 원래 폴더 직접 작업 예외는 아래 "병렬 작업" 참고). 시작 전 `git fetch origin`으로 최신 `origin/main`을 기준 삼는다.
 - 커밋 메시지는 한국어로 쓰고 끝에 `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`를 붙인다.
 - 비밀값(`.env.local`, API 키, DB 비밀번호 등)은 절대 커밋하지 않는다.
+- `.env.local`은 체크아웃(원래 폴더·작업 트리)마다 따로 있다. 로컬 실행(`npm run dev`)이 필요한데 없으면 `npm run setup`으로 만든다 (로컬 체험 모드, 입력할 값 없음). 로컬에서 운영 Supabase에 연결하지 않는다 (운영 데이터·암호화 키와 섞임).
 - push는 사용자가 요청할 때만 한다. "main에 머지해서 push" 요청 시:
   1. `git fetch origin`
   2. `git merge-base --is-ancestor origin/main HEAD`로 fast-forward 가능한지 확인 (불가하면 먼저 origin/main을 병합하고 다시 검증)
@@ -59,7 +60,7 @@
 
 push 전 체크리스트 (위 검증 명령에 추가):
 - `npx next build` 통과 확인 — 테스트가 통과해도 배포 빌드(정적 생성 등)가 실패할 수 있다. 실제로 `/login` 정적 생성 중 `DATA_ENCRYPTION_KEY` 누락으로 Vercel 빌드가 실패한 적이 있다.
-  - `.env.local`이 없는 작업 트리에서는 같은 이유로 실패하므로 임시 키로 돌린다 (Bash): ``DATA_ENCRYPTION_KEY=$(node -e "console.log(require('crypto').randomBytes(32).toString('base64'))") npx next build``. 이 임시 키는 어디에도 저장하지 않는다.
+  - 로컬에서는 항상 이 명령으로 돌린다 (Bash): ``LOCAL_DEV_MODE=false DATA_ENCRYPTION_KEY=$(node -e "console.log(require('crypto').randomBytes(32).toString('base64'))") npx next build``. `.env.local`이 없으면 키 누락으로, `npm run setup`으로 만든 `.env.local`(로컬 체험 모드)이 있으면 "LOCAL_DEV_MODE는 개발 환경에서만" 오류로 실패하기 때문이다. 셸 환경변수가 `.env.local`보다 우선한다. 이 임시 키는 어디에도 저장하지 않는다.
 - 다시 `git fetch origin`으로 그사이 main에 들어온 변경을 확인한다 (위 fast-forward 절차).
 
 작업 후:
