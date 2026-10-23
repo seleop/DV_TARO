@@ -28,7 +28,7 @@ GitHub(seleop/DV_TARO) ──자동 배포──▶ Vercel(앱 서버) ──▶
 2. 저장소의 `supabase/migrations/20261023000000_init.sql` 내용을 전부 붙여 넣고 **Run**
 3. **Table Editor**에서 `profiles`, `invitations`, `saju_calculations`, `saju_engine_results`, `fortune_readings`, `usage_logs`, `admin_audit` 7개 테이블이 보이면 성공
 4. `supabase/migrations/` 의 나머지 파일도 **파일 이름 순서대로** 같은 방법으로 실행한다. 이미 운영 중인 DB에는 새로 추가된 파일만 실행한다.
-   - `20261024000000_privacy_consent.sql`: 가입 시 개인정보 동의 기록 칸(`profiles.privacy_agreed_at`, `privacy_version`). **이 파일을 실행하지 않고 새 코드를 배포하면 회원가입이 실패한다** → 배포(push) 전에 먼저 실행
+   - `20261023231500_privacy_consent.sql`: 가입 시 개인정보 동의 기록 칸(`profiles.privacy_agreed_at`, `privacy_version`). **이 파일을 실행하지 않고 새 코드를 배포하면 회원가입이 실패한다** → 배포(push) 전에 먼저 실행
 
 ## 3단계. 로그인(Auth) 설정
 
