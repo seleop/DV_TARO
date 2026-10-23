@@ -63,3 +63,6 @@ assets/mascot/preview/
 
 # 세션별 개발 서버 설정 (포트가 세션마다 다름)
 .claude/launch.json
+
+# 디자인 시안용 임시 파일 (저장소 제외)
+public/__design/

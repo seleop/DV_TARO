@@ -83,6 +83,7 @@ def srgb_to_linear(c):
 
 # ── 재질 ──────────────────────────────────────────────
 _mats = {}
+_mat_info = {}  # 이름 → 원래 색·발광 (스타일 바꿀 때 사용)
 
 
 def material(name, color, rough=0.55, metal=0.0, sss=0.0, bump=0.0, emit=0.0):
@@ -112,6 +113,7 @@ def material(name, color, rough=0.55, metal=0.0, sss=0.0, bump=0.0, emit=0.0):
         nt.links.new(noise.outputs["Fac"], b.inputs["Height"])
         nt.links.new(b.outputs["Normal"], bsdf.inputs["Normal"])
     _mats[name] = m
+    _mat_info[name] = {"color": color, "emit": emit, "metal": metal}
     return m
 
 
@@ -968,6 +970,137 @@ def setup_scene(res, engine):
     return sc
 
 
+# ── 2D·2.5D 스타일 (시안) ──────────────────────────────
+# shading: flat(단색) · cel(2단 명암) · tri(3단) · soft(부드러운 명암) · gradient(위아래 그라데이션+하이라이트) · clay(기존 3D, 평평한 조명)
+STYLES = {
+    "flat2d": {"shading": "flat", "lines": [((0.24, 0.17, 0.15), 3.0)], "ortho": True, "facing": 12},
+    "cel2d": {"shading": "cel", "lines": [((0.24, 0.17, 0.15), 2.2)], "ortho": True, "facing": 22},
+    "tri25d": {"shading": "tri", "lines": [("tone", 1.6)], "ortho": True, "facing": 30},
+    "soft25d": {"shading": "soft", "lines": [], "ortho": True, "facing": 30},
+    "sticker": {"shading": "cel", "lines": [((1, 1, 1), 9.0, "outer"), ((0.3, 0.22, 0.2), 1.6)], "ortho": True, "facing": 18},
+    "claylite": {"shading": "clay", "lines": [], "ortho": True, "facing": 24},
+}
+
+
+def toon_material(m, color, mode, emit):
+    nt = m.node_tree
+    nt.nodes.clear()
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    lin = srgb_to_linear(color)
+    em = nt.nodes.new("ShaderNodeEmission")
+    em.inputs["Strength"].default_value = 1.0
+    nt.links.new(em.outputs[0], out.inputs["Surface"])
+    if emit or mode == "flat":
+        em.inputs["Color"].default_value = (*lin, 1)
+        return
+    diff = nt.nodes.new("ShaderNodeBsdfDiffuse")
+    s2r = nt.nodes.new("ShaderNodeShaderToRGB")
+    nt.links.new(diff.outputs[0], s2r.inputs[0])
+    ramp = nt.nodes.new("ShaderNodeValToRGB")
+    nt.links.new(s2r.outputs["Color"], ramp.inputs["Fac"])
+    shade = tuple(c * t for c, t in zip(lin, (0.74, 0.70, 0.86)))  # 그림자는 살짝 보랏빛
+    deep = tuple(c * t for c, t in zip(lin, (0.56, 0.52, 0.72)))
+    els = ramp.color_ramp.elements
+    if mode == "cel":
+        ramp.color_ramp.interpolation = "CONSTANT"
+        els[0].position, els[0].color = 0.0, (*shade, 1)
+        els[1].position, els[1].color = 0.32, (*lin, 1)
+    elif mode == "tri":
+        ramp.color_ramp.interpolation = "CONSTANT"
+        els[0].position, els[0].color = 0.0, (*deep, 1)
+        els[1].position, els[1].color = 0.16, (*shade, 1)
+        e = els.new(0.42)
+        e.color = (*lin, 1)
+    else:  # soft · gradient
+        ramp.color_ramp.interpolation = "EASE"
+        els[0].position, els[0].color = 0.12, (*shade, 1)
+        els[1].position, els[1].color = 0.48, (*lin, 1)
+    color_out = ramp.outputs["Color"]
+    if mode == "gradient":
+        # 위는 밝고 아래는 살짝 어둡게 + 작은 반사광
+        tc = nt.nodes.new("ShaderNodeTexCoord")
+        sep = nt.nodes.new("ShaderNodeSeparateXYZ")
+        nt.links.new(tc.outputs["Generated"], sep.inputs[0])
+        g = nt.nodes.new("ShaderNodeMapRange")
+        g.inputs["To Min"].default_value = 0.88
+        g.inputs["To Max"].default_value = 1.06
+        nt.links.new(sep.outputs["Z"], g.inputs["Value"])
+        mul = nt.nodes.new("ShaderNodeMix")
+        mul.data_type = "RGBA"
+        mul.blend_type = "MULTIPLY"
+        mul.inputs["Factor"].default_value = 1.0
+        nt.links.new(color_out, mul.inputs[6])
+        nt.links.new(g.outputs[0], mul.inputs[7])
+        gl = nt.nodes.new("ShaderNodeBsdfGlossy")
+        gl.inputs["Roughness"].default_value = 0.25
+        s2 = nt.nodes.new("ShaderNodeShaderToRGB")
+        nt.links.new(gl.outputs[0], s2.inputs[0])
+        hr = nt.nodes.new("ShaderNodeValToRGB")
+        hr.color_ramp.interpolation = "CONSTANT"
+        hr.color_ramp.elements[0].color = (0, 0, 0, 1)
+        hr.color_ramp.elements[1].position = 0.55
+        hr.color_ramp.elements[1].color = (0.35, 0.35, 0.35, 1)
+        nt.links.new(s2.outputs["Color"], hr.inputs["Fac"])
+        add = nt.nodes.new("ShaderNodeMix")
+        add.data_type = "RGBA"
+        add.blend_type = "ADD"
+        add.inputs["Factor"].default_value = 1.0
+        nt.links.new(mul.outputs[2], add.inputs[6])
+        nt.links.new(hr.outputs["Color"], add.inputs[7])
+        color_out = add.outputs[2]
+    nt.links.new(color_out, em.inputs["Color"])
+
+
+def apply_style(sc, name):
+    st = STYLES[name]
+    if st["shading"] != "clay":
+        for mname, info in _mat_info.items():
+            toon_material(_mats[mname], info["color"], st["shading"], info["emit"])
+    else:
+        # 기존 3D 재질 그대로, 조명만 평평하게 (그림자 대비를 줄여 덜 입체적으로)
+        sc.world.node_tree.nodes["Background"].inputs["Strength"].default_value = 0.7
+        for o in sc.objects:
+            if o.type == "LIGHT" and o.name == "Key":
+                o.data.energy = 260
+    cam = sc.camera
+    if st["ortho"]:
+        cam.data.type = "ORTHO"
+        cam.data.ortho_scale = 3.35
+    if st["lines"]:
+        # 눈·입·볼·반짝이에는 선을 긋지 않는다 (얼굴에 잔선이 생기지 않게)
+        noline = bpy.data.collections.new("NoLine")
+        sc.collection.children.link(noline)
+        face_keys = ("Eye", "Hi1", "Hi2", "HappyEye", "Smile", "Mouth", "Tongue", "Cheek", "Spark", "Sky", "Confetti", "CardStar", "Lens")
+        for o in sc.objects:
+            if o.type in ("MESH", "CURVE") and o.name.split(".")[0].startswith(face_keys):
+                noline.objects.link(o)
+        sc.render.use_freestyle = True
+        sc.render.line_thickness_mode = "ABSOLUTE"
+        vl = sc.view_layers[0]
+        vl.use_freestyle = True
+        fs_ = vl.freestyle_settings
+        for old in list(fs_.linesets):
+            fs_.linesets.remove(old)
+        for i, line in enumerate(st["lines"]):
+            color, thick = line[0], line[1]
+            outer = len(line) > 2
+            ls = fs_.linesets.new(f"Line{i}")
+            ls.select_by_visibility = True
+            ls.select_by_edge_types = True
+            ls.select_silhouette = not outer
+            ls.select_border = not outer
+            ls.select_crease = False
+            ls.select_external_contour = True
+            ls.select_by_collection = True
+            ls.collection = noline
+            ls.collection_negation = "EXCLUSIVE"
+            lst = ls.linestyle
+            lst.thickness = thick
+            lst.thickness_position = "OUTSIDE" if outer else "CENTER"
+            lst.color = (0.42, 0.33, 0.30) if color == "tone" else color
+    return st
+
+
 def render_frame(sc, path):
     sc.render.filepath = path
     bpy.ops.render.render(write_still=True)
@@ -994,12 +1127,16 @@ def main():
     ap.add_argument("--save", default="")
     ap.add_argument("--only-frame", type=int, default=-1)
     ap.add_argument("--outfits", default="default,saju,tarot,star")
+    ap.add_argument("--style", default="", help="2D·2.5D 시안 스타일 (STYLES)")
     a = ap.parse_args(argv)
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
     rig = build()
     sc = setup_scene(a.res, a.engine)
     rig["facing"] = FACING_DEG
+    if a.style:
+        st = apply_style(sc, a.style)
+        rig["facing"] = st["facing"]
     set_outfit(rig, "default")
 
     if a.stills:
