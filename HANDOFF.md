@@ -20,6 +20,7 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
+- **진행 중**: 로그인·가입 세션/`claude/youthful-shamir-aa9bf7` — ① 진입 화면(로그인·회원가입 두 버튼) + 한 칸씩 순차 입력 + 복이 연출(로그인=얼굴 줌인, 가입=별자리 하늘): `src/app/login/**`, `src/app/signup/**`, `src/components/auth/**` ② 이후 앱 전체 "스크롤 없는 화면"(사주 설명 화면 제외) 재구성: `(app)` 화면·`components/*Client.tsx`·`BirthForm`·`ui.tsx`(추가만)
 - **로그인·회원가입 개선 완료(2026-10-23 main 반영)**: 브랜치 `claude/youthful-shamir-aa9bf7`
   - `/login`·`/signup` 분리(요청 시점 렌더링, `SIGNUP_MODE`만 읽음 → 환경변수 없이도 빌드 통과). 화면은 `src/components/auth/*`
   - 로그인 필요 시 `/login?next=<경로>` → 로그인 후 복귀 (`lib/auth/next-path.ts`, 같은 사이트 경로만). 경로는 `proxy.ts`가 `x-dv-path` 요청 헤더로 넘김
