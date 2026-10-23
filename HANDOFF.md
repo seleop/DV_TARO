@@ -20,7 +20,8 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
-- **진입 화면·복이 연출·스크롤 없는 화면 완료(main 미반영, 2026-10-24)**: 브랜치 `claude/youthful-shamir-aa9bf7`
+- **진입 화면·복이 연출·스크롤 없는 화면 완료(2026-10-24 main 반영)**: 브랜치 `claude/youthful-shamir-aa9bf7`
+- **우주 배경·로그인 화면 다듬기(main 미반영, 2026-10-24)**: 앱 전체 배경을 은하수(성운·반짝이는 별·십자 빛 별·SVG 별똥별)로 교체(`src/components/app/CosmicBackdrop.tsx`, 루트 `layout.tsx`의 `.stars` 대체). 진입 화면 복이 400px(작은 화면은 무대에 맞춤), 로그인 복이 약 500px(키보드가 올라와도 유지, 사용자 요청). 키보드는 줌인 연출(0.7초) 뒤 올라오고 화면 높이는 부드럽게 변함, iOS에서 자동으로 안 뜨면 입력칸이 반짝이며 눌러 달라고 안내
   - `/login` 진입 화면 = 작은 복이 + 로그인·회원가입 두 버튼(손 흔들기). 누르면 한 칸씩 순차 입력(`src/components/auth/AuthFlow.tsx`), 입력칸 하나를 재사용해 단계가 바뀌어도 키보드 유지
   - 로그인 = 복이 얼굴 줌인(384px 원본으로 그리고 배율), 가입 = 카메라가 밤하늘로 올라가며 단계마다 별이 이어지는 별자리(`Constellation.tsx`), 완료 시 celebrate. 단계마다 끄덕임, 오류 때 놀람
   - 화면 높이를 `visualViewport`에 맞춰 키보드가 올라와도 스크롤 없이 입력칸·버튼 표시(`useVisualViewport.ts`). `/signup` 링크는 바로 가입 입력으로

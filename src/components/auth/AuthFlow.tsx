@@ -63,6 +63,10 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
   const [reaction, setReaction] = useState<{ state: MascotState; id: number } | null>(initialMode === "choose" ? { state: "wave", id: 0 } : null);
   const react = (state: MascotState) => setReaction((r) => ({ state, id: (r?.id ?? 0) + 1 }));
   const inputRef = useRef<HTMLInputElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const prevMode = useRef<Mode>(initialMode);
+  const [stage, setStage] = useState<{ w: number; h: number } | null>(null);
+  const [tapHint, setTapHint] = useState(false);
   const pushed = useRef(false);
   const submitting = useRef(false);
 
@@ -83,10 +87,35 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
-  // 단계가 바뀌면 입력칸으로 (같은 입력칸을 계속 쓰므로 이미 열린 키보드는 유지된다)
+  // 입력칸으로 커서를 옮긴다.
+  // - 진입 화면에서 막 들어왔으면 줌인·별자리 연출(0.7초)이 끝난 뒤 키보드를 올린다 (연출 도중 화면이 툭 줄지 않게)
+  // - 단계만 바뀌면 바로 (같은 입력칸을 계속 쓰므로 이미 열린 키보드는 유지된다)
+  // iOS는 터치 직후가 아니면 키보드를 띄우지 않으므로, 커서가 안 들어가면 입력칸을 반짝여 눌러 달라고 안내한다.
   useEffect(() => {
-    if (mode !== "choose" && field !== "agreePrivacy") inputRef.current?.focus({ preventScroll: true });
+    const from = prevMode.current;
+    prevMode.current = mode;
+    const el = inputRef.current;
+    if (mode === "choose" || field === "agreePrivacy" || !el) return;
+    const focus = () => {
+      el.focus({ preventScroll: true });
+      setTapHint(document.activeElement !== el);
+    };
+    if (from !== "choose") {
+      el.focus({ preventScroll: true });
+      return;
+    }
+    const t = setTimeout(focus, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 720);
+    return () => clearTimeout(t);
   }, [mode, field]);
+
+  // 무대 크기를 재서 진입 화면 복이 크기를 정한다 (작은 화면에서 제목·버튼과 겹치지 않게)
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(([e]) => setStage({ w: e.contentRect.width, h: e.contentRect.height }));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   function enter(m: Exclude<Mode, "choose">) {
     if (!pushed.current) {
@@ -183,16 +212,23 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
   const boxStyle = vv ? { height: vv.height, top: vv.top } : undefined;
   const ease = "transition-all duration-700 ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none";
 
-  // 복이 위치(384px 기준 배율): 진입=작게 가운데, 로그인=얼굴 클로즈업, 가입=아래 구석에서 하늘을 올려다봄
+  // 복이 크기(px, 2026-10-24 사용자 선택): 진입 400(작은 화면이면 무대에 맞춰 줄임) · 로그인 약 500.
+  // 로그인 크기는 키보드가 올라와 무대가 줄어도 그대로 유지한다(사용자 요청) → 화면 폭만 기준으로 삼는다
+  const sw = stage?.w ?? 375;
+  const sh = stage?.h ?? 600;
+  const chooseSize = Math.min(400, sh * 0.72, sw * 1.1);
+  const loginSize = Math.min(500, sw * 1.35);
+  // 복이 위치(384px 원본 기준 배율): 진입=가운데, 로그인=다가옴, 가입=아래 구석에서 하늘을 올려다봄
   const mascotPos =
     mode === "choose"
-      ? { left: "50%", top: "50%", transform: "translate(-50%,-50%) scale(0.375)" }
+      ? { left: "50%", top: "58%", transform: `translate(-50%,-50%) scale(${chooseSize / 384})` }
       : mode === "login"
-        ? { left: "50%", top: "calc(50% + 66px)", transform: "translate(-50%,-50%) scale(2.19)" }
+        ? { left: "50%", top: "calc(50% + 28px)", transform: `translate(-50%,-50%) scale(${loginSize / 384})` }
         : { left: "18%", top: "84%", transform: "translate(-50%,-50%) scale(0.26)" };
 
   return (
-    <div className="fixed inset-x-0 top-0 z-10 mx-auto flex h-dvh w-full max-w-[440px] flex-col overflow-hidden" style={boxStyle}>
+    // 키보드가 오르내릴 때 높이가 툭 바뀌지 않게 부드럽게 따라간다
+    <div className="fixed inset-x-0 top-0 z-10 mx-auto flex h-dvh w-full max-w-[440px] flex-col overflow-hidden transition-[height,top] duration-300 ease-out motion-reduce:transition-none" style={boxStyle}>
       {/* 상단: 뒤로 + 진행 표시 */}
       <div className="flex h-14 shrink-0 items-center px-3 pt-[env(safe-area-inset-top)]">
         {mode !== "choose" && (
@@ -212,7 +248,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
       </div>
 
       {/* 무대: 복이 + 하늘 */}
-      <div className="relative min-h-0 flex-1 overflow-hidden">
+      <div ref={stageRef} className="relative min-h-0 flex-1 overflow-hidden">
         <div className={`absolute inset-x-0 top-0 text-center ${ease} ${mode === "choose" ? "translate-y-[6%] opacity-100" : "-translate-y-full opacity-0"}`}>
           <p className="text-[15px] text-ink-2">우리끼리 보는 운세</p>
           <h1 className="text-gradient mt-1 text-[34px] font-extrabold leading-tight">{BRAND.appName}</h1>
@@ -335,7 +371,8 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
                   onKeyDown={checkCaps}
                   onKeyUp={checkCaps}
                   onBlur={() => setCaps(false)}
-                  placeholder={meta.label}
+                  placeholder={tapHint ? `여기를 눌러 ${meta.label} 입력` : meta.label}
+                  onFocus={() => setTapHint(false)}
                   autoComplete={mode === "login" ? (field === "email" ? "username" : "current-password") : meta.autoComplete}
                   inputMode={meta.inputMode}
                   autoCapitalize={field === "inviteCode" ? "characters" : field === "displayName" ? "sentences" : "none"}
@@ -345,7 +382,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
                   enterKeyHint={last ? (mode === "login" ? "go" : "done") : "next"}
                   aria-invalid={error ? true : undefined}
                   aria-describedby={error ? "auth-msg" : undefined}
-                  className={`${inputCls} h-14 text-[17px] ${isPassword ? "pr-14" : ""} ${field === "inviteCode" ? "uppercase tracking-widest" : ""} ${error ? "border-bad/70!" : ""}`}
+                  className={`${inputCls} h-14 text-[17px] ${tapHint ? "animate-pulse border-accent! ring-2 ring-accent/60" : ""} ${isPassword ? "pr-14" : ""} ${field === "inviteCode" ? "uppercase tracking-widest" : ""} ${error ? "border-bad/70!" : ""}`}
                 />
                 {isPassword && (
                   <button
