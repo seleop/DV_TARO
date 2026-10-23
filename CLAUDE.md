@@ -29,3 +29,14 @@
   2. `git merge-base --is-ancestor origin/main HEAD`로 fast-forward 가능한지 확인 (불가하면 먼저 origin/main을 병합하고 다시 검증)
   3. `git push origin HEAD:main`
 - 원래 체크아웃(`C:\Users\seleo\Documents\DV_TARO`)의 로컬 main은 자동으로 갱신되지 않으므로 필요하면 그곳에서 `git pull`을 안내한다.
+
+## 병렬 작업 (여러 세션 동시 진행)
+여러 세션이 각자 작업 트리에서 동시에 작업한다. **작업(파일 수정)을 시작하기 전에 반드시** 아래를 확인하고, 확인한 내용을 사용자에게 짧게 알린다.
+1. 최신 main 반영: `git fetch origin` → `git log --oneline HEAD..origin/main`. 내 브랜치에 없는 커밋이 있으면 `git merge origin/main`으로 받은 뒤 시작한다.
+2. 이전 작업 내역: [HANDOFF.md](HANDOFF.md)의 현재 상태·다음 단계·미해결 사항과 `git log --oneline -10 origin/main`을 읽는다.
+3. 진행 중인 다른 작업: `git worktree list`, `git branch -a --sort=-committerdate`로 다른 작업 트리·브랜치를 보고, 최근 브랜치는 `git log --oneline origin/main..<브랜치>`, `git diff --stat origin/main...<브랜치>`로 무엇을 바꾸는 중인지 확인한다. 커밋되지 않은 변경은 `git -C <작업 트리 경로> status --short`로 본다 (읽기만, 다른 작업 트리의 파일은 수정하지 않는다).
+4. 내 작업과 같은 파일·기능을 다른 세션이 다루고 있으면 시작 전에 사용자에게 범위를 질문한다.
+
+작업 중·후:
+- push 직전에 다시 `git fetch origin`으로 그사이 main에 들어온 변경을 확인한다 (위 fast-forward 절차).
+- 작업을 마치면 다른 세션이 이어받을 수 있도록 HANDOFF.md의 현재 상태·다음 단계를 갱신한다. HANDOFF.md는 여러 세션이 고치므로 필요한 줄만 고치고, 병합 충돌이 나면 양쪽 내용을 모두 살린다.
