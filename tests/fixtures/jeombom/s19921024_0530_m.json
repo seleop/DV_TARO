@@ -1,0 +1,97 @@
+{
+  "ok": true,
+  "input": {
+    "year": 1992,
+    "month": 10,
+    "day": 24,
+    "hour": 5,
+    "minute": 30,
+    "hasTime": true,
+    "calendar": "solar",
+    "gender": "male",
+    "trueSolarTime": false
+  },
+  "correction": {
+    "applied": false,
+    "standardMeridian": "동경 135도",
+    "utcOffset": "UTC+09:00",
+    "daylightSaving": false,
+    "note": "보정을 끄고 계산했습니다(tst=0). 기록된 시계 시각을 그대로 씁니다.",
+    "reference": "https://jeombom.kr/pyojunsi"
+  },
+  "pillars": {
+    "year": [
+      "임",
+      "신"
+    ],
+    "month": [
+      "경",
+      "술"
+    ],
+    "day": [
+      "계",
+      "유"
+    ],
+    "hour": [
+      "을",
+      "묘"
+    ]
+  },
+  "hanja": {
+    "year": "壬申",
+    "month": "庚戌",
+    "day": "癸酉",
+    "hour": "乙卯"
+  },
+  "dayMaster": {
+    "stem": "계",
+    "element": "수",
+    "name": "계수(癸水)",
+    "image": "촉촉한 이슬·빗물"
+  },
+  "ilju": {
+    "name": "계유",
+    "url": "https://jeombom.kr/ilju/gyeyu"
+  },
+  "elements": {
+    "목": 2,
+    "화": 0,
+    "토": 1,
+    "금": 3,
+    "수": 2
+  },
+  "strength": "중화",
+  "yongsin": "화",
+  "voids": [
+    "술",
+    "해"
+  ],
+  "zodiac": "원숭이",
+  "tenGods": {
+    "year": {
+      "stem": "겁재",
+      "branch": "정인"
+    },
+    "month": {
+      "stem": "정인",
+      "branch": "정관"
+    },
+    "day": {
+      "stem": "일간",
+      "branch": "편인"
+    },
+    "hour": {
+      "stem": "식신",
+      "branch": "식신"
+    }
+  },
+  "meta": {
+    "engine": "점봄 만세력 (한국천문연구원 KASI 절기 데이터 기준)",
+    "source": "https://jeombom.kr",
+    "docs": "https://jeombom.kr/manse-api",
+    "license": "CC BY 4.0",
+    "attribution": "계산: 점봄 만세력 API (https://jeombom.kr)",
+    "privacy": "입력값을 저장하지 않습니다.",
+    "disclaimer": "명리 해석은 오락용이며 의료·법률·투자 판단을 대신하지 않습니다."
+  }
+}

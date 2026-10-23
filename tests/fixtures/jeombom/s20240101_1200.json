@@ -1,0 +1,97 @@
+{
+  "ok": true,
+  "input": {
+    "year": 2024,
+    "month": 1,
+    "day": 1,
+    "hour": 12,
+    "minute": 0,
+    "hasTime": true,
+    "calendar": "solar",
+    "gender": "male",
+    "trueSolarTime": false
+  },
+  "correction": {
+    "applied": false,
+    "standardMeridian": "동경 135도",
+    "utcOffset": "UTC+09:00",
+    "daylightSaving": false,
+    "note": "보정을 끄고 계산했습니다(tst=0). 기록된 시계 시각을 그대로 씁니다.",
+    "reference": "https://jeombom.kr/pyojunsi"
+  },
+  "pillars": {
+    "year": [
+      "계",
+      "묘"
+    ],
+    "month": [
+      "갑",
+      "자"
+    ],
+    "day": [
+      "갑",
+      "자"
+    ],
+    "hour": [
+      "경",
+      "오"
+    ]
+  },
+  "hanja": {
+    "year": "癸卯",
+    "month": "甲子",
+    "day": "甲子",
+    "hour": "庚午"
+  },
+  "dayMaster": {
+    "stem": "갑",
+    "element": "목",
+    "name": "갑목(甲木)",
+    "image": "하늘로 뻗는 큰 나무"
+  },
+  "ilju": {
+    "name": "갑자",
+    "url": "https://jeombom.kr/ilju/gapja"
+  },
+  "elements": {
+    "목": 3,
+    "화": 1,
+    "토": 0,
+    "금": 1,
+    "수": 3
+  },
+  "strength": "신강",
+  "yongsin": "토",
+  "voids": [
+    "술",
+    "해"
+  ],
+  "zodiac": "토끼",
+  "tenGods": {
+    "year": {
+      "stem": "정인",
+      "branch": "겁재"
+    },
+    "month": {
+      "stem": "비견",
+      "branch": "정인"
+    },
+    "day": {
+      "stem": "일간",
+      "branch": "정인"
+    },
+    "hour": {
+      "stem": "편관",
+      "branch": "상관"
+    }
+  },
+  "meta": {
+    "engine": "점봄 만세력 (한국천문연구원 KASI 절기 데이터 기준)",
+    "source": "https://jeombom.kr",
+    "docs": "https://jeombom.kr/manse-api",
+    "license": "CC BY 4.0",
+    "attribution": "계산: 점봄 만세력 API (https://jeombom.kr)",
+    "privacy": "입력값을 저장하지 않습니다.",
+    "disclaimer": "명리 해석은 오락용이며 의료·법률·투자 판단을 대신하지 않습니다."
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "ok": true,
+  "input": {
+    "year": 1997,
+    "month": 1,
+    "day": 1,
+    "hour": null,
+    "minute": null,
+    "hasTime": false,
+    "calendar": "lunar",
+    "leapMonth": false,
+    "gender": "male",
+    "trueSolarTime": false
+  },
+  "correction": {
+    "applied": false,
+    "standardMeridian": "동경 135도",
+    "utcOffset": "UTC+09:00",
+    "daylightSaving": false,
+    "note": "보정을 끄고 계산했습니다(tst=0). 기록된 시계 시각을 그대로 씁니다.",
+    "reference": "https://jeombom.kr/pyojunsi"
+  },
+  "pillars": {
+    "year": [
+      "정",
+      "축"
+    ],
+    "month": [
+      "임",
+      "인"
+    ],
+    "day": [
+      "신",
+      "사"
+    ],
+    "hour": null
+  },
+  "hanja": {
+    "year": "丁丑",
+    "month": "壬寅",
+    "day": "辛巳",
+    "hour": null
+  },
+  "dayMaster": {
+    "stem": "신",
+    "element": "금",
+    "name": "신금(辛金)",
+    "image": "세공된 보석·칼"
+  },
+  "ilju": {
+    "name": "신사",
+    "url": "https://jeombom.kr/ilju/sinsa"
+  },
+  "elements": {
+    "목": 1,
+    "화": 2,
+    "토": 1,
+    "금": 1,
+    "수": 1
+  },
+  "strength": "신약",
+  "yongsin": "토",
+  "voids": [
+    "신",
+    "유"
+  ],
+  "zodiac": "소",
+  "tenGods": {
+    "year": {
+      "stem": "편관",
+      "branch": "편인"
+    },
+    "month": {
+      "stem": "상관",
+      "branch": "정재"
+    },
+    "day": {
+      "stem": "일간",
+      "branch": "정관"
+    },
+    "hour": {
+      "stem": "정재",
+      "branch": "편관"
+    }
+  },
+  "meta": {
+    "engine": "점봄 만세력 (한국천문연구원 KASI 절기 데이터 기준)",
+    "source": "https://jeombom.kr",
+    "docs": "https://jeombom.kr/manse-api",
+    "license": "CC BY 4.0",
+    "attribution": "계산: 점봄 만세력 API (https://jeombom.kr)",
+    "privacy": "입력값을 저장하지 않습니다.",
+    "disclaimer": "명리 해석은 오락용이며 의료·법률·투자 판단을 대신하지 않습니다."
+  }
+}

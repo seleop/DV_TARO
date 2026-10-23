@@ -1,0 +1,97 @@
+{
+  "ok": true,
+  "input": {
+    "year": 2024,
+    "month": 3,
+    "day": 10,
+    "hour": 23,
+    "minute": 30,
+    "hasTime": true,
+    "calendar": "solar",
+    "gender": "male",
+    "trueSolarTime": false
+  },
+  "correction": {
+    "applied": false,
+    "standardMeridian": "동경 135도",
+    "utcOffset": "UTC+09:00",
+    "daylightSaving": false,
+    "note": "보정을 끄고 계산했습니다(tst=0). 기록된 시계 시각을 그대로 씁니다.",
+    "reference": "https://jeombom.kr/pyojunsi"
+  },
+  "pillars": {
+    "year": [
+      "갑",
+      "진"
+    ],
+    "month": [
+      "정",
+      "묘"
+    ],
+    "day": [
+      "계",
+      "유"
+    ],
+    "hour": [
+      "임",
+      "자"
+    ]
+  },
+  "hanja": {
+    "year": "甲辰",
+    "month": "丁卯",
+    "day": "癸酉",
+    "hour": "壬子"
+  },
+  "dayMaster": {
+    "stem": "계",
+    "element": "수",
+    "name": "계수(癸水)",
+    "image": "촉촉한 이슬·빗물"
+  },
+  "ilju": {
+    "name": "계유",
+    "url": "https://jeombom.kr/ilju/gyeyu"
+  },
+  "elements": {
+    "목": 2,
+    "화": 1,
+    "토": 1,
+    "금": 1,
+    "수": 3
+  },
+  "strength": "신약",
+  "yongsin": "금",
+  "voids": [
+    "술",
+    "해"
+  ],
+  "zodiac": "용",
+  "tenGods": {
+    "year": {
+      "stem": "상관",
+      "branch": "정관"
+    },
+    "month": {
+      "stem": "편재",
+      "branch": "식신"
+    },
+    "day": {
+      "stem": "일간",
+      "branch": "편인"
+    },
+    "hour": {
+      "stem": "겁재",
+      "branch": "비견"
+    }
+  },
+  "meta": {
+    "engine": "점봄 만세력 (한국천문연구원 KASI 절기 데이터 기준)",
+    "source": "https://jeombom.kr",
+    "docs": "https://jeombom.kr/manse-api",
+    "license": "CC BY 4.0",
+    "attribution": "계산: 점봄 만세력 API (https://jeombom.kr)",
+    "privacy": "입력값을 저장하지 않습니다.",
+    "disclaimer": "명리 해석은 오락용이며 의료·법률·투자 판단을 대신하지 않습니다."
+  }
+}

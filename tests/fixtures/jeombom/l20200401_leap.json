@@ -1,0 +1,95 @@
+{
+  "ok": true,
+  "input": {
+    "year": 2020,
+    "month": 4,
+    "day": 1,
+    "hour": null,
+    "minute": null,
+    "hasTime": false,
+    "calendar": "lunar",
+    "leapMonth": true,
+    "gender": "male",
+    "trueSolarTime": false
+  },
+  "correction": {
+    "applied": false,
+    "standardMeridian": "동경 135도",
+    "utcOffset": "UTC+09:00",
+    "daylightSaving": false,
+    "note": "보정을 끄고 계산했습니다(tst=0). 기록된 시계 시각을 그대로 씁니다.",
+    "reference": "https://jeombom.kr/pyojunsi"
+  },
+  "pillars": {
+    "year": [
+      "경",
+      "자"
+    ],
+    "month": [
+      "경",
+      "진"
+    ],
+    "day": [
+      "병",
+      "신"
+    ],
+    "hour": null
+  },
+  "hanja": {
+    "year": "庚子",
+    "month": "庚辰",
+    "day": "丙申",
+    "hour": null
+  },
+  "dayMaster": {
+    "stem": "병",
+    "element": "화",
+    "name": "병화(丙火)",
+    "image": "세상을 비추는 태양"
+  },
+  "ilju": {
+    "name": "병신",
+    "url": "https://jeombom.kr/ilju/byeongsin"
+  },
+  "elements": {
+    "목": 0,
+    "화": 1,
+    "토": 1,
+    "금": 3,
+    "수": 1
+  },
+  "strength": "신약",
+  "yongsin": "목",
+  "voids": [
+    "진",
+    "사"
+  ],
+  "zodiac": "쥐",
+  "tenGods": {
+    "year": {
+      "stem": "편재",
+      "branch": "정관"
+    },
+    "month": {
+      "stem": "편재",
+      "branch": "식신"
+    },
+    "day": {
+      "stem": "일간",
+      "branch": "편재"
+    },
+    "hour": {
+      "stem": "편인",
+      "branch": "겁재"
+    }
+  },
+  "meta": {
+    "engine": "점봄 만세력 (한국천문연구원 KASI 절기 데이터 기준)",
+    "source": "https://jeombom.kr",
+    "docs": "https://jeombom.kr/manse-api",
+    "license": "CC BY 4.0",
+    "attribution": "계산: 점봄 만세력 API (https://jeombom.kr)",
+    "privacy": "입력값을 저장하지 않습니다.",
+    "disclaimer": "명리 해석은 오락용이며 의료·법률·투자 판단을 대신하지 않습니다."
+  }
+}

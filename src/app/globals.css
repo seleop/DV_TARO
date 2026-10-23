@@ -1,0 +1,168 @@
+@import "tailwindcss";
+
+/* 우주 테마(항상 어두운 화면). 레퍼런스: 보랏빛 밤하늘 + 가운데 캐릭터 + 유리 카드 */
+:root {
+  --bg: #0a0820;
+  --bg-2: #160d3a;
+  --surface: rgba(255, 255, 255, 0.07);
+  --surface-2: rgba(255, 255, 255, 0.11);
+  --tile: rgba(88, 80, 140, 0.45);
+  --ink: #f4f1ff;
+  --ink-2: #b8b0d8;
+  --line: rgba(255, 255, 255, 0.1);
+  --accent: #b18cff;
+  --accent-2: #8f7bff;
+  --accent-ink: #ffffff;
+  --primary-from: #b04df0;
+  --primary-to: #8b5cf6;
+  --blue: #4f7cf0;
+  --ok: #7ee2a8;
+  --warn: #ffc46b;
+  --bad: #ff8a80;
+  --wood: #74d99f;
+  --fire: #ff7a6b;
+  --earth: #f2c46b;
+  --metal: #d5d9e3;
+  --water: #7fb2ff;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-tile: var(--tile);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-blue: var(--blue);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --font-sans: "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  word-break: keep-all;
+  overscroll-behavior-y: none;
+}
+
+.hanja {
+  font-family: "Noto Serif KR", "Batang", serif;
+}
+
+/* 밤하늘 배경: 중앙 보라 글로우 + 별 */
+.cosmic-bg {
+  background:
+    radial-gradient(ellipse 80% 45% at 50% 32%, rgba(140, 70, 200, 0.38), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 85% 75%, rgba(80, 90, 220, 0.18), transparent 70%),
+    linear-gradient(180deg, #120a35 0%, #0a0820 55%, #090717 100%);
+}
+.stars,
+.stars::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 12% 18%, #fff8, transparent),
+    radial-gradient(1px 1px at 28% 62%, #fff6, transparent),
+    radial-gradient(1.5px 1.5px at 72% 22%, #fffa, transparent),
+    radial-gradient(1px 1px at 86% 48%, #fff7, transparent),
+    radial-gradient(1px 1px at 55% 80%, #fff5, transparent),
+    radial-gradient(1.5px 1.5px at 40% 35%, #fff9, transparent),
+    radial-gradient(1px 1px at 8% 88%, #fff6, transparent),
+    radial-gradient(1px 1px at 93% 9%, #fff8, transparent),
+    radial-gradient(1px 1px at 63% 52%, #fff4, transparent);
+}
+.stars::after {
+  content: "";
+  transform: translate(37%, 23%) scale(1.3);
+  opacity: 0.6;
+  animation: twinkle 6s ease-in-out infinite alternate;
+}
+
+.text-gradient {
+  background: linear-gradient(90deg, #c9b3ff, #9c86ff 60%, #b98cff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.glass {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.btn-primary {
+  background: linear-gradient(90deg, var(--primary-from), var(--primary-to));
+  box-shadow: 0 8px 24px -8px rgba(176, 77, 240, 0.7);
+}
+
+/* 캐릭터 무대 */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes orbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes counter-orbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+@keyframes twinkle {
+  from { opacity: 0.25; }
+  to { opacity: 0.8; }
+}
+@keyframes glow {
+  0%, 100% { opacity: 0.75; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-float { animation: float 4.5s ease-in-out infinite; }
+.animate-orbit { animation: orbit 24s linear infinite; }
+.animate-counter-orbit { animation: counter-orbit 24s linear infinite; }
+.animate-glow { animation: glow 3s ease-in-out infinite; }
+.animate-rise { animation: rise 0.5s ease-out both; }
+
+/* 타로 카드 뒤집기 */
+.flip { perspective: 1000px; }
+.flip-inner {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.flip-inner.is-flipped { transform: rotateY(180deg); }
+.flip-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.flip-back { transform: rotateY(180deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float, .animate-orbit, .animate-counter-orbit, .animate-glow, .stars::after { animation: none; }
+  .flip-inner { transition: none; }
+}
+
+.pb-safe { padding-bottom: max(env(safe-area-inset-bottom), 12px); }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
