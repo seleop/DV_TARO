@@ -20,7 +20,12 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
-- **진행 중**: 로그인·가입 세션/`claude/youthful-shamir-aa9bf7` — 독립 3D 우주 배경(은하수·별똥별 유람·3인칭 카메라) 컴포넌트. 회원가입은 건드리지 않음. 범위: 신규 `src/components/cosmos/**`, 신규 관리자 미리보기 `src/app/(app)/admin/cosmos/page.tsx`, `tests/cosmic-journey.test.ts`
+- **독립 3D 우주 배경(은하수·별똥별 유람) 완료(main 미반영, 2026-10-24)**: 브랜치 `claude/youthful-shamir-aa9bf7`. 회원가입·기존 화면에는 아직 연결하지 않음(새 패키지 없음, 기존 three·@react-three/fiber 사용)
+  - 진입점 `src/components/cosmos/CosmicBackground.tsx`(부모를 꽉 채우는 장식 레이어, `active`로 부드럽게 사라짐·나타남, 3D 지연 로딩, WebGL 미지원·오류·그래픽 끊김은 정적 그라데이션, 동작 줄이기는 정지 장면, 탭 숨김 시 그리기 멈춤)
+  - `CosmicScene`(Canvas) · `GalaxyField`(나선 은하 원반·먼 별 껍질·하늘을 가로지르는 은하수 띠) · `CosmicEffects`(경로 주변·은하수 띠의 성운, 먼지) · `ShootingStar`(주인공: 빛의 핵·발광·숨 쉬는 꼬리 띠 / 보조 최대 2개) · `CameraJourney`(뒤·위·옆에서 지수 감쇠로 추적, 위쪽 고정) · `journey.ts`(닫힌 경로·시간 기반 진행·damp·예산, `tests/cosmic-journey.test.ts`)
+  - 미리보기: 관리자 로그인 후 `/admin/cosmos` (사라지기/나타나기 버튼, fps 표시)
+  - 확인: 화면 없는 Edge(소프트웨어 WebGL)로 실제 시간 캡처 — 390×844·360×600·430×600, 사라지기/나타나기, 앱 콘솔 오류 없음(라이브러리 내부 `THREE.Clock` 사용 중단 예고 경고 1건). 소프트웨어 렌더링 26~56fps. 실기기 GPU 성능·발열은 미확인
+  - 데스크톱 앱 브라우저 창이 숨겨져 있으면 requestAnimationFrame이 0이라 3D가 멈춘 것처럼 보임 — 확인할 때는 창을 보이게 하거나 위 방식으로
 - **회원가입 3D 우주 연출 완료(2026-10-24 main 반영)**: 브랜치 `claude/youthful-shamir-aa9bf7`. 패키지 `three`·`@react-three/fiber`·`@types/three` 추가(사용자 승인)
   - 가입 중에만 위쪽 무대가 별빛 정원 → 3D 우주로 전환(정원이 가라앉고 우주가 내려옴). 진입·로그인은 그대로. `AuthFlow.tsx`는 연결부만 수정
   - `src/components/auth/SignupCosmos.tsx`: 3D를 지연 로딩(`next/dynamic` ssr:false, 압축 약 245KB, 가입에 들어갈 때만). WebGL 미지원·동작 줄이기·그래픽 끊김(context lost)·오류·로딩 중에는 기존 SVG 별자리(`Constellation`)
