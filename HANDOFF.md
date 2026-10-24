@@ -20,6 +20,7 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
+- **진행 중: 메인 화면 세션/claude/vigilant-hopper-402c8c — 홈 화면 UI** (`src/app/(app)/page.tsx`, 새 폴더 `src/components/home/**`, 필요 시 `src/lib/home*.ts`·홈 전용 API·관련 테스트. 마스코트·배경·auth·패키지는 건드리지 않음)
 - **마스코트 교체: 별이 (main 미반영, 2026-10-24)**: 복이 대신 BlenderKit 무료 모델 Aurora Fox(Rigged)를 "별이"로 앱 전체에 사용(사용자 결정). `scripts/mascot/build_fox.py`(네 발 동물 동작·모자+옆 소품 의상), 모델은 저장소 제외(`fetch_fox.mjs`로 받음), 텍스처의 눈 자국 자동 정리(`docs/MASCOT.md` 15절)
 - **복이 소프트 2.5D·천막 배경 (main 반영, 2026-10-24)**: `claude/lucid-solomon-5113d2`. 복이를 소프트 2.5D(툰 셰이딩·직교 카메라)로 다시 렌더·시트 경량화(약 30%↓, 미리 불러오기는 디코딩 안 함). 우주 배경(`CosmicBackdrop`)을 지우고 장면 일러스트로: 홈·오늘의 운세=천막 입구, 사주 목록·타로=천막 안, 별자리·로그인/가입=별빛 정원, 나머지=크림색(`SceneArt`, `lib/scene.ts`). 테마 토큰을 밝은 크림색으로, 장면 위 글자는 `.scene-light/.scene-dark`. `Screen` 의 `scene` 으로 장면 + 시트 화면(`docs/MASCOT.md` 14절)
 - **진입 화면·복이 연출·스크롤 없는 화면 완료(2026-10-24 main 반영)**: 브랜치 `claude/youthful-shamir-aa9bf7`
