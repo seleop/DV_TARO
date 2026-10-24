@@ -20,7 +20,15 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
-- **진행 중**: 로그인·가입 세션/`claude/youthful-shamir-aa9bf7` — 회원가입 우주 배경 고도화(부유물·성운·혜성, 고정 은하 크기·위치, 단계별 카메라 역동성)와 단계 완료 시 별자리 잇기 연출(시안 선택 후). 범위: `src/components/cosmos/**`, `src/components/auth/SignupCosmos.tsx`, `src/app/(app)/admin/cosmos/*`, 관련 테스트
+- **회원가입 우주 배경 고도화·별자리 잇기 연출 완료(2026-10-24, 브랜치 `claude/youthful-shamir-aa9bf7`, main 미반영)**: 인증·가입 로직 변경 없음
+  - 시차: 카메라를 감싸 감기는 가까운 별·중간 별·빛 알갱이(`ParallaxStars.tsx`), 가까이 스치는 구름·파편 — 가까울수록 빠르고 하늘(은하·먼 별)은 거의 안 움직임
+  - 성운: 빛 받는 가장자리가 밝은 뭉게구름 셰이더(`NEBULA_FRAG`), 어두운 먼지 구름, 카메라 아래 구름 바다. 배경 그림을 돌리는 방식 아님
+  - 은하: 화면에 붙어 따라오던 큰 은하 삭제 → 셰이더로 계산한 작은 나선 은하 5개를 경로 구간마다 하늘에 고정 배치(`SkyBox.tsx`). 하늘 재질은 불투명 목록·음수 renderOrder로 가까운 행성보다 먼저 그림
+  - 소행성(울퉁불퉁한 모양·표면 요철·라벤더 테두리)·혜성(`Comet.tsx`)·행성 조명 보정
+  - 카메라: 단계가 넘어갈수록 빠르고 크게 선회·기울기(`STAGE_TARGETS`의 orbit·roll·fov·energy), 장 전환 때 가속(`Director.surge`), 시선이 별똥별에서 0.16rad 이상 벗어나지 않게 제한(`CameraRig`)
+  - 해상도 자동 조절(`AdaptiveQuality.tsx`: 평균 fps 45 미만이면 dpr 하향, 최소 0.75)
+  - 별자리 진행 표시 시안 A(빛의 실, 사용자 선택): 단계 완료 시 빛 한 점이 다음 별로 흐르며 희미한 선을 긋고, 별은 배경 십자 빛 별 결(`Constellation.tsx`)
+  - 미확인: 실제 휴대폰 fps(화면 없는 Edge 소프트웨어 렌더에서 7~29fps — 실제 GPU는 더 빠를 것으로 예상하나 확인 필요)
 - **우주 유람-회원가입 단계 연동·레퍼런스 화면 반영 완료(2026-10-24, 브랜치 `claude/youthful-shamir-aa9bf7`, main 미반영)**: 인증·검증·제출 로직은 그대로, `AuthFlow.tsx`는 `SignupCosmos`에 `field`·`done`을 넘기는 한 줄만 수정
   - 연결: `AuthFlow`의 `field`/`done` → `signupJourneyStage`(`src/components/auth/signupJourney.ts`) → `CosmicBackground stage` → `Director`가 `STAGE_TARGETS`(`src/components/cosmos/stages.ts`)로 시간 기반 감쇠. 이메일=멀리서 천천히 진입, 비밀번호·확인=밝고 긴 꼬리·다른 곡선 경로, 닉네임=보라 성운 접근·별 입자 모임, 초대코드·동의=은하 중심 쪽(밝기 억제), 완료=중심으로 들어가며 페이드 후 이동. 뒤로 가면 반대로 부드럽게 돌아감
   - 레퍼런스 반영: 화면 위쪽 큰 나선 은하·작은 은하(`SkyBox.tsx`, 카메라 방향을 천천히 따라 도는 앞쪽 하늘), 왼쪽 행성·위성, 소행성 무리(`Planets.tsx`), 별 모양 머리와 반짝이 입자 꼬리(`ShootingStar.tsx` `SparkleTrail`), 속도감 빛줄기(`SpeedStreaks.tsx`), 진한 보라·파랑 성운. 가입 전용 이전 3D(`src/components/auth/cosmos/*`)는 삭제

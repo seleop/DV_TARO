@@ -12,6 +12,8 @@ import { GALAXY_FRAG, GALAXY_VERT, NEBULA_FRAG, NEBULA_VERT, STAR_FRAG, STAR_VER
 
 /**
  * 하늘(가장 먼 층): 카메라 위치를 따라다니는 하늘 공(회전은 따르지 않음)에 붙어 거의 움직이지 않는다.
+ * 하늘의 재질은 모두 '불투명 목록'(transparent 끔, 섞기는 그대로)에 두고 renderOrder를 음수로 해, 가까운 행성·바위보다 먼저 그린다.
+ * (투명 목록에 두면 깊이 검사 없이 나중에 그려져 가까운 행성 위에 하늘이 덮여 행성이 비쳐 보인다)
  * 가까운 별·구름·소행성이 빠르게 지나가는 동안 이 층은 카메라가 방향을 틀 때만 천천히 흘러, 층마다 시차가 생긴다.
  *  - 나선 은하 다섯: 그림이 아니라 셰이더로 계산한 원반(팔·먼지띠·중심빛) + 반짝이는 별 입자.
  *    화면에 고정하지 않고 하늘의 정해진 자리에 두되, 유람 경로의 여러 구간에서 바라보는 방향 근처에 놓아
@@ -61,7 +63,7 @@ export function SkyBox({ clock, paths, heroStars, skyNebulae, flares, pixelRatio
           renderOrder={-2}
         >
           <planeGeometry args={[1, 1]} />
-          <shaderMaterial vertexShader={NEBULA_VERT} fragmentShader={NEBULA_FRAG} uniforms={c.uniforms} transparent depthWrite={false} depthTest={false} blending={AdditiveBlending} />
+          <shaderMaterial vertexShader={NEBULA_VERT} fragmentShader={NEBULA_FRAG} uniforms={c.uniforms} depthWrite={false} depthTest={false} blending={AdditiveBlending} />
         </mesh>
       ))}
 
@@ -75,7 +77,7 @@ export function SkyBox({ clock, paths, heroStars, skyNebulae, flares, pixelRatio
             {/* 원반: 팔·먼지띠·중심빛 */}
             <mesh scale={g.radius * 2} frustumCulled={false} renderOrder={-1}>
               <planeGeometry args={[1, 1]} />
-              <shaderMaterial vertexShader={GALAXY_VERT} fragmentShader={GALAXY_FRAG} uniforms={g.discUniforms} transparent depthWrite={false} depthTest={false} blending={AdditiveBlending} />
+              <shaderMaterial vertexShader={GALAXY_VERT} fragmentShader={GALAXY_FRAG} uniforms={g.discUniforms} depthWrite={false} depthTest={false} blending={AdditiveBlending} />
             </mesh>
             {/* 팔을 따라 반짝이는 별 */}
             <points frustumCulled={false} renderOrder={-1}>
@@ -85,21 +87,21 @@ export function SkyBox({ clock, paths, heroStars, skyNebulae, flares, pixelRatio
                 <bufferAttribute attach="attributes-aPhase" args={[g.data.phase, 1]} />
                 <bufferAttribute attach="attributes-aColor" args={[g.data.color, 3]} />
               </bufferGeometry>
-              <shaderMaterial vertexShader={STAR_VERT} fragmentShader={STAR_FRAG} uniforms={g.starUniforms} transparent depthWrite={false} depthTest={false} blending={AdditiveBlending} />
+              <shaderMaterial vertexShader={STAR_VERT} fragmentShader={STAR_FRAG} uniforms={g.starUniforms} depthWrite={false} depthTest={false} blending={AdditiveBlending} />
             </points>
           </group>
         </group>
       ))}
 
       {/* 행성과 위성: 첫 은하 쪽에서 빛을 받아 그쪽 가장자리가 빛난다.
-          하늘 성운·은하보다 가까우므로 그 다음에 그려 가린다 (불투명 단계에서 먼저 그리면 성운이 위에 덮여 비쳐 보임) */}
+          하늘 성운·은하보다 가까우므로 그 다음(renderOrder -0.5)에 그려 가린다 */}
       <mesh position={planet.planet} scale={10} rotation={[0.4, 0.8, 0.2]} renderOrder={-0.5}>
         <sphereGeometry args={[1, 48, 32]} />
-        <shaderMaterial vertexShader={PLANET_VERT} fragmentShader={PLANET_FRAG} uniforms={skyPlanet} depthTest={false} transparent />
+        <shaderMaterial vertexShader={PLANET_VERT} fragmentShader={PLANET_FRAG} uniforms={skyPlanet} depthTest={false} depthWrite={false} />
       </mesh>
       <mesh position={planet.moon} scale={2.2} renderOrder={-0.5}>
         <sphereGeometry args={[1, 32, 24]} />
-        <shaderMaterial vertexShader={PLANET_VERT} fragmentShader={PLANET_FRAG} uniforms={skyMoon} depthTest={false} transparent />
+        <shaderMaterial vertexShader={PLANET_VERT} fragmentShader={PLANET_FRAG} uniforms={skyMoon} depthTest={false} depthWrite={false} />
       </mesh>
 
       {flareList.map((f, i) => (
@@ -119,8 +121,8 @@ function Flare({ flare, tex, clock }: { flare: { position: [number, number, numb
     s.scale.setScalar(flare.size * k);
   });
   return (
-    <sprite ref={ref} position={flare.position} renderOrder={1}>
-      <spriteMaterial transparent depthWrite={false} depthTest={false} blending={AdditiveBlending} color={flare.color}>
+    <sprite ref={ref} position={flare.position} renderOrder={-0.4}>
+      <spriteMaterial transparent={false} depthWrite={false} depthTest={false} blending={AdditiveBlending} color={flare.color}>
         <canvasTexture attach="map" args={[tex]} />
       </spriteMaterial>
     </sprite>

@@ -35,13 +35,17 @@ export const PLANET_FRAG = /* glsl */ `
   uniform vec3 uRim;
   void main() {
     vec3 n = normalize(vNormal);
-    float diff = max(dot(n, uLight), 0.0);
+    vec3 v = normalize(vView);
+    // 빛을 보는 쪽으로 조금 당겨, 어느 방향에서 봐도 빛 받는 초승달 면이 보이게 한다 (어두운 면만 보이면 구름에 묻혀 비쳐 보임)
+    vec3 l = normalize(uLight + v * 0.8);
+    float diff = max(dot(n, l), 0.0);
     vec3 p = normalize(vObj);
     float band = 0.5 + 0.5 * sin(p.y * 9.0 + sin(p.x * 4.0 + p.z * 3.0) * 1.6);
-    vec3 base = mix(uColorA, uColorB, band);
-    vec3 lit = base * (0.08 + 1.05 * diff);
-    float fres = pow(1.0 - max(dot(n, normalize(vView)), 0.0), 3.0);
-    vec3 rim = uRim * fres * (0.35 + 0.9 * diff);
+    float swirl = 0.5 + 0.5 * sin(p.x * 13.0 + p.y * 5.0 + band * 3.0);
+    vec3 base = mix(uColorA, uColorB, band) * (0.85 + 0.3 * swirl);
+    vec3 lit = base * (0.1 + 1.25 * pow(diff, 1.3));
+    float fres = pow(1.0 - max(dot(n, v), 0.0), 3.0);
+    vec3 rim = uRim * fres * (0.45 + 1.1 * diff);
     gl_FragColor = vec4(lit + rim, 1.0);
   }
 `;
