@@ -20,6 +20,7 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
+- **진행 중**: 로그인·가입 세션/`claude/youthful-shamir-aa9bf7` — 진입 흐름 개편(최초 접속=우주 배경 터치→가입 1단계, 가입·로그인한 기기=우주 배경+로그인·회원가입 버튼, 별이 없음, 로그인도 우주 배경), 우주 색상 다채롭게, 전방에서 날아오는 먼지·빛, 별똥별 효과 강화. 범위: `src/components/auth/*`, `src/app/login`·`src/app/signup` 페이지, `src/components/MeClient.tsx`(로그아웃 시 기기 표시 한 줄), `src/components/cosmos/**`, 관련 테스트
 - **회원가입 우주 배경 고도화·별자리 잇기 연출 완료(2026-10-24, 브랜치 `claude/youthful-shamir-aa9bf7`, main 미반영)**: 인증·가입 로직 변경 없음
   - 시차: 카메라를 감싸 감기는 가까운 별·중간 별·빛 알갱이(`ParallaxStars.tsx`), 가까이 스치는 구름·파편 — 가까울수록 빠르고 하늘(은하·먼 별)은 거의 안 움직임
   - 성운: 빛 받는 가장자리가 밝은 뭉게구름 셰이더(`NEBULA_FRAG`), 어두운 먼지 구름, 카메라 아래 구름 바다. 배경 그림을 돌리는 방식 아님
