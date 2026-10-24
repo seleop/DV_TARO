@@ -20,6 +20,7 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
+- **진행 중**: 로그인·가입 세션/`claude/youthful-shamir-aa9bf7` — 우주 배경에 태양계 행성 추가, 오늘의 운세 배경 교체(시안 6개 중 선택)·운세 보는 중 별이 걸음에 맞춰 배경이 옆으로 흐름. 범위: `src/components/cosmos/**`, `src/components/TodayClient.tsx`, 오늘의 운세 장면(신규 컴포넌트), `src/lib/scene.ts`(오늘의 운세 장면 지정), 관련 테스트
 - **단계 완료 연출·말풍선·여백·가입 완료 질문 완료(2026-10-24, 브랜치 `claude/youthful-shamir-aa9bf7`, main 미반영)**: 인증·저장 API 변경 없음
   - 단계를 마칠 때마다(`beat` = 마친 단계 수): 워프(시야 확장·빛줄기 늘어남·가속) → 단계마다 다른 카메라 구도(`SHOTS` 7개: 뒤·오른쪽 낮게·위·왼쪽 가까이·아래·멀리·앞 비스듬히)로 휘돌아 들어감, 하늘 성운 색조 변화(`STEP_TINTS`), 별똥별에서 빛의 충격파(`Shockwave.tsx`), 주변 입자 소용돌이. `Director.kick/aim/release`, 미리보기 `/admin/cosmos`의 "단계 완료(워프)" 버튼
   - 별자리: 별빛 오로라(선은 가늘고 희미하게, 선을 따라 청록·라벤더·분홍 빛이 흐르고 반짝이 가루, 별은 은은한 색 빛무리)
