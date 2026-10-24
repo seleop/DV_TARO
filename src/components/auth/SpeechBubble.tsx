@@ -53,13 +53,15 @@ export function SpeechBubble({ id, label, text, accent = false }: { id: string; 
 }
 
 function Bubble({ line, skip, onSkip, onGone }: { line: Line; skip: boolean; onSkip: () => void; onGone: () => void }) {
-  // 낱말은 줄바꿈 단위로 묶고(낱말 중간에서 줄이 바뀌지 않게), 글자마다 나타나는 시각을 늦춘다 (띄어쓰기도 한 박자)
+  // 글 속 "\n"은 줄바꿈. 낱말은 줄바꿈 단위로 묶고(낱말 중간에서 줄이 바뀌지 않게), 글자마다 나타나는 시각을 늦춘다 (띄어쓰기·줄바꿈도 한 박자)
   let n = 0;
-  const words = line.text.split(" ").map((w) => {
-    const chars = [...w].map((c) => ({ c, delay: POP_DELAY_MS + 120 + n++ * CHAR_MS }));
-    n++;
-    return chars;
-  });
+  const lines = line.text.split("\n").map((row) =>
+    row.split(" ").map((w) => {
+      const chars = [...w].map((c) => ({ c, delay: POP_DELAY_MS + 120 + n++ * CHAR_MS }));
+      n++;
+      return chars;
+    }),
+  );
   return (
     <p
       onClick={onSkip}
@@ -78,21 +80,26 @@ function Bubble({ line, skip, onSkip, onGone }: { line: Line; skip: boolean; onS
       {/* 화면 읽기용: 문장 전체 (사라지는 말풍선은 읽지 않음) */}
       {!line.out && (
         <span className="sr-only" aria-live="polite">
-          {line.text}
+          {line.text.replace(/\n/g, " ")}
         </span>
       )}
       <span aria-hidden>
-        {words.map((chars, wi) => (
-          <span key={wi}>
-            <span className="inline-block whitespace-nowrap">
-              {chars.map(({ c, delay }, ci) => (
-                <span key={ci} className="sb-ch" style={{ animationDelay: `${delay}ms` }}>
-                  {c}
+        {lines.map((words, li) => (
+          <span key={li}>
+            {li > 0 && <br />}
+            {words.map((chars, wi) => (
+              <span key={wi}>
+                <span className="inline-block whitespace-nowrap">
+                  {chars.map(({ c, delay }, ci) => (
+                    <span key={ci} className="sb-ch" style={{ animationDelay: `${delay}ms` }}>
+                      {c}
+                    </span>
+                  ))}
                 </span>
-              ))}
-            </span>
-            {/* 띄어쓰기는 보통 글자로 둔다 (줄이 바뀔 때 줄 앞에 빈칸이 남지 않게) */}
-            {wi < words.length - 1 && " "}
+                {/* 띄어쓰기는 보통 글자로 둔다 (줄이 바뀔 때 줄 앞에 빈칸이 남지 않게) */}
+                {wi < words.length - 1 && " "}
+              </span>
+            ))}
           </span>
         ))}
       </span>

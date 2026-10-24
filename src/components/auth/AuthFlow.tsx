@@ -42,13 +42,13 @@ const STEP: Record<
 };
 /** 출생 정보 단계에서 '???'가 건네는 말 */
 const BIRTH_PROMPT: Record<BirthField, string> = {
-  calendar: "이제 너에 대해 알려줘. 생일은 양력이야, 음력이야?",
+  calendar: "이제 너에 대해 알려줘.\n생일은 양력이야, 음력이야?",
   year: "몇 년에 태어났어?",
   month: "몇 월이야?",
   day: "며칠이야?",
   leap: "그 달이 윤달이었어?",
-  time: "태어난 시각도 알아? 몰라도 괜찮아.",
-  gender: "마지막이야! 성별을 알려줄래? 대운을 볼 때만 써.",
+  time: "태어난 시각도 알아?\n몰라도 괜찮아.",
+  gender: "마지막이야! 성별을 알려줄래?\n대운을 볼 때만 써.",
 };
 const LOGIN_STEPS: SignupField[] = ["email", "password"];
 const signupSteps = (invite: boolean): SignupField[] =>
@@ -325,12 +325,12 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
       ? "좋아! 별자리를 따라 오늘의 운세로 가자."
       : "알겠어! 보고 싶을 때 언제든 불러 줘."
     : finale === "ask"
-      ? "방금 알려준 대로 오늘의 운세를 한 번 봐줄까?"
+      ? "방금 알려준 대로\n오늘의 운세를 한 번 봐줄까?"
       : finale === "reveal"
-        ? "사실 나는 별이야! 네 별자리가 완성됐어."
+        ? "사실 나는 별이야!\n네 별자리가 완성됐어."
         : mode === "birth"
       ? bField === "calendar"
-        ? `${initialMode === "birth" ? "다시 왔구나!" : "가입 완료!"} ${BIRTH_PROMPT.calendar}`
+        ? `${initialMode === "birth" ? "다시 왔구나!" : "가입 완료!"}\n${BIRTH_PROMPT.calendar}`
         : BIRTH_PROMPT[bField]
       : meta.signup;
 
@@ -398,8 +398,9 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
         </div>
 
         {/* '???'의 말 (가입·출생 정보): 한 글자씩 튀어 오르며 나타나고, 말이 바뀌면 통 튀어나온다. 마지막에 이름표가 '별이'로 */}
+        {/* 아래 시트가 무대를 24px 덮으므로, 키보드 위 자동완성 띠 등으로 무대가 짧아져도 말풍선이 가려지지 않게 최소 간격을 둔다 */}
         {asking && (
-          <div className={`absolute bottom-[12%] right-4 ${ease} ${done ? "left-[36%]" : "left-4"}`}>
+          <div className={`absolute bottom-[max(12%,2.25rem)] right-4 ${ease} ${done ? "left-[36%]" : "left-4"}`}>
             <SpeechBubble
               id={leaving ? `leave-${finale.leaving}` : finale ? `finale-${finale}` : `${mode}-${mode === "birth" ? bField : field}`}
               label={done ? "별이" : "???"}
