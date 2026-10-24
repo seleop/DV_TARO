@@ -20,7 +20,8 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
-- **회원가입 3D 우주 연출 완료(main 미반영, 2026-10-24)**: 브랜치 `claude/youthful-shamir-aa9bf7`. 패키지 `three`·`@react-three/fiber`·`@types/three` 추가(사용자 승인)
+- **진행 중**: 로그인·가입 세션/`claude/youthful-shamir-aa9bf7` — 독립 3D 우주 배경(은하수·별똥별 유람·3인칭 카메라) 컴포넌트. 회원가입은 건드리지 않음. 범위: 신규 `src/components/cosmos/**`, 신규 관리자 미리보기 `src/app/(app)/admin/cosmos/page.tsx`, `tests/cosmic-journey.test.ts`
+- **회원가입 3D 우주 연출 완료(2026-10-24 main 반영)**: 브랜치 `claude/youthful-shamir-aa9bf7`. 패키지 `three`·`@react-three/fiber`·`@types/three` 추가(사용자 승인)
   - 가입 중에만 위쪽 무대가 별빛 정원 → 3D 우주로 전환(정원이 가라앉고 우주가 내려옴). 진입·로그인은 그대로. `AuthFlow.tsx`는 연결부만 수정
   - `src/components/auth/SignupCosmos.tsx`: 3D를 지연 로딩(`next/dynamic` ssr:false, 압축 약 245KB, 가입에 들어갈 때만). WebGL 미지원·동작 줄이기·그래픽 끊김(context lost)·오류·로딩 중에는 기존 SVG 별자리(`Constellation`)
   - `src/components/auth/cosmos/CosmosScene.tsx`: 셰이더 성운(보라·남색·자주), 반짝이는 별, 나선 은하, 단계별 별자리(켜질 때 빛 고리, 선이 그려짐), 별똥별, 손가락·마우스를 따라 기우는 카메라, 단계마다 카메라 상승, 완료 시 물러남. 해상도 배율 최대 1.5, 작은 화면·4코어 이하 기기는 입자 감소(`cosmos/layout.ts`, `tests/cosmos-layout.test.ts`), 가입 화면이 아니거나 탭이 숨겨지면 그리기 멈춤
