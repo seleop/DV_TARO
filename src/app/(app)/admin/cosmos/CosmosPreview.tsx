@@ -7,6 +7,7 @@ import type { JourneyStage } from "@/components/cosmos/stages";
 
 /** 장 고르기 (회원가입 단계와 같은 이름) */
 const STAGES: Array<[JourneyStage, string]> = [
+  ["intro", "첫 화면"],
   ["cruise", "기본"],
   ["enter", "이메일·진입"],
   ["ignite", "비밀번호"],

@@ -6,14 +6,15 @@ import { JOURNEY, damp, wrap01 } from "./journey";
  * 장면은 장 이름만 받고, 연출 값(속도·카메라 거리·경로 비중·밝기 등)이 그 장의 목표값으로 시간에 따라 부드럽게 따라간다.
  * 그래서 장이 바뀌어도 배경이 갑자기 바뀌지 않고, 이전 장으로 돌아가면 같은 방식으로 되돌아간다.
  *
- *  - cruise : 기본 유람 (미리보기 등 장이 정해지지 않았을 때)
+ *  - intro  : 첫 화면(터치 전). 은하 바깥 멀고 높은 곳에서 천천히 내려다본다
+ *  - cruise : 기본 유람 (가입·로그인한 적 있는 기기의 진입 화면, 미리보기)
  *  - enter  : 은하수 안으로 천천히 진입. 카메라가 멀고 높은 곳에서 다가오고, 별똥별이 앞서 나아간다
  *  - ignite : 별똥별이 밝아지고 꼬리가 길어지며, 은하수의 다른 곡선 경로로 옮겨 간다
  *  - nebula : 보라색 성운이 가까워지고 별빛 입자가 별똥별 주변으로 모인다
  *  - core   : 은하 중심부를 향해 나아간다 (밝기는 과하지 않게)
  *  - arrive : 별똥별이 은하 중심의 빛으로 들어가고, 화면은 바깥에서 부드럽게 사라진다
  */
-export type JourneyStage = "cruise" | "enter" | "ignite" | "nebula" | "core" | "arrive";
+export type JourneyStage = "intro" | "cruise" | "enter" | "ignite" | "nebula" | "core" | "arrive";
 
 export type DirectorValues = {
   /** 경로를 도는 속도 배율 */
@@ -67,6 +68,7 @@ const BASE: DirectorValues = {
 };
 
 export const STAGE_TARGETS: Record<JourneyStage, DirectorValues> = {
+  intro: { ...BASE, speed: 0.45, followDistance: 22, followHeight: 9, brightness: 0.95, tail: 0.9, orbit: 0.2, fov: 52, energy: 0.2 },
   cruise: BASE,
   // 단계가 넘어갈수록 빠르고(속도), 크게 돌며(orbit), 기울고(roll), 장 전환의 가속이 세진다(energy)
   enter: { ...BASE, speed: 0.6, followDistance: 12, followHeight: 3.8, brightness: 0.9, tail: 0.85, orbit: 0, fov: 52, energy: 0.25 },

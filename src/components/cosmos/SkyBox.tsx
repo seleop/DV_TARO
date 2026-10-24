@@ -31,7 +31,7 @@ export function SkyBox({ clock, paths, heroStars, skyNebulae, flares, pixelRatio
   const flareList = useMemo(() => placeFlares(flares), [flares]);
   const flareTex = useMemo(() => flareCanvas(), []);
   const skyPlanet = useMemo(() => planetUniforms("#26308f", "#8a63f0", "#c2b0ff", light), [light]);
-  const skyMoon = useMemo(() => planetUniforms("#343a78", "#9aa4e0", "#d6dcff", light), [light]);
+  const skyMoon = useMemo(() => planetUniforms("#5a3a2a", "#e8b890", "#ffe0c4", light), [light]);
 
   useFrame(({ camera }) => {
     const t = clock.time;
@@ -158,9 +158,11 @@ function placeSkyNebulae(n: number) {
   const rand = mulberry32(8080);
   const palette: Array<[string, string]> = [
     ["#2a12a0", "#b067ff"],
-    ["#1426a8", "#5d86ff"],
+    ["#0b4a7e", "#48d8ff"],
     ["#4a128f", "#e08aff"],
-    ["#1c1b8c", "#8a72ff"],
+    ["#6a1252", "#ff7ac0"],
+    ["#1426a8", "#5d86ff"],
+    ["#4a1a7a", "#ffa8c0"],
   ];
   return Array.from({ length: n }, (_, i) => {
     const az = (i / n) * 360 + rand() * 25;
@@ -178,7 +180,7 @@ function placeSkyNebulae(n: number) {
 /** 십자 빛 별: 하늘 곳곳 (수평선보다 조금 위에 더 많이) */
 function placeFlares(n: number) {
   const rand = mulberry32(1212);
-  const colors = ["#ffffff", "#dcd2ff", "#c3d0ff", "#ffd9f3"];
+  const colors = ["#ffffff", "#dcd2ff", "#a8f0ff", "#ffd0ec", "#ffe6b0", "#c3d0ff"];
   return Array.from({ length: n }, (_, i) => ({
     position: skyDir(rand() * 360, -10 + Math.pow(rand(), 0.8) * 50, SKY_R * 0.8),
     size: 2.2 + rand() * 3.2,
@@ -195,11 +197,11 @@ type GalaxySpec = { curve: "a" | "b" | "c"; u: number; dAz: number; el: number; 
  */
 function buildGalaxies(paths: JourneyPaths, heroStars: number, pixelRatio: number) {
   const specs: GalaxySpec[] = [
-    { curve: "a", u: 0.1, dAz: 6, el: 3, radius: 18, arms: 2, twist: 2.4, share: 0.45, seed: 31, tilt: 0.55, spin: 0.012, inner: "#ff9fe6", outer: "#5a7dff" },
-    { curve: "a", u: 0.16, dAz: -15, el: 10, radius: 7, arms: 2, twist: 2.8, share: 0.1, seed: 47, tilt: 0.95, spin: -0.018, inner: "#ffc2f0", outer: "#8a7dff" },
-    { curve: "b", u: 0.33, dAz: 11, el: 6, radius: 14, arms: 3, twist: 2.1, share: 0.2, seed: 59, tilt: 0.7, spin: 0.014, inner: "#f2a8ff", outer: "#4f6cff" },
-    { curve: "c", u: 0.55, dAz: -9, el: 7, radius: 13, arms: 2, twist: 2.6, share: 0.15, seed: 71, tilt: 0.8, spin: -0.012, inner: "#ffb0e0", outer: "#6a5cff" },
-    { curve: "a", u: 0.8, dAz: 12, el: 8, radius: 10, arms: 2, twist: 2.2, share: 0.1, seed: 83, tilt: 0.6, spin: 0.016, inner: "#ffd0f4", outer: "#7a8cff" },
+    { curve: "a", u: 0.1, dAz: 6, el: 3, radius: 18, arms: 2, twist: 2.4, share: 0.45, seed: 31, tilt: 0.55, spin: 0.012, inner: "#ffb8e8", outer: "#4f86ff" },
+    { curve: "a", u: 0.16, dAz: -15, el: 10, radius: 7, arms: 2, twist: 2.8, share: 0.1, seed: 47, tilt: 0.95, spin: -0.018, inner: "#b8fbff", outer: "#7a6cff" },
+    { curve: "b", u: 0.33, dAz: 11, el: 6, radius: 14, arms: 3, twist: 2.1, share: 0.2, seed: 59, tilt: 0.7, spin: 0.014, inner: "#ffd6a0", outer: "#c05cff" },
+    { curve: "c", u: 0.55, dAz: -9, el: 7, radius: 13, arms: 2, twist: 2.6, share: 0.15, seed: 71, tilt: 0.8, spin: -0.012, inner: "#ff9ccf", outer: "#3fc8ff" },
+    { curve: "a", u: 0.8, dAz: 12, el: 8, radius: 10, arms: 2, twist: 2.2, share: 0.1, seed: 83, tilt: 0.6, spin: 0.016, inner: "#d8c8ff", outer: "#58e8d8" },
   ];
   return specs.map((g) => {
     const pos = new Vector3(...skyDir(yawAt(paths[g.curve], g.u) + g.dAz, g.el, SKY_R * 0.92));

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Vector3 } from "three";
-import { signupJourneyStage } from "@/components/auth/signupJourney";
+import { authJourneyStage, signupJourneyStage } from "@/components/auth/signupJourney";
+import { entryScreen } from "@/lib/auth/returning-device";
 import { createJourneyCurve } from "@/components/cosmos/journey";
 import {
   CameraRig,
@@ -30,6 +31,26 @@ describe("회원가입 단계 → 우주 유람의 장", () => {
     ];
     for (const [f, stage] of map) expect(signupJourneyStage(f, false)).toBe(stage);
     for (const [f] of map) expect(signupJourneyStage(f, true)).toBe("arrive");
+  });
+});
+
+describe("진입 화면 (최초 접속·가입 이후)", () => {
+  it("이 기기에서 가입·로그인한 적 없으면 터치해 가입을 시작하는 첫 화면, 있으면 버튼 화면", () => {
+    expect(entryScreen(false, "open")).toBe("intro");
+    expect(entryScreen(false, "invite")).toBe("intro");
+    expect(entryScreen(true, "open")).toBe("choose");
+    // 가입을 받지 않으면 첫 화면 없이 버튼 화면(로그인)
+    expect(entryScreen(false, "closed")).toBe("choose");
+  });
+
+  it("인증 화면마다 우주 유람의 장이 정해진다", () => {
+    expect(authJourneyStage("pending", "email", false)).toBe("intro");
+    expect(authJourneyStage("intro", "email", false)).toBe("intro");
+    expect(authJourneyStage("choose", "email", false)).toBe("cruise");
+    expect(authJourneyStage("login", "email", false)).toBe("enter");
+    expect(authJourneyStage("login", "password", false)).toBe("ignite");
+    expect(authJourneyStage("signup", "displayName", false)).toBe("nebula");
+    expect(authJourneyStage("signup", "agreePrivacy", true)).toBe("arrive");
   });
 });
 
@@ -184,7 +205,7 @@ describe("카메라가 별똥별을 화면 안에 잡는다", () => {
     expect(worst).toBeLessThan(0.75);
   });
 
-  for (const stage of ["cruise", "enter", "ignite", "nebula", "core", "arrive"] as const) {
+  for (const stage of ["intro", "cruise", "enter", "ignite", "nebula", "core", "arrive"] as const) {
     it(`${stage}: 장이 자리 잡은 뒤 한참 동안 별똥별이 화면 안쪽에 있다`, () => {
       const d = new Director(INTRO_VALUES, 0.08);
       const rig = new CameraRig();

@@ -1,20 +1,22 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import { BRAND } from "@/config/brand";
 import { PRIVACY_CONSENT } from "@/config/privacy";
 import { ApiError, api, errorText } from "@/lib/client";
 import { DISPLAY_NAME_MAX, splitServerError, validateLogin, validateSignup, type SignupField, type SignupValues } from "@/lib/auth/validate";
+import { entryScreen, markReturningDevice, readReturningDevice, subscribeReturningDevice } from "@/lib/auth/returning-device";
 import type { MascotState } from "@/config/mascot-assets";
 import { FortuneMascot } from "../FortuneMascot";
-import { SceneArt } from "../app/SceneArt";
 import { SafeForm } from "../SafeForm";
 import { Button, inputCls } from "../ui";
-import { SignupCosmos } from "./SignupCosmos";
+import { AuthCosmos } from "./AuthCosmos";
+import type { AuthScreen } from "./signupJourney";
 import { useVisualViewport } from "./useVisualViewport";
 
-type Mode = "choose" | "login" | "signup";
+/** entry: 진입 화면(이 기기 기록에 따라 첫 화면 또는 버튼 화면) */
+type Mode = "entry" | "login" | "signup";
 type SignupMode = "open" | "invite" | "closed";
 
 /** 단계별 입력칸 설정과 별이가 건네는 말 */
@@ -43,9 +45,12 @@ const CODE_FIELD: Partial<Record<string, SignupField>> = { EMAIL_TAKEN: "email",
 const EMPTY: SignupValues = { email: "", password: "", passwordConfirm: "", displayName: "", inviteCode: "", agreePrivacy: false };
 
 /**
- * 진입 화면(로그인·회원가입 두 버튼) → 한 칸씩 순차 입력.
- * - 로그인: 카메라가 별이 얼굴로 줌인
- * - 회원가입: 카메라가 밤하늘로 올라가 우주 유람(SignupCosmos)이 단계마다 다르게 움직이고, 별이 하나씩 이어져 별자리가 된다
+ * 인증 화면 (배경은 모두 우주 유람 AuthCosmos, 2026-10-24 사용자 결정):
+ * - 최초 접속(이 기기에서 가입·로그인한 적 없음): 우주 배경과 '화면을 터치해 시작하기'만. 어디든 터치하면 바로 회원가입 1단계.
+ *   이미 계정이 있으면 작은 '로그인' 링크로 (회원가입 1단계에도 같은 링크)
+ * - 가입·로그인한 적 있는 기기: 별똥별이 날아가는 우주 배경에 로그인·회원가입 버튼 (별이 없음)
+ * - 로그인: 우주 배경 그대로 이메일·비밀번호를 한 칸씩 (별이 없음)
+ * - 회원가입: 단계마다 우주 유람이 다르게 움직이고, 별이 하나씩 이어져 별자리가 된다 (별이가 아래 구석에서 말을 건넴)
  * 화면은 실제로 보이는 영역 크기에 맞춰 스크롤 없이 쓴다. 입력칸은 한 개를 계속 써서 단계가 바뀌어도 키보드가 닫히지 않는다.
  */
 export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode; next: string; signupMode: SignupMode }) {
@@ -60,14 +65,14 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
   const [showPw, setShowPw] = useState(false);
   const [caps, setCaps] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
-  // 별이의 한 번 재생 동작 (끝나면 대기 동작으로 돌아간다). 진입 화면에서는 손을 흔들며 맞이한다
-  const [reaction, setReaction] = useState<{ state: MascotState; id: number } | null>(initialMode === "choose" ? { state: "wave", id: 0 } : null);
+  // 별이의 한 번 재생 동작 (끝나면 대기 동작으로 돌아간다). 별이는 회원가입 중에만 보인다
+  const [reaction, setReaction] = useState<{ state: MascotState; id: number } | null>(null);
   const react = (state: MascotState) => setReaction((r) => ({ state, id: (r?.id ?? 0) + 1 }));
   const inputRef = useRef<HTMLInputElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
   const prevMode = useRef<Mode>(initialMode);
-  const [stage, setStage] = useState<{ w: number; h: number } | null>(null);
   const [tapHint, setTapHint] = useState(false);
+  // 이 기기에서 가입·로그인한 적 있는지: 서버 렌더·첫 그리기에서는 모름(null) → 브라우저에서 읽어 정한다
+  const returning = useSyncExternalStore<boolean | null>(subscribeReturningDevice, readReturningDevice, () => null);
   const pushed = useRef(false);
   const submitting = useRef(false);
 
@@ -76,12 +81,13 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
   const field = steps[Math.min(step, steps.length - 1)];
   const meta = STEP[field];
   const last = step === steps.length - 1;
+  const screen: AuthScreen = mode === "entry" ? (returning === null ? "pending" : entryScreen(returning, signupMode)) : mode;
 
   // 휴대폰 뒤로 가기로 진입 화면에 돌아온다
   useEffect(() => {
     const onPop = () => {
       pushed.current = false;
-      setMode("choose");
+      setMode("entry");
       setError(null);
     };
     window.addEventListener("popstate", onPop);
@@ -89,19 +95,19 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
   }, []);
 
   // 입력칸으로 커서를 옮긴다.
-  // - 진입 화면에서 막 들어왔으면 줌인·별자리 연출(0.7초)이 끝난 뒤 키보드를 올린다 (연출 도중 화면이 툭 줄지 않게)
+  // - 진입 화면에서 막 들어왔으면 시트가 올라오는 연출(0.7초)이 끝난 뒤 키보드를 올린다 (연출 도중 화면이 툭 줄지 않게)
   // - 단계만 바뀌면 바로 (같은 입력칸을 계속 쓰므로 이미 열린 키보드는 유지된다)
   // iOS는 터치 직후가 아니면 키보드를 띄우지 않으므로, 커서가 안 들어가면 입력칸을 반짝여 눌러 달라고 안내한다.
   useEffect(() => {
     const from = prevMode.current;
     prevMode.current = mode;
     const el = inputRef.current;
-    if (mode === "choose" || field === "agreePrivacy" || !el) return;
+    if (mode === "entry" || field === "agreePrivacy" || !el) return;
     const focus = () => {
       el.focus({ preventScroll: true });
       setTapHint(document.activeElement !== el);
     };
-    if (from !== "choose") {
+    if (from !== "entry") {
       el.focus({ preventScroll: true });
       return;
     }
@@ -109,26 +115,18 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
     return () => clearTimeout(t);
   }, [mode, field]);
 
-  // 무대 크기를 재서 진입 화면 별이 크기를 정한다 (작은 화면에서 제목·버튼과 겹치지 않게)
-  useEffect(() => {
-    const el = stageRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(([e]) => setStage({ w: e.contentRect.width, h: e.contentRect.height }));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  function enter(m: Exclude<Mode, "choose">) {
+  function enter(m: Exclude<Mode, "entry">) {
     if (!pushed.current) {
       window.history.pushState({ auth: m }, "");
       pushed.current = true;
     }
     setMode(m);
-    react("nod");
+    if (m === "signup") react("nod");
     setStep(0);
     setError(null);
     setDone(false);
     setShowPw(false);
+    setShowTerms(false);
   }
 
   function back() {
@@ -136,7 +134,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
     setShowTerms(false);
     if (step > 0) setStep(step - 1);
     else if (pushed.current) window.history.back();
-    else setMode("choose");
+    else setMode("entry");
   }
 
   function stepError(f: SignupField): string | undefined {
@@ -165,7 +163,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
     try {
       if (mode === "login") {
         await api("/api/auth/login", { body: { email: values.email.trim(), password: values.password } });
-        react("happy");
+        markReturningDevice();
         router.replace(next);
       } else {
         await api("/api/auth/signup", {
@@ -178,6 +176,8 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
             ...(signupMode === "invite" ? { inviteCode: values.inviteCode.trim() } : {}),
           },
         });
+        // 다음부터 이 기기의 진입 화면은 로그인·회원가입 버튼
+        markReturningDevice();
         // 별자리가 완성되는 모습을 잠깐 보여 준 뒤 이동한다
         setDone(true);
         await new Promise((r) => setTimeout(r, 1100));
@@ -212,32 +212,20 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
   const prompt = mode === "login" ? (meta.login ?? meta.signup) : meta.signup;
   const boxStyle = vv ? { height: vv.height, top: vv.top } : undefined;
   const ease = "transition-all duration-700 ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none";
-
-  // 별이 크기(px, 2026-10-24 사용자 선택): 진입 400(작은 화면이면 무대에 맞춰 줄임) · 로그인 약 500.
-  // 로그인 크기는 키보드가 올라와 무대가 줄어도 그대로 유지한다(사용자 요청) → 화면 폭만 기준으로 삼는다
-  const sw = stage?.w ?? 375;
-  const sh = stage?.h ?? 600;
-  const chooseSize = Math.min(400, sh * 0.72, sw * 1.1);
-  const loginSize = Math.min(500, sw * 1.35);
-  // 별이 위치(384px 원본 기준 배율): 진입=가운데, 로그인=다가옴, 가입=아래 구석에서 하늘을 올려다봄
-  const mascotPos =
-    mode === "choose"
-      ? { left: "50%", top: "58%", transform: `translate(-50%,-50%) scale(${chooseSize / 384})` }
-      : mode === "login"
-        ? { left: "50%", top: "calc(50% + 28px)", transform: `translate(-50%,-50%) scale(${loginSize / 384})` }
-        : { left: "18%", top: "84%", transform: "translate(-50%,-50%) scale(0.26)" };
+  const intro = screen === "intro" || screen === "pending";
+  const signup = screen === "signup";
+  const loginLink = "min-h-11 px-2 text-[13px] text-white/75 underline underline-offset-4";
 
   return (
     // 키보드가 오르내릴 때 높이가 툭 바뀌지 않게 부드럽게 따라간다
     <div className="fixed inset-x-0 top-0 z-10 mx-auto flex h-dvh w-full max-w-[440px] flex-col overflow-hidden transition-[height,top] duration-300 ease-out motion-reduce:transition-none" style={boxStyle}>
-      {/* 위: 별빛 정원 장면(뒤로·진행 표시·별이·별자리) / 아래: 크림색 시트(버튼·입력) */}
+      {/* 화면 전체(시트 뒤까지) 우주 */}
+      <AuthCosmos screen={screen} field={field} total={steps.length} step={step} done={done} />
+      {/* 위: 무대(뒤로·진행 표시·별이·말) / 아래: 크림색 시트(버튼·입력). 첫 화면에서는 시트 없이 우주만 */}
       <div className="scene-dark relative flex min-h-0 flex-1 flex-col">
-      {/* 가입 중에는 정원이 아래로 가라앉고 카메라가 하늘로 올라가 3D 우주가 위쪽을 채운다 */}
-      <SceneArt kind="garden" className={`absolute inset-0 h-full w-full ${ease} ${mode === "signup" ? "translate-y-1/4 opacity-0" : ""}`} />
-      <SignupCosmos active={mode === "signup"} field={field} total={steps.length} step={step} done={done} />
-      {/* 상단: 뒤로 + 진행 표시 */}
+      {/* 상단: 뒤로 + 진행 표시(로그인) 또는 로그인 링크(회원가입 1단계) */}
       <div className="relative flex h-14 shrink-0 items-center px-3 pt-[env(safe-area-inset-top)]">
-        {mode !== "choose" && (
+        {(mode === "login" || mode === "signup") && (
           <button type="button" onClick={back} aria-label="뒤로" className="flex h-11 w-11 items-center justify-center rounded-full text-ink active:bg-white/10">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M15 18l-6-6 6-6" />
@@ -251,43 +239,64 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
             ))}
           </div>
         )}
+        {signup && step === 0 && !done && (
+          <button type="button" onClick={() => enter("login")} className={`ml-auto ${loginLink}`}>
+            이미 계정이 있어요? 로그인
+          </button>
+        )}
       </div>
 
-      {/* 무대: 별이 + 하늘 */}
-      <div ref={stageRef} className="relative min-h-0 flex-1 overflow-hidden pb-6">
-        <div className={`absolute inset-x-0 top-0 text-center ${ease} ${mode === "choose" ? "translate-y-[6%] opacity-100" : "-translate-y-full opacity-0"}`}>
+      {/* 무대: 하늘 + (회원가입 중) 별이 */}
+      <div className="relative min-h-0 flex-1 overflow-hidden pb-6">
+        {/* 버튼 화면의 앱 이름 */}
+        <div
+          className={`absolute inset-x-0 top-[16%] text-center ${ease} ${screen === "choose" ? "translate-y-0 opacity-100" : "-translate-y-8 opacity-0"}`}
+          aria-hidden={screen !== "choose"}
+        >
           <p className="text-[15px] text-ink-2">우리끼리 보는 운세</p>
           <h1 className="text-gradient mt-1 text-[34px] font-extrabold leading-tight">{BRAND.appName}</h1>
         </div>
 
-        <div className={`absolute h-[384px] w-[384px] origin-center ${ease}`} style={mascotPos}>
-          {/* 스프라이트 원본(384px) 크기로 그리고 배율로 줄이고 키워 확대해도 덜 흐리게 한다 */}
+        {/* 별이: 회원가입 중에만 아래 구석에서 하늘을 올려다보며 말을 건넨다 */}
+        <div
+          className={`absolute h-[384px] w-[384px] origin-center ${ease} ${signup ? "opacity-100" : "pointer-events-none opacity-0"}`}
+          style={{ left: "18%", top: "84%", transform: `translate(-50%,-50%) scale(${signup ? 0.26 : 0.2})` }}
+          aria-hidden={!signup}
+        >
+          {/* 스프라이트 원본(384px) 크기로 그리고 배율로 줄인다 */}
           <FortuneMascot
             state={done ? "celebrate" : (reaction?.state ?? "idle")}
             playId={reaction?.id ?? 0}
             size={384}
-            preload={["wave", "nod", "surprised", "happy", "celebrate"]}
+            preload={["nod", "surprised", "celebrate"]}
             onAnimationComplete={(st) => {
               if (st !== "celebrate") setReaction((r) => (r?.state === st ? null : r));
             }}
           />
         </div>
 
-        {/* 별이의 말풍선 */}
-        {mode !== "choose" && (
+        {/* 별이의 말풍선(회원가입) / 안내 문구(로그인: 별이 없이 화면 위쪽 가운데) */}
+        {signup && (
           <p
-            key={`${mode}-${field}`}
+            key={`signup-${field}`}
             aria-live="polite"
-            className={`absolute animate-[rise_.35s_ease-out] rounded-2xl bg-white px-4 py-2.5 text-[15px] font-semibold text-[#2a2440] shadow-lg motion-reduce:animate-none ${
-              mode === "login" ? "left-1/2 top-3 -translate-x-1/2 whitespace-nowrap" : "bottom-[12%] left-[34%] right-4"
-            }`}
+            className="absolute bottom-[12%] left-[34%] right-4 animate-[rise_.35s_ease-out] rounded-2xl bg-white px-4 py-2.5 text-[15px] font-semibold text-[#2a2440] shadow-lg motion-reduce:animate-none"
           >
             {done ? "별자리가 완성됐어!" : prompt}
           </p>
         )}
+        {mode === "login" && (
+          <p
+            key={`login-${field}`}
+            aria-live="polite"
+            className="absolute inset-x-4 top-[10%] animate-[rise_.35s_ease-out] text-center text-[19px] font-bold text-white drop-shadow-[0_2px_10px_rgba(10,6,40,0.8)] motion-reduce:animate-none"
+          >
+            {field === "email" ? "다시 만나서 반가워요! 이메일을 알려 주세요." : "비밀번호를 입력해 주세요."}
+          </p>
+        )}
 
         {/* 동의 내용 (무대 위에 겹쳐 보여 준다) */}
-        {showTerms && mode === "signup" && field === "agreePrivacy" && (
+        {showTerms && signup && field === "agreePrivacy" && (
           <div id="auth-terms" className="absolute inset-3 overflow-y-auto rounded-2xl bg-[#140f33]/95 p-4 text-[13px] leading-relaxed text-ink-2 backdrop-blur">
             <p className="mb-2 font-semibold text-ink">{PRIVACY_CONSENT.title}</p>
             <dl className="space-y-1.5">
@@ -308,10 +317,37 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
       </div>
       </div>
 
-      {/* 하단: 버튼 또는 입력 (시트) */}
-      <div className="relative -mt-6 shrink-0 rounded-t-[28px] bg-[var(--bg)] px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-5 shadow-[0_-12px_24px_-16px_rgba(30,20,70,0.6)]">
-        {mode === "choose" ? (
-          <>
+      {/* 첫 화면: 어디든 터치하면 회원가입 1단계 (로그인 링크는 이 위에 있어 따로 눌린다) */}
+      {intro && (
+        <button
+          type="button"
+          onClick={() => enter("signup")}
+          disabled={screen === "pending"}
+          aria-label="화면을 터치해 회원가입 시작하기"
+          className="absolute inset-0 z-20 cursor-pointer"
+        />
+      )}
+
+      {/* 하단: 버튼 또는 입력 (시트). 첫 화면에서는 크림색 판이 아래로 내려가 있고 터치 안내만 보인다 */}
+      <div className="relative -mt-6 shrink-0 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-5">
+        <div
+          aria-hidden
+          className={`absolute inset-0 rounded-t-[28px] bg-[var(--bg)] shadow-[0_-12px_24px_-16px_rgba(30,20,70,0.6)] ${ease} ${intro ? "translate-y-full opacity-0" : "translate-y-0 opacity-100"}`}
+        />
+        {intro ? (
+          <div className="relative text-center">
+            <p
+              className={`flex h-14 items-center justify-center text-[16px] font-semibold text-white/90 drop-shadow-[0_2px_8px_rgba(10,6,40,0.8)] ${screen === "intro" ? "animate-pulse" : "opacity-0"}`}
+            >
+              화면을 터치해 시작하기
+            </p>
+            {/* 이미 계정이 있는 사람(새 기기 등): 터치 영역보다 위에 두어 따로 눌린다 */}
+            <button type="button" onClick={() => enter("login")} disabled={screen === "pending"} className={`relative z-30 mt-1 ${loginLink}`}>
+              이미 계정이 있어요? 로그인
+            </button>
+          </div>
+        ) : screen === "choose" ? (
+          <div className="relative">
             <div className="grid grid-cols-2 gap-3">
               <Button size="lg" variant="ghost" onClick={() => enter("login")}>
                 로그인
@@ -323,9 +359,9 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
             <p className="mt-3 min-h-5 text-center text-xs text-ink-2/80" role="status">
               {error ?? "비밀번호를 잊었다면 운영자에게 문의해 주세요."}
             </p>
-          </>
+          </div>
         ) : (
-          <SafeForm onSubmit={onSubmit} noValidate className="space-y-2.5">
+          <SafeForm onSubmit={onSubmit} noValidate className="relative space-y-2.5">
             {field === "agreePrivacy" ? (
               <div className={`flex items-center rounded-2xl border px-3 ${error ? "border-bad/70" : "border-line"}`}>
                 <label className="flex min-h-12 flex-1 items-center gap-3 text-[14px]">

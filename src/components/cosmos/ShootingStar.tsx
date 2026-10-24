@@ -18,22 +18,41 @@ const HEAD = new Vector3();
 const HERO_SAMPLES = 64;
 
 /**
- * 주인공 별똥별: 작은 빛의 핵 + 부드러운 발광 + 길이·밝기가 숨 쉬듯 변하는 꼬리.
+ * 주인공 별똥별: 별 모양 핵 두 겹(서로 반대로 돎) + 부드러운 발광 + 가로로 번지는 렌즈 빛줄기
+ * + 길이·밝기가 숨 쉬듯 변하는 꼬리 두 겹(가는 흰 꼬리 + 넓게 퍼지는 청록·자홍 빛 꼬리, 빛의 물결이 흘러감).
  * 닫힌 유람 경로를 끝없이 돌기 때문에 반복할 때 처음 위치로 순간이동하지 않는다.
  * 꼬리는 경로상의 지난 위치들로 만든 띠이고, 늘 카메라 쪽을 향하게 펼쳐 어느 각도에서도 두께가 보인다.
  * 장에 따라 밝기·꼬리 길이가 바뀌고, 마지막 장에서는 머리부터 은하 중심의 빛으로 끌려 들어간다.
  */
 export function ShootingStar({ director, paths, clock }: { director: Director; paths: JourneyPaths; clock: JourneyClock }) {
   const trail = useRef<Mesh>(null);
+  const aura = useRef<Mesh>(null);
   const core = useRef<Sprite>(null);
+  const core2 = useRef<Sprite>(null);
+  const streak = useRef<Sprite>(null);
   const glow = useRef<Sprite>(null);
   const geo = useMemo(() => ribbonBuffers(HERO_SAMPLES), []);
+  const auraGeo = useMemo(() => ribbonBuffers(HERO_SAMPLES), []);
   const uniforms = useMemo(
     () => ({
       uBrightness: { value: 1 },
       uHead: { value: new Color("#ffffff") },
-      uMid: { value: new Color("#e2d6ff") },
-      uTail: { value: new Color("#4f5ef0") },
+      uMid: { value: new Color("#e8e0ff") },
+      uTail: { value: new Color("#6a6cff") },
+      uTime: { value: 0 },
+      uFlow: { value: 0.45 },
+    }),
+    [],
+  );
+  // 넓게 퍼지는 빛 꼬리: 머리 쪽 흰빛 → 청록 → 자홍
+  const auraUniforms = useMemo(
+    () => ({
+      uBrightness: { value: 0.5 },
+      uHead: { value: new Color("#ffffff") },
+      uMid: { value: new Color("#7ff0ff") },
+      uTail: { value: new Color("#c25cff") },
+      uTime: { value: 0 },
+      uFlow: { value: 0.8 },
     }),
     [],
   );
@@ -53,6 +72,7 @@ export function ShootingStar({ director, paths, clock }: { director: Director; p
     const w0 = director.weights;
     const cam = state.camera.position;
     const pos = (mesh.geometry.getAttribute("position") as BufferAttribute).array as Float32Array;
+    const auraPos = aura.current ? ((aura.current.geometry.getAttribute("position") as BufferAttribute).array as Float32Array) : null;
 
     for (let i = 0; i < HERO_SAMPLES; i++) {
       const s = i / (HERO_SAMPLES - 1);
@@ -73,16 +93,47 @@ export function ShootingStar({ director, paths, clock }: { director: Director; p
       pos[k + 3] = P.x - SIDE.x * w;
       pos[k + 4] = P.y - SIDE.y * w;
       pos[k + 5] = P.z - SIDE.z * w;
+      if (auraPos) {
+        // 빛 꼬리: 뒤로 갈수록 넓게 퍼진다
+        const wa = 0.18 + 0.75 * Math.pow(s, 0.6) * (1 - s * 0.35);
+        auraPos[k] = P.x + SIDE.x * wa;
+        auraPos[k + 1] = P.y + SIDE.y * wa;
+        auraPos[k + 2] = P.z + SIDE.z * wa;
+        auraPos[k + 3] = P.x - SIDE.x * wa;
+        auraPos[k + 4] = P.y - SIDE.y * wa;
+        auraPos[k + 5] = P.z - SIDE.z * wa;
+      }
     }
     mesh.geometry.getAttribute("position").needsUpdate = true;
-    (mesh.material as ShaderMaterial).uniforms.uBrightness.value = brightness;
+    const tu = (mesh.material as ShaderMaterial).uniforms;
+    tu.uBrightness.value = brightness;
+    tu.uTime.value = t;
+    if (aura.current) {
+      aura.current.geometry.getAttribute("position").needsUpdate = true;
+      const au = (aura.current.material as ShaderMaterial).uniforms;
+      // 전환 가속 때 더 밝게 타오른다
+      au.uBrightness.value = brightness * (0.42 + 0.35 * director.surge);
+      au.uTime.value = t;
+    }
 
     HEAD.copy(director.star);
+    const flash = 1 + director.surge * 0.5;
     if (core.current) {
       core.current.position.copy(HEAD);
-      core.current.scale.setScalar(0.9 + brightness * 0.25);
+      core.current.scale.setScalar((1.05 + brightness * 0.35) * flash);
       // 별 모양 머리가 천천히 돈다
       (core.current.material as SpriteMaterial).rotation = t * 0.6;
+    }
+    if (core2.current) {
+      // 두 번째 별빛(청록): 반대로 돌며 크기가 숨 쉬듯 변해 반짝임이 겹쳐 보인다
+      core2.current.position.copy(HEAD);
+      core2.current.scale.setScalar((1.5 + brightness * 0.4) * (0.85 + 0.15 * Math.sin(t * 2.7)) * flash);
+      (core2.current.material as SpriteMaterial).rotation = 0.4 - t * 0.35;
+    }
+    if (streak.current) {
+      // 렌즈 빛줄기: 머리를 가로지르는 가늘고 긴 빛 (화면 가로 방향)
+      streak.current.position.copy(HEAD);
+      streak.current.scale.set((4.5 + brightness * 1.5) * flash, 0.14 + 0.04 * Math.sin(t * 3.1), 1);
     }
     if (glow.current) {
       glow.current.position.copy(HEAD);
@@ -102,12 +153,32 @@ export function ShootingStar({ director, paths, clock }: { director: Director; p
         </bufferGeometry>
         <shaderMaterial vertexShader={TRAIL_VERT} fragmentShader={TRAIL_FRAG} uniforms={uniforms} transparent depthWrite={false} blending={AdditiveBlending} />
       </mesh>
+      {/* 넓게 퍼지는 빛 꼬리 (가는 꼬리보다 먼저 그림) */}
+      <mesh ref={aura} frustumCulled={false} renderOrder={2}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[auraGeo.position, 3]} usage={DynamicDrawUsage} />
+          <bufferAttribute attach="attributes-aAlong" args={[auraGeo.along, 1]} />
+          <bufferAttribute attach="attributes-aAcross" args={[auraGeo.across, 1]} />
+          <bufferAttribute attach="index" args={[auraGeo.index, 1]} />
+        </bufferGeometry>
+        <shaderMaterial vertexShader={TRAIL_VERT} fragmentShader={TRAIL_FRAG} uniforms={auraUniforms} transparent depthWrite={false} blending={AdditiveBlending} />
+      </mesh>
       <sprite ref={glow} renderOrder={3}>
         <spriteMaterial transparent depthWrite={false} blending={AdditiveBlending}>
           <canvasTexture attach="map" args={[glowTex]} />
         </spriteMaterial>
       </sprite>
-      <sprite ref={core} renderOrder={4}>
+      <sprite ref={streak} renderOrder={4}>
+        <spriteMaterial transparent depthWrite={false} blending={AdditiveBlending} color="#dff6ff" opacity={0.6}>
+          <canvasTexture attach="map" args={[glowTex]} />
+        </spriteMaterial>
+      </sprite>
+      <sprite ref={core2} renderOrder={4}>
+        <spriteMaterial transparent depthWrite={false} blending={AdditiveBlending} color="#9ff4ff" opacity={0.55}>
+          <canvasTexture attach="map" args={[coreTex]} />
+        </spriteMaterial>
+      </sprite>
+      <sprite ref={core} renderOrder={5}>
         <spriteMaterial transparent depthWrite={false} blending={AdditiveBlending}>
           <canvasTexture attach="map" args={[coreTex]} />
         </spriteMaterial>
@@ -162,8 +233,9 @@ export function SparkleTrail({ director, clock, capacity, rate, pixelRatio }: { 
       const i = s.next;
       s.next = (s.next + 1) % capacity;
       const k = i * 3;
-      const back = 0.6 + s.rand() * 2.6;
-      const spread = 0.35 + s.rand() * 0.9;
+      const back = 0.6 + s.rand() * 2.8;
+      // 전환 가속 때 더 넓게 흩날린다
+      const spread = (0.4 + s.rand() * 1.3) * (1 + director.surge * 0.6);
       const a = s.rand() * Math.PI * 2;
       pos[k] = director.star.x;
       pos[k + 1] = director.star.y;

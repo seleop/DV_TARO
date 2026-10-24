@@ -2,27 +2,31 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
-import { AdditiveBlending, BufferAttribute, DynamicDrawUsage, type Group, type LineSegments, type ShaderMaterial } from "three";
+import { AdditiveBlending, BufferAttribute, Color, DynamicDrawUsage, type Group, type LineSegments, type ShaderMaterial } from "three";
 import type { JourneyClock } from "./common";
 import { mulberry32 } from "./journey";
 import type { Director } from "./stages";
 
 const STREAK_VERT = /* glsl */ `
   attribute float aAlong;
+  attribute vec3 aColor;
   varying float vAlong;
+  varying vec3 vColor;
   void main() {
     vAlong = aAlong;
+    vColor = aColor;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `;
 
 const STREAK_FRAG = /* glsl */ `
   varying float vAlong;
+  varying vec3 vColor;
   uniform float uIntensity;
   void main() {
-    // 앞(카메라 쪽) 끝이 밝고 뒤로 갈수록 옅어진다
+    // 앞(카메라 쪽) 끝이 밝고 희며, 뒤로 갈수록 제 색으로 옅어진다
     float a = (1.0 - vAlong) * uIntensity;
-    vec3 col = mix(vec3(0.62, 0.66, 1.0), vec3(0.85, 0.75, 1.0), vAlong);
+    vec3 col = mix(vec3(1.0), vColor, smoothstep(0.0, 0.5, vAlong));
     gl_FragColor = vec4(col * a, a);
   }
 `;
@@ -40,8 +44,16 @@ export function SpeedStreaks({ director, clock, count }: { director: Director; c
   const geo = useMemo(() => {
     const position = new Float32Array(count * 2 * 3);
     const along = new Float32Array(count * 2);
-    for (let i = 0; i < count; i++) along[i * 2 + 1] = 1;
-    return { position, along };
+    const color = new Float32Array(count * 2 * 3);
+    // 빛줄기 색: 대부분 라벤더·푸른빛, 가끔 청록·분홍·금빛
+    const tints = ["#9fa8ff", "#c9b4ff", "#9fa8ff", "#7fe8ff", "#ff9ad6", "#ffd98a"].map((c) => new Color(c));
+    const rand = mulberry32(1357);
+    for (let i = 0; i < count; i++) {
+      along[i * 2 + 1] = 1;
+      const c = tints[Math.floor(rand() * tints.length)];
+      color.set([c.r, c.g, c.b, c.r, c.g, c.b], i * 6);
+    }
+    return { position, along, color };
   }, [count]);
   const uniforms = useMemo(() => ({ uIntensity: { value: 0 } }), []);
   const st = useRef({ rand: mulberry32(2468), streaks: [] as Array<{ x: number; y: number; z: number; v: number; len: number }> });
@@ -66,7 +78,8 @@ export function SpeedStreaks({ director, clock, count }: { director: Director; c
       const k = s.streaks[i];
       k.z += k.v * (0.4 + pace) * dt;
       if (k.z > NEAR) Object.assign(k, spawn(s.rand, FAR));
-      const len = k.len * (0.5 + pace * 1.4);
+      // 빠를수록·전환 가속 때 길게 늘어난다
+      const len = k.len * (0.5 + pace * 1.6 + director.surge * 1.2);
       const j = i * 6;
       pos[j] = k.x;
       pos[j + 1] = k.y;
@@ -85,6 +98,7 @@ export function SpeedStreaks({ director, clock, count }: { director: Director; c
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" args={[geo.position, 3]} usage={DynamicDrawUsage} />
           <bufferAttribute attach="attributes-aAlong" args={[geo.along, 1]} />
+          <bufferAttribute attach="attributes-aColor" args={[geo.color, 3]} />
         </bufferGeometry>
         <shaderMaterial vertexShader={STREAK_VERT} fragmentShader={STREAK_FRAG} uniforms={uniforms} transparent depthWrite={false} depthTest={false} blending={AdditiveBlending} />
       </lineSegments>

@@ -25,3 +25,27 @@ export function signupJourneyStage(field: SignupField, done: boolean): JourneySt
       return "core";
   }
 }
+
+/** 인증 화면의 지금 화면: 판단 전(pending)·최초 접속(intro)·버튼(choose)·로그인·회원가입 */
+export type AuthScreen = "pending" | "intro" | "choose" | "login" | "signup";
+
+/**
+ * 인증 화면 전체 → 우주 유람의 장.
+ *  - 최초 접속(터치 전): 은하 바깥 멀고 높은 곳에서 천천히 (터치하면 이메일 단계의 '진입'으로 다가간다)
+ *  - 버튼 화면(가입·로그인한 적 있는 기기): 별똥별이 날아가는 기본 유람
+ *  - 로그인: 이메일=진입, 비밀번호=별똥별이 밝아짐
+ *  - 회원가입: 단계별 (signupJourneyStage)
+ */
+export function authJourneyStage(screen: AuthScreen, field: SignupField, done: boolean): JourneyStage {
+  switch (screen) {
+    case "pending":
+    case "intro":
+      return "intro";
+    case "choose":
+      return "cruise";
+    case "login":
+      return field === "password" ? "ignite" : "enter";
+    case "signup":
+      return signupJourneyStage(field, done);
+  }
+}

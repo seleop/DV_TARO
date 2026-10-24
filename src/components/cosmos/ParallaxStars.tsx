@@ -20,9 +20,9 @@ type Layer = { box: number; near: number; scale: number; maxSize: number; twinkl
 export function ParallaxStars({ clock, near, mid, bokeh, pixelRatio }: { clock: JourneyClock; near: number; mid: number; bokeh: number; pixelRatio: number }) {
   const layers = useMemo(
     () => [
-      { n: near, seed: 101, spec: { box: 34, near: 1.2, scale: 26, maxSize: 7, twinkle: 0.35, sizes: [0.5, 1.6], tints: ["#ffffff", "#e6ddff", "#cdd6ff", "#ffe2f6"], frag: STAR_FRAG } as Layer },
-      { n: mid, seed: 202, spec: { box: 120, near: 3, scale: 60, maxSize: 5, twinkle: 0.5, sizes: [0.5, 1.4], tints: ["#f2eeff", "#c9b8ff", "#9fb0ff", "#e9c4ff"], frag: STAR_FRAG } as Layer },
-      { n: bokeh, seed: 303, spec: { box: 26, near: 1.5, scale: 30, maxSize: 46, twinkle: 0.2, sizes: [1.2, 3.2], tints: ["#b9a2ff", "#8fa0ff", "#e6a6ff"], frag: BOKEH_FRAG } as Layer },
+      { n: near, seed: 101, spec: { box: 34, near: 1.2, scale: 26, maxSize: 7, twinkle: 0.35, sizes: [0.5, 1.6], tints: ["#ffffff", "#e6ddff", "#a8f0ff", "#ffd0ec", "#ffe6b0", "#cdd6ff"], frag: STAR_FRAG } as Layer },
+      { n: mid, seed: 202, spec: { box: 120, near: 3, scale: 60, maxSize: 5, twinkle: 0.5, sizes: [0.5, 1.4], tints: ["#f2eeff", "#c9b8ff", "#8fe4ff", "#ffb8e0", "#ffd8a0", "#9fb0ff"], frag: STAR_FRAG } as Layer },
+      { n: bokeh, seed: 303, spec: { box: 26, near: 1.5, scale: 30, maxSize: 46, twinkle: 0.2, sizes: [1.2, 3.2], tints: ["#b9a2ff", "#6fe0ff", "#ff9ad6", "#ffc98a", "#8fa0ff"], frag: BOKEH_FRAG } as Layer },
     ].map(({ n, seed, spec }) => ({ spec, data: buildLayer(n, seed, spec), uniforms: layerUniforms(spec, pixelRatio) })),
     [near, mid, bokeh, pixelRatio],
   );

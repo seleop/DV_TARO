@@ -152,25 +152,34 @@ export const SPARKLE_VERT = /* glsl */ `
   uniform float uTime;
   varying float vLife;
   varying float vTw;
+  varying float vSeed;
   void main() {
     vLife = aLife;
+    vSeed = aSeed;
     vTw = 0.65 + 0.35 * sin(uTime * 18.0 + aSeed * 40.0);
     vec4 mv = modelViewMatrix * vec4(position, 1.0);
     gl_Position = projectionMatrix * mv;
-    float size = (0.6 + 2.2 * aLife) * (0.6 + fract(aSeed * 7.3));
-    gl_PointSize = clamp(size * uPixelRatio * (22.0 / -mv.z), 0.0, 18.0 * uPixelRatio) * step(0.001, aLife);
+    float size = (0.6 + 2.6 * aLife) * (0.6 + fract(aSeed * 7.3));
+    gl_PointSize = clamp(size * uPixelRatio * (22.0 / -mv.z), 0.0, 22.0 * uPixelRatio) * step(0.001, aLife);
   }
 `;
 
 export const SPARKLE_FRAG = /* glsl */ `
   varying float vLife;
   varying float vTw;
+  varying float vSeed;
   void main() {
     float d = length(gl_PointCoord - 0.5);
     float a = 1.0 - smoothstep(0.0, 0.5, d);
     a = a * a * vLife * vTw;
-    vec3 col = mix(vec3(0.45, 0.55, 1.0), vec3(0.85, 0.78, 1.0), smoothstep(0.2, 0.6, vLife));
-    col = mix(col, vec3(1.0), smoothstep(0.7, 1.0, vLife));
+    // 입자마다 색이 다르다: 라벤더·청록·분홍·금빛 (갓 태어났을 때는 흰빛)
+    float h = fract(vSeed * 7.31);
+    vec3 hue = vec3(0.8, 0.75, 1.0);
+    if (h < 0.25) hue = vec3(0.55, 0.95, 1.0);
+    else if (h < 0.45) hue = vec3(1.0, 0.6, 0.88);
+    else if (h < 0.6) hue = vec3(1.0, 0.86, 0.55);
+    vec3 col = mix(hue * 0.75, hue, smoothstep(0.2, 0.6, vLife));
+    col = mix(col, vec3(1.0), smoothstep(0.75, 1.0, vLife));
     gl_FragColor = vec4(col * a, a);
   }
 `;
@@ -195,13 +204,17 @@ export const TRAIL_FRAG = /* glsl */ `
   uniform vec3 uHead;
   uniform vec3 uMid;
   uniform vec3 uTail;
+  uniform float uTime;
+  uniform float uFlow;
   void main() {
     // vAlong: 0 = 머리, 1 = 꼬리 끝 / vAcross: -1~1 (띠의 폭 방향)
     float fade = pow(1.0 - vAlong, 1.7);
     float edge = 1.0 - smoothstep(0.0, 1.0, abs(vAcross));
     vec3 col = mix(uHead, uMid, smoothstep(0.0, 0.25, vAlong));
     col = mix(col, uTail, smoothstep(0.25, 1.0, vAlong));
-    float a = fade * edge * uBrightness;
+    // 꼬리를 따라 흘러가는 빛의 물결 (uFlow가 0이면 없음)
+    float flow = 1.0 + uFlow * (0.45 * sin(vAlong * 38.0 - uTime * 14.0) + 0.25 * sin(vAlong * 91.0 - uTime * 23.0 + vAcross * 2.0));
+    float a = fade * edge * uBrightness * flow;
     gl_FragColor = vec4(col * a, a);
   }
 `;
@@ -308,5 +321,28 @@ export const GALAXY_FRAG = /* glsl */ `
     col += vec3(1.0, 0.82, 0.95) * bulge * 0.85 + vec3(1.0) * core * 0.9;
     col += vec3(1.0) * pow(fine, 6.0) * armI * 2.0;
     gl_FragColor = vec4(col * uOpacity, 1.0);
+  }
+`;
+
+/**
+ * 앞에서 날아오는 빛 알갱이(카메라에 붙은 공간): 멀리서 옅게 나타나 다가올수록 커지고 밝아지며, 바로 앞에서 사라진다.
+ * 프래그먼트는 STAR_FRAG를 함께 쓴다.
+ */
+export const ONCOMING_VERT = /* glsl */ `
+  attribute float aSize;
+  attribute vec3 aColor;
+  uniform float uPixelRatio;
+  uniform float uFar;
+  uniform float uIntensity;
+  varying vec3 vColor;
+  varying float vBright;
+  void main() {
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    gl_Position = projectionMatrix * mv;
+    float z = -mv.z;
+    float fade = (1.0 - smoothstep(uFar * 0.6, uFar, z)) * smoothstep(0.8, 4.0, z);
+    vBright = fade * uIntensity;
+    vColor = aColor;
+    gl_PointSize = clamp(aSize * uPixelRatio * (40.0 / max(z, 0.1)), 0.0, 30.0 * uPixelRatio) * step(0.002, fade);
   }
 `;

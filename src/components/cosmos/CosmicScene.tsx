@@ -12,6 +12,7 @@ import { AsteroidField, NearDebris, Planets } from "./Planets";
 import { Comet } from "./Comet";
 import { AdaptiveQuality } from "./AdaptiveQuality";
 import { ParallaxStars } from "./ParallaxStars";
+import { FlybyComet, OncomingLights } from "./Oncoming";
 import { SkyBox } from "./SkyBox";
 import { SpeedStreaks } from "./SpeedStreaks";
 import { Director, INTRO_VALUES, STAGE_TARGETS, createJourneyPaths, type JourneyStage } from "./stages";
@@ -87,6 +88,10 @@ export default function CosmicScene({ running, moving, stage, onReady, onContext
       <MinorShootingStar seed={11} clock={clock} />
       {!budget.lite && <MinorShootingStar seed={29} clock={clock} />}
       <SpeedStreaks director={director} clock={clock} count={budget.streaks} />
+      <OncomingLights director={director} clock={clock} count={budget.oncoming} pixelRatio={pixelRatio} />
+      {Array.from({ length: budget.flybys }, (_, i) => (
+        <FlybyComet key={i} seed={7 + i * 13} director={director} clock={clock} />
+      ))}
     </Canvas>
   );
 }

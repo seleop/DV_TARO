@@ -50,11 +50,12 @@ export const PLANET_FRAG = /* glsl */ `
   }
 `;
 
+/** 경로에서 멀찍이(화면을 가리지 않게) 놓은 행성들. 색을 서로 달리해 우주가 다채롭게 보인다: 청록·분홍·호박색 위성·파랑 */
 const PLANETS = [
-  { position: [64, 16, 34] as const, radius: 11, a: "#2c2f8f", b: "#7b5ce0", rim: "#b8a6ff" },
-  { position: [-58, 22, -44] as const, radius: 7, a: "#3a2a7a", b: "#9a7ae8", rim: "#d2c4ff" },
-  { position: [-49, 25, -33] as const, radius: 2.2, a: "#3b3d6e", b: "#8a8fc4", rim: "#c9d0ff" },
-  { position: [18, -20, 76] as const, radius: 16, a: "#1c2266", b: "#5468d6", rim: "#9fb2ff" },
+  { position: [84, 20, 46] as const, radius: 7, a: "#0f4a5a", b: "#3fd0c8", rim: "#a8fff4" },
+  { position: [-76, 28, -58] as const, radius: 5.5, a: "#5a1440", b: "#ff7ab8", rim: "#ffc4e4" },
+  { position: [-66, 31, -46] as const, radius: 1.6, a: "#5a3a1a", b: "#ffcf8a", rim: "#ffe8c4" },
+  { position: [26, -28, 100] as const, radius: 10, a: "#1c2266", b: "#7a8cff", rim: "#b8c6ff" },
 ];
 
 /** 행성 셋 + 위성 하나: 경로 바깥쪽 여러 깊이에 놓여, 지나갈 때 시차가 생긴다 */
@@ -241,7 +242,7 @@ export function AsteroidField({ paths, director, clock, count }: { paths: Journe
   const smallUniforms = useMemo(() => rockUniforms("#35315f"), []);
   const fields = useMemo(() => {
     const bigCount = Math.round(count * 0.3);
-    return { bigRocks: placeRocks(paths, bigCount, 3131, 0.5, 2.6, 6), smallRocks: placeRocks(paths, count - bigCount, 4242, 0.08, 0.55, 9) };
+    return { bigRocks: placeRocks(paths, bigCount, 3131, 0.5, 1.9, 6), smallRocks: placeRocks(paths, count - bigCount, 4242, 0.08, 0.55, 9) };
   }, [paths, count]);
 
   useEffect(() => {
@@ -315,7 +316,8 @@ function placeRocks(paths: JourneyPaths, n: number, seed: number, minScale: numb
     paths[curve].getPointAt(((u % 1) + 1) % 1, center);
     paths[curve].getTangentAt(((u % 1) + 1) % 1, tan);
     side.crossVectors(tan, up).normalize();
-    const off = dir * (9 + Math.abs(gaussian(rand)) * spread);
+    // 별똥별 길에서 12 이상 비켜 둔다 (카메라가 옆으로 돌 때 별똥별을 가리지 않게)
+    const off = dir * (12 + Math.abs(gaussian(rand)) * spread);
     const pos = center.clone().addScaledVector(side, off).addScaledVector(up, gaussian(rand) * spread * 0.45).addScaledVector(tan, gaussian(rand) * spread);
     const s = minScale + Math.pow(rand(), 2.2) * (maxScale - minScale);
     return {

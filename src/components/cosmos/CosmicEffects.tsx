@@ -8,12 +8,15 @@ import { smooth, wrap, type JourneyClock } from "./common";
 import { bandPoint, gaussian, mulberry32 } from "./journey";
 import { DUST_VERT, NEBULA_FRAG, NEBULA_VERT, STAR_FRAG } from "./shaders";
 
-/** 빛나는 성운 색 짝(바탕 → 빛 받는 가장자리): 레퍼런스의 진한 보라·파랑·자홍 */
+/** 빛나는 성운 색 짝(바탕 → 빛 받는 가장자리): 레퍼런스의 보라·파랑을 바탕으로 청록·자홍·장밋빛을 섞어 다채롭게 */
 const GLOW: Array<[string, string]> = [
   ["#2a12a0", "#c27bff"],
-  ["#1426a8", "#6f9bff"],
+  ["#0b4a7e", "#4fe3ff"],
   ["#4a128f", "#f08cff"],
-  ["#1c1b8c", "#9c86ff"],
+  ["#1426a8", "#6f9bff"],
+  ["#2a1e9a", "#9fb8ff"],
+  ["#4a1a7a", "#ffb3c8"],
+  ["#0d5a6a", "#6fffd8"],
 ];
 /** 어두운 먼지 구름 색 짝(속 → 가장자리) */
 const DARK: Array<[string, string]> = [

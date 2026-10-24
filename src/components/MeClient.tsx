@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { markReturningDevice } from "@/lib/auth/returning-device";
 import { api, errorText, formatDate } from "@/lib/client";
 import { CharacterStage } from "./Character";
 import { HomeButton } from "./app/HomeButton";
@@ -42,6 +43,8 @@ export function MeClient({
   async function logout() {
     if (!confirm("로그아웃할까요?")) return;
     await api("/api/auth/logout", { method: "POST", body: {} }).catch(() => null);
+    // 다음 진입 화면은 로그인·회원가입 버튼 (이전부터 쓰던 기기에도 표시가 남도록)
+    markReturningDevice();
     router.replace("/login");
     router.refresh();
   }
