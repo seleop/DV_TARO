@@ -20,7 +20,10 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
-- **진행 중**: 로그인·가입 세션/`claude/youthful-shamir-aa9bf7` — 우주 유람(`CosmicBackground`)을 회원가입 단계와 연동. 인증·검증·제출 로직은 건드리지 않음. 범위: `src/components/cosmos/**`, `src/components/auth/SignupCosmos.tsx`·(신규) 단계 매핑, `AuthFlow.tsx`는 연결부 한 줄, 가입 전용 이전 3D(`src/components/auth/cosmos/*`) 정리, `src/app/(app)/admin/cosmos/*` 미리보기, 관련 테스트
+- **우주 유람-회원가입 단계 연동·레퍼런스 화면 반영 완료(2026-10-24, 브랜치 `claude/youthful-shamir-aa9bf7`, main 미반영)**: 인증·검증·제출 로직은 그대로, `AuthFlow.tsx`는 `SignupCosmos`에 `field`·`done`을 넘기는 한 줄만 수정
+  - 연결: `AuthFlow`의 `field`/`done` → `signupJourneyStage`(`src/components/auth/signupJourney.ts`) → `CosmicBackground stage` → `Director`가 `STAGE_TARGETS`(`src/components/cosmos/stages.ts`)로 시간 기반 감쇠. 이메일=멀리서 천천히 진입, 비밀번호·확인=밝고 긴 꼬리·다른 곡선 경로, 닉네임=보라 성운 접근·별 입자 모임, 초대코드·동의=은하 중심 쪽(밝기 억제), 완료=중심으로 들어가며 페이드 후 이동. 뒤로 가면 반대로 부드럽게 돌아감
+  - 레퍼런스 반영: 화면 위쪽 큰 나선 은하·작은 은하(`SkyBox.tsx`, 카메라 방향을 천천히 따라 도는 앞쪽 하늘), 왼쪽 행성·위성, 소행성 무리(`Planets.tsx`), 별 모양 머리와 반짝이 입자 꼬리(`ShootingStar.tsx` `SparkleTrail`), 속도감 빛줄기(`SpeedStreaks.tsx`), 진한 보라·파랑 성운. 가입 전용 이전 3D(`src/components/auth/cosmos/*`)는 삭제
+  - 확인: `/admin/cosmos`에서 단계 버튼으로 미리보기. 화면 없는 Edge(소프트웨어 렌더)에서 20~38fps — 실제 기기 fps는 아직 확인 안 함
 - **독립 3D 우주 배경(은하수·별똥별 유람) 완료(2026-10-24 main 반영)**: 브랜치 `claude/youthful-shamir-aa9bf7`. 회원가입·기존 화면에는 아직 연결하지 않음(새 패키지 없음, 기존 three·@react-three/fiber 사용)
   - 진입점 `src/components/cosmos/CosmicBackground.tsx`(부모를 꽉 채우는 장식 레이어, `active`로 부드럽게 사라짐·나타남, 3D 지연 로딩, WebGL 미지원·오류·그래픽 끊김은 정적 그라데이션, 동작 줄이기는 정지 장면, 탭 숨김 시 그리기 멈춤)
   - `CosmicScene`(Canvas) · `GalaxyField`(나선 은하 원반·먼 별 껍질·하늘을 가로지르는 은하수 띠) · `CosmicEffects`(경로 주변·은하수 띠의 성운, 먼지) · `ShootingStar`(주인공: 빛의 핵·발광·숨 쉬는 꼬리 띠 / 보조 최대 2개) · `CameraJourney`(뒤·위·옆에서 지수 감쇠로 추적, 위쪽 고정) · `journey.ts`(닫힌 경로·시간 기반 진행·damp·예산, `tests/cosmic-journey.test.ts`)

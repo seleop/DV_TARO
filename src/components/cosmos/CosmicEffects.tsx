@@ -10,10 +10,10 @@ import { DUST_VERT, NEBULA_FRAG, NEBULA_VERT, STAR_FRAG } from "./shaders";
 
 /** 성운 색 짝: 딥 네이비·미드나이트 블루·바이올렛·은은한 라벤더 */
 const PALETTE: Array<[string, string]> = [
-  ["#141a5a", "#6a45c8"],
-  ["#0f1650", "#9d8ae6"],
-  ["#22175f", "#7f58cf"],
-  ["#101848", "#6f69c9"],
+  ["#20148a", "#9a55f0"],
+  ["#14208e", "#6c86f5"],
+  ["#3a1590", "#c87cf5"],
+  ["#181a7a", "#8a74f0"],
 ];
 
 /**

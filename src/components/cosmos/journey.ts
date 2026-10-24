@@ -82,6 +82,13 @@ export function cosmicBudget(env: { width: number; cores: number; dpr: number })
     bandClouds: lite ? 6 : 8,
     dust: lite ? 700 : 1400,
     nebulae: lite ? 6 : 9,
+    heroStars: lite ? 8000 : 16000,
+    skyNebulae: lite ? 8 : 12,
+    flares: lite ? 26 : 45,
+    asteroids: lite ? 40 : 80,
+    streaks: lite ? 36 : 64,
+    sparkleCapacity: lite ? 260 : 420,
+    sparkleRate: lite ? 150 : 240,
     maxDpr: Math.min(env.dpr, lite ? 1.5 : 2),
   };
 }

@@ -2,11 +2,11 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
-import { AdditiveBlending, BufferAttribute, Color, DynamicDrawUsage, Vector3, type Mesh, type ShaderMaterial, type Sprite } from "three";
-import { glowCanvas, type JourneyClock } from "./common";
+import { AdditiveBlending, BufferAttribute, Color, DynamicDrawUsage, Vector3, type Mesh, type Points, type ShaderMaterial, type Sprite, type SpriteMaterial } from "three";
+import { flareCanvas, glowCanvas, type JourneyClock } from "./common";
 import { mulberry32, tailAt, wrap01 } from "./journey";
 import { CORE_POINT, journeyPoint, journeyTangent, type Director, type JourneyPaths } from "./stages";
-import { TRAIL_FRAG, TRAIL_VERT } from "./shaders";
+import { SPARKLE_FRAG, SPARKLE_VERT, TRAIL_FRAG, TRAIL_VERT } from "./shaders";
 
 /* 매 프레임 새 객체를 만들지 않도록 계산용 벡터를 미리 만들어 둔다 (장면에는 별똥별이 하나뿐이다) */
 const P = new Vector3();
@@ -32,12 +32,13 @@ export function ShootingStar({ director, paths, clock }: { director: Director; p
     () => ({
       uBrightness: { value: 1 },
       uHead: { value: new Color("#ffffff") },
-      uMid: { value: new Color("#e7ddff") },
-      uTail: { value: new Color("#5b45d9") },
+      uMid: { value: new Color("#e2d6ff") },
+      uTail: { value: new Color("#4f5ef0") },
     }),
     [],
   );
-  const coreTex = useMemo(() => glowCanvas(["rgba(255,255,255,1)", "rgba(255,255,255,0.55)", "rgba(240,232,255,0.12)", "rgba(200,180,255,0)"], 64), []);
+  // 머리: 별 모양(십자 빛) 핵 — 레퍼런스처럼 반짝이는 별
+  const coreTex = useMemo(() => flareCanvas(128), []);
   const glowTex = useMemo(() => glowCanvas(["rgba(236,226,255,0.55)", "rgba(178,140,255,0.2)", "rgba(110,80,230,0.06)", "rgba(60,40,160,0)"], 128), []);
 
   useFrame((state) => {
@@ -64,7 +65,7 @@ export function ShootingStar({ director, paths, clock }: { director: Director; p
       TO_CAM.subVectors(cam, P);
       SIDE.crossVectors(T, TO_CAM).normalize();
       // 머리 쪽이 굵고 끝으로 갈수록 가늘어진다
-      const w = 0.11 * Math.pow(1 - s, 0.8) + 0.006;
+      const w = 0.2 * Math.pow(1 - s, 0.7) + 0.01;
       const k = i * 6;
       pos[k] = P.x + SIDE.x * w;
       pos[k + 1] = P.y + SIDE.y * w;
@@ -79,7 +80,9 @@ export function ShootingStar({ director, paths, clock }: { director: Director; p
     HEAD.copy(director.star);
     if (core.current) {
       core.current.position.copy(HEAD);
-      core.current.scale.setScalar(0.32 + brightness * 0.08);
+      core.current.scale.setScalar(0.9 + brightness * 0.25);
+      // 별 모양 머리가 천천히 돈다
+      (core.current.material as SpriteMaterial).rotation = t * 0.6;
     }
     if (glow.current) {
       glow.current.position.copy(HEAD);
@@ -110,6 +113,89 @@ export function ShootingStar({ director, paths, clock }: { director: Director; p
         </spriteMaterial>
       </sprite>
     </group>
+  );
+}
+
+/* ── 반짝이 입자 꼬리 ─────────────────────────────── */
+
+const SP_BACK = new Vector3();
+const SP_SIDE = new Vector3();
+const SP_UP = new Vector3();
+const SP_WORLD_UP = new Vector3(0, 1, 0);
+
+/**
+ * 별똥별 머리에서 흩날려 뒤로 퍼지는 반짝이 입자 (레퍼런스의 반짝이는 꼬리).
+ * 미리 만든 버퍼를 고리처럼 돌려 쓰며(매 프레임 새 객체 없음), 수명이 다하면 크기 0으로 숨는다.
+ */
+export function SparkleTrail({ director, clock, capacity, rate, pixelRatio }: { director: Director; clock: JourneyClock; capacity: number; rate: number; pixelRatio: number }) {
+  const ref = useRef<Points>(null);
+  const buf = useMemo(
+    () => ({
+      position: new Float32Array(capacity * 3),
+      life: new Float32Array(capacity),
+      seed: Float32Array.from({ length: capacity }, (_, i) => ((i * 0.61803) % 1) + 0.0001),
+    }),
+    [capacity],
+  );
+  const uniforms = useMemo(() => ({ uPixelRatio: { value: pixelRatio }, uTime: { value: 0 } }), [pixelRatio]);
+  // 입자마다의 속도·수명은 그리기 버퍼가 아니라 이 컴포넌트의 상태에 둔다
+  const st = useRef({ next: 0, carry: 0, rand: mulberry32(77), velocity: new Float32Array(capacity * 3), maxLife: new Float32Array(capacity) });
+
+  useFrame(() => {
+    const p = ref.current;
+    if (!p) return;
+    const dt = clock.dt;
+    const s = st.current;
+    const v = director.values;
+    const lifeAttr = p.geometry.getAttribute("aLife") as BufferAttribute;
+    const posAttr = p.geometry.getAttribute("position") as BufferAttribute;
+    const pos = posAttr.array as Float32Array;
+    const life = lifeAttr.array as Float32Array;
+    // 진행 방향 반대(뒤)와 옆·위 방향
+    SP_BACK.copy(director.tangent).multiplyScalar(-1);
+    SP_SIDE.crossVectors(director.tangent, SP_WORLD_UP).normalize();
+    SP_UP.crossVectors(SP_SIDE, director.tangent).normalize();
+    // 새 입자: 밝기·꼬리 길이가 클수록 많이
+    s.carry += dt * rate * (0.6 + 0.4 * v.brightness * v.tail);
+    while (s.carry >= 1) {
+      s.carry -= 1;
+      const i = s.next;
+      s.next = (s.next + 1) % capacity;
+      const k = i * 3;
+      const back = 0.6 + s.rand() * 2.6;
+      const spread = 0.35 + s.rand() * 0.9;
+      const a = s.rand() * Math.PI * 2;
+      pos[k] = director.star.x;
+      pos[k + 1] = director.star.y;
+      pos[k + 2] = director.star.z;
+      s.velocity[k] = SP_BACK.x * back + (SP_SIDE.x * Math.cos(a) + SP_UP.x * Math.sin(a)) * spread;
+      s.velocity[k + 1] = SP_BACK.y * back + (SP_SIDE.y * Math.cos(a) + SP_UP.y * Math.sin(a)) * spread;
+      s.velocity[k + 2] = SP_BACK.z * back + (SP_SIDE.z * Math.cos(a) + SP_UP.z * Math.sin(a)) * spread;
+      s.maxLife[i] = 0.7 + s.rand() * 1.1;
+      life[i] = 1;
+    }
+    for (let i = 0; i < capacity; i++) {
+      if (life[i] <= 0) continue;
+      const k = i * 3;
+      pos[k] += s.velocity[k] * dt;
+      pos[k + 1] += s.velocity[k + 1] * dt;
+      pos[k + 2] += s.velocity[k + 2] * dt;
+      life[i] = Math.max(0, life[i] - dt / s.maxLife[i]);
+    }
+    posAttr.needsUpdate = true;
+    lifeAttr.needsUpdate = true;
+    (p.material as ShaderMaterial).uniforms.uTime.value = clock.time;
+  });
+
+  return (
+    <points ref={ref} frustumCulled={false} renderOrder={3}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[buf.position, 3]} usage={DynamicDrawUsage} />
+        <bufferAttribute attach="attributes-aLife" args={[buf.life, 1]} usage={DynamicDrawUsage} />
+        <bufferAttribute attach="attributes-aSeed" args={[buf.seed, 1]} />
+      </bufferGeometry>
+      <shaderMaterial vertexShader={SPARKLE_VERT} fragmentShader={SPARKLE_FRAG} uniforms={uniforms} transparent depthWrite={false} blending={AdditiveBlending} />
+    </points>
   );
 }
 

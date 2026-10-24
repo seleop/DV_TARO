@@ -118,6 +118,37 @@ export const NEBULA_FRAG = /* glsl */ `
   }
 `;
 
+/** 별똥별 반짝이 입자: 태어날 때 크고 밝다가 줄어들며 흰색 → 라벤더 → 파랑으로 옅어진다 */
+export const SPARKLE_VERT = /* glsl */ `
+  attribute float aLife;
+  attribute float aSeed;
+  uniform float uPixelRatio;
+  uniform float uTime;
+  varying float vLife;
+  varying float vTw;
+  void main() {
+    vLife = aLife;
+    vTw = 0.65 + 0.35 * sin(uTime * 18.0 + aSeed * 40.0);
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    gl_Position = projectionMatrix * mv;
+    float size = (0.6 + 2.2 * aLife) * (0.6 + fract(aSeed * 7.3));
+    gl_PointSize = clamp(size * uPixelRatio * (22.0 / -mv.z), 0.0, 18.0 * uPixelRatio) * step(0.001, aLife);
+  }
+`;
+
+export const SPARKLE_FRAG = /* glsl */ `
+  varying float vLife;
+  varying float vTw;
+  void main() {
+    float d = length(gl_PointCoord - 0.5);
+    float a = 1.0 - smoothstep(0.0, 0.5, d);
+    a = a * a * vLife * vTw;
+    vec3 col = mix(vec3(0.45, 0.55, 1.0), vec3(0.85, 0.78, 1.0), smoothstep(0.2, 0.6, vLife));
+    col = mix(col, vec3(1.0), smoothstep(0.7, 1.0, vLife));
+    gl_FragColor = vec4(col * a, a);
+  }
+`;
+
 /** 별똥별 꼬리(카메라를 향하는 띠): 머리 쪽은 희고 밝게, 끝으로 갈수록 라벤더·보라로 옅어진다 */
 export const TRAIL_VERT = /* glsl */ `
   attribute float aAlong;

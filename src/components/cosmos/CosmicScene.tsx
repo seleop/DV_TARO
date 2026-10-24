@@ -7,7 +7,10 @@ import { CosmicEffects } from "./CosmicEffects";
 import { GalaxyField } from "./GalaxyField";
 import { JourneyClock } from "./common";
 import { cosmicBudget, createJourneyCurve } from "./journey";
-import { MinorShootingStar, ShootingStar } from "./ShootingStar";
+import { MinorShootingStar, ShootingStar, SparkleTrail } from "./ShootingStar";
+import { AsteroidField, Planets } from "./Planets";
+import { SkyBox } from "./SkyBox";
+import { SpeedStreaks } from "./SpeedStreaks";
 import { Director, INTRO_VALUES, STAGE_TARGETS, createJourneyPaths, type JourneyStage } from "./stages";
 
 export type CosmicSceneProps = {
@@ -23,7 +26,9 @@ export type CosmicSceneProps = {
 
 /**
  * 3D 우주 장면(Canvas). CosmicBackground가 브라우저에서만 지연 로딩한다.
- * 그리는 순서: 시계 → 연출 감독(장 → 연출 값·별똥별 위치) → 별의 바다 → 성운·먼지 → 별똥별(주인공 1 + 보조) → 카메라.
+ * 매 프레임 순서: 시계 → 연출 감독(장 → 연출 값·별똥별 위치) → 카메라 → 카메라를 따라다니는 하늘·빛줄기 → 나머지.
+ * 장면 구성(레퍼런스: 나선 은하·성운·행성·소행성·반짝이 꼬리의 별똥별·빛줄기):
+ * 하늘(은하 3·성운·십자 빛 별) / 별의 바다(원반·먼 별·은하수 띠) / 성운·먼지 / 행성·소행성 / 별똥별(주인공·반짝이 입자·보조) / 빛줄기
  */
 export default function CosmicScene({ running, moving, stage, onReady, onContextLost }: CosmicSceneProps) {
   const budget = useMemo(
@@ -57,15 +62,20 @@ export default function CosmicScene({ running, moving, stage, onReady, onContext
         onReady?.();
       }}
     >
-      <color attach="background" args={["#03051a"]} />
+      <color attach="background" args={["#050826"]} />
       <JourneyTimer clock={clock} moving={moving} />
       <JourneyDirector director={director} paths={paths} stage={stage} clock={clock} moving={moving} />
+      <CameraJourney director={director} paths={paths} clock={clock} />
+      <SkyBox clock={clock} heroStars={budget.heroStars} skyNebulae={budget.skyNebulae} flares={budget.flares} pixelRatio={pixelRatio} />
       <GalaxyField clock={clock} director={director} galaxyStars={budget.galaxyStars} farStars={budget.farStars} bandStars={budget.bandStars} pixelRatio={pixelRatio} />
       <CosmicEffects curve={curve} clock={clock} director={director} nebulae={budget.nebulae} bandClouds={budget.bandClouds} dust={budget.dust} pixelRatio={pixelRatio} />
+      <Planets />
+      <AsteroidField paths={paths} director={director} clock={clock} count={budget.asteroids} />
       <ShootingStar director={director} paths={paths} clock={clock} />
+      <SparkleTrail director={director} clock={clock} capacity={budget.sparkleCapacity} rate={budget.sparkleRate} pixelRatio={pixelRatio} />
       <MinorShootingStar seed={11} clock={clock} />
       {!budget.lite && <MinorShootingStar seed={29} clock={clock} />}
-      <CameraJourney director={director} paths={paths} clock={clock} />
+      <SpeedStreaks director={director} clock={clock} count={budget.streaks} />
     </Canvas>
   );
 }
