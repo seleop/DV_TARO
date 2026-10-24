@@ -20,6 +20,7 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
+- **진행 중**: 로그인·가입 세션/`claude/youthful-shamir-aa9bf7` — 가입 흐름에 출생 정보 단계(양음력·연·월·일·윤달·시각·성별, 우주 배경) 연결, '???' 화자·마지막 별이 공개, 실존 별자리(전갈자리) 진행 표시, 출생 정보 없는 로그인 사용자 /start로 이어하기, 별똥별 눈부심 완화·비행 효과 강화. 범위: `src/components/auth/*`, `src/app/start`(신규), `src/lib/auth/session.ts`·`next-path.ts`(생년월일 필수 이동 경로), `src/components/cosmos/**`, 관련 테스트
 - **진입 흐름 개편·우주 연출 강화 완료(2026-10-24, 브랜치 `claude/youthful-shamir-aa9bf7`, main 미반영)**: 인증 API·검증·제출 로직 변경 없음
   - 최초 접속(이 기기에서 가입·로그인한 적 없음, `localStorage` `dvtaro.returning` 없음): 우주 배경 + "화면을 터치해 시작하기" → 어디든 터치하면 회원가입 1단계. 작은 "이미 계정이 있어요? 로그인" 링크(첫 화면·가입 1단계 상단)
   - 가입·로그인 성공, 로그아웃 시 기기 표시(`src/lib/auth/returning-device.ts`) → 다음 진입은 우주 배경 + 로그인·회원가입 버튼(별이 없음). 로그인도 우주 배경(별이 없음). 별이는 회원가입 중에만
