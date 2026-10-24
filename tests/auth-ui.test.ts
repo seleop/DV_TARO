@@ -23,9 +23,9 @@ describe("로그인 후 돌아갈 경로(?next=)", () => {
     expect(loginHref("/saju/1?a=b")).toBe("/login?next=%2Fsaju%2F1%3Fa%3Db");
   });
 
-  it("생년월일 없이 들어갈 수 있는 화면은 MY·프로필·관리자뿐", () => {
-    for (const p of ["/me", "/me/profile?welcome=1", "/admin", "/admin/users"]) expect(isBirthOptionalPath(p)).toBe(true);
-    for (const p of ["/", "/today", "/tarot", "/saju/1", "/media", "/administrator"]) expect(isBirthOptionalPath(p)).toBe(false);
+  it("생년월일 없이 들어갈 수 있는 화면은 출생 정보 이어 하기·MY·프로필·관리자뿐", () => {
+    for (const p of ["/start", "/me", "/me/profile?welcome=1", "/admin", "/admin/users"]) expect(isBirthOptionalPath(p)).toBe(true);
+    for (const p of ["/", "/today", "/tarot", "/saju/1", "/media", "/administrator", "/starter"]) expect(isBirthOptionalPath(p)).toBe(false);
   });
 });
 

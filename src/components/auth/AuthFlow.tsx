@@ -7,19 +7,20 @@ import { PRIVACY_CONSENT } from "@/config/privacy";
 import { ApiError, api, errorText } from "@/lib/client";
 import { DISPLAY_NAME_MAX, splitServerError, validateLogin, validateSignup, type SignupField, type SignupValues } from "@/lib/auth/validate";
 import { entryScreen, markReturningDevice, readReturningDevice, subscribeReturningDevice } from "@/lib/auth/returning-device";
-import type { MascotState } from "@/config/mascot-assets";
 import { FortuneMascot } from "../FortuneMascot";
 import { SafeForm } from "../SafeForm";
 import { Button, inputCls } from "../ui";
 import { AuthCosmos } from "./AuthCosmos";
+import { ChoiceButtons, TimeFields, WheelPicker } from "./BirthInputs";
+import { BIRTH_DEFAULT, BIRTH_FIELDS_ALL, BIRTH_MIN_YEAR, birthMaxYear, birthPayload, birthStarIndex, birthStepError, birthSteps, daysIn, type BirthField, type BirthValues } from "./birthSteps";
 import type { AuthScreen } from "./signupJourney";
 import { useVisualViewport } from "./useVisualViewport";
 
-/** entry: 진입 화면(이 기기 기록에 따라 첫 화면 또는 버튼 화면) */
-type Mode = "entry" | "login" | "signup";
+/** entry: 진입 화면(이 기기 기록에 따라 첫 화면 또는 버튼 화면) / birth: 가입에 이어지는 출생 정보 */
+type Mode = "entry" | "login" | "signup" | "birth";
 type SignupMode = "open" | "invite" | "closed";
 
-/** 단계별 입력칸 설정과 별이가 건네는 말 */
+/** 단계별 입력칸 설정과 '???'가 건네는 말 */
 const STEP: Record<
   SignupField,
   {
@@ -38,11 +39,24 @@ const STEP: Record<
   inviteCode: { label: "초대 코드", signup: "받은 초대 코드를 알려줘.", type: "text", autoComplete: "off" },
   agreePrivacy: { label: "개인정보 동의", signup: "마지막으로 이것만 확인해 줘!" },
 };
+/** 출생 정보 단계에서 '???'가 건네는 말 */
+const BIRTH_PROMPT: Record<BirthField, string> = {
+  calendar: "이제 너에 대해 알려줘. 생일은 양력이야, 음력이야?",
+  year: "몇 년에 태어났어?",
+  month: "몇 월이야?",
+  day: "며칠이야?",
+  leap: "그 달이 윤달이었어?",
+  time: "태어난 시각도 알아? 몰라도 괜찮아.",
+  gender: "마지막이야! 성별을 알려줄래? 대운을 볼 때만 써.",
+};
 const LOGIN_STEPS: SignupField[] = ["email", "password"];
 const signupSteps = (invite: boolean): SignupField[] =>
   invite ? ["email", "password", "passwordConfirm", "displayName", "inviteCode", "agreePrivacy"] : ["email", "password", "passwordConfirm", "displayName", "agreePrivacy"];
 const CODE_FIELD: Partial<Record<string, SignupField>> = { EMAIL_TAKEN: "email", INVALID_EMAIL: "email", WEAK_PASSWORD: "password", INVALID_INVITE: "inviteCode", INVALID_CREDENTIALS: "password" };
 const EMPTY: SignupValues = { email: "", password: "", passwordConfirm: "", displayName: "", inviteCode: "", agreePrivacy: false };
+/** 마지막에 '???'가 별이로 정체를 드러낸 뒤 오늘의 운세로 넘어가기까지 */
+const REVEAL_MS = 2800;
+const range = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 
 /**
  * 인증 화면 (배경은 모두 우주 유람 AuthCosmos, 2026-10-24 사용자 결정):
@@ -50,7 +64,10 @@ const EMPTY: SignupValues = { email: "", password: "", passwordConfirm: "", disp
  *   이미 계정이 있으면 작은 '로그인' 링크로 (회원가입 1단계에도 같은 링크)
  * - 가입·로그인한 적 있는 기기: 별똥별이 날아가는 우주 배경에 로그인·회원가입 버튼 (별이 없음)
  * - 로그인: 우주 배경 그대로 이메일·비밀번호를 한 칸씩 (별이 없음)
- * - 회원가입: 단계마다 우주 유람이 다르게 움직이고, 별이 하나씩 이어져 별자리가 된다 (별이가 아래 구석에서 말을 건넴)
+ * - 회원가입 → 계정을 만든 뒤 같은 우주에서 출생 정보(양력/음력·연·월·일·윤달·시각·성별)로 이어진다.
+ *   정체 모를 화자 '???'가 묻고, 단계마다 실존 별자리(전갈자리)의 별이 하나씩 이어진다.
+ *   마지막에 별자리가 완성되면 '???'가 별이로 정체를 드러낸 뒤 오늘의 운세로 간다.
+ *   출생 정보를 넣기 전에 나갔다면 다시 로그인할 때 /start에서 출생 정보부터 이어 한다(initialMode="birth").
  * 화면은 실제로 보이는 영역 크기에 맞춰 스크롤 없이 쓴다. 입력칸은 한 개를 계속 써서 단계가 바뀌어도 키보드가 닫히지 않는다.
  */
 export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode; next: string; signupMode: SignupMode }) {
@@ -59,17 +76,19 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
   const [mode, setMode] = useState<Mode>(initialMode);
   const [step, setStep] = useState(0);
   const [values, setValues] = useState<SignupValues>(EMPTY);
+  const [birth, setBirth] = useState<BirthValues>(BIRTH_DEFAULT);
+  const [bStep, setBStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // 출생 정보까지 모두 저장해 별자리가 완성됨 → '???'가 별이로 정체를 드러낸다
   const [done, setDone] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [caps, setCaps] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
-  // 별이의 한 번 재생 동작 (끝나면 대기 동작으로 돌아간다). 별이는 회원가입 중에만 보인다
-  const [reaction, setReaction] = useState<{ state: MascotState; id: number } | null>(null);
-  const react = (state: MascotState) => setReaction((r) => ({ state, id: (r?.id ?? 0) + 1 }));
   const inputRef = useRef<HTMLInputElement>(null);
+  const hourRef = useRef<HTMLInputElement>(null);
   const prevMode = useRef<Mode>(initialMode);
+  const modeRef = useRef<Mode>(initialMode);
   const [tapHint, setTapHint] = useState(false);
   // 이 기기에서 가입·로그인한 적 있는지: 서버 렌더·첫 그리기에서는 모름(null) → 브라우저에서 읽어 정한다
   const returning = useSyncExternalStore<boolean | null>(subscribeReturningDevice, readReturningDevice, () => null);
@@ -77,15 +96,30 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
   const submitting = useRef(false);
 
   const canSignup = signupMode !== "closed";
-  const steps = mode === "login" ? LOGIN_STEPS : signupSteps(signupMode === "invite");
+  const accountSteps = signupSteps(signupMode === "invite");
+  const steps = mode === "login" ? LOGIN_STEPS : accountSteps;
   const field = steps[Math.min(step, steps.length - 1)];
   const meta = STEP[field];
   const last = step === steps.length - 1;
+  const bSteps = birthSteps(birth.calendar);
+  const bField = bSteps[Math.min(bStep, bSteps.length - 1)];
+  const bLast = bStep === bSteps.length - 1;
   const screen: AuthScreen = mode === "entry" ? (returning === null ? "pending" : entryScreen(returning, signupMode)) : mode;
+  // 별자리 진행: 가입 단계 + 출생 정보 7단계(양력이면 윤달 별은 지나가며 켜진다)
+  const starTotal = accountSteps.length + BIRTH_FIELDS_ALL.length;
+  const starLit = mode === "birth" ? accountSteps.length + birthStarIndex(bField) : mode === "signup" ? step : 0;
 
-  // 휴대폰 뒤로 가기로 진입 화면에 돌아온다
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
+
+  // 휴대폰 뒤로 가기로 진입 화면에 돌아온다. 계정을 만든 뒤(출생 정보)에는 되돌아가지 않고 그 자리에 머문다
   useEffect(() => {
     const onPop = () => {
+      if (modeRef.current === "birth") {
+        window.history.pushState({ auth: "birth" }, "");
+        return;
+      }
       pushed.current = false;
       setMode("entry");
       setError(null);
@@ -97,10 +131,16 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
   // 입력칸으로 커서를 옮긴다.
   // - 진입 화면에서 막 들어왔으면 시트가 올라오는 연출(0.7초)이 끝난 뒤 키보드를 올린다 (연출 도중 화면이 툭 줄지 않게)
   // - 단계만 바뀌면 바로 (같은 입력칸을 계속 쓰므로 이미 열린 키보드는 유지된다)
+  // - 출생 정보는 목록·버튼으로 고르므로 키보드를 닫고, 시각 단계에서만 '시' 칸으로
   // iOS는 터치 직후가 아니면 키보드를 띄우지 않으므로, 커서가 안 들어가면 입력칸을 반짝여 눌러 달라고 안내한다.
   useEffect(() => {
     const from = prevMode.current;
     prevMode.current = mode;
+    if (mode === "birth") {
+      if (bField === "time" && birth.timeKnown) hourRef.current?.focus({ preventScroll: true });
+      else if (document.activeElement instanceof HTMLInputElement) document.activeElement.blur();
+      return;
+    }
     const el = inputRef.current;
     if (mode === "entry" || field === "agreePrivacy" || !el) return;
     const focus = () => {
@@ -113,15 +153,16 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
     }
     const t = setTimeout(focus, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 720);
     return () => clearTimeout(t);
-  }, [mode, field]);
+    // 시각을 몰라요/알아요를 바꿀 때마다 커서를 옮기지는 않는다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, field, bField]);
 
-  function enter(m: Exclude<Mode, "entry">) {
+  function enter(m: "login" | "signup") {
     if (!pushed.current) {
       window.history.pushState({ auth: m }, "");
       pushed.current = true;
     }
     setMode(m);
-    if (m === "signup") react("nod");
     setStep(0);
     setError(null);
     setDone(false);
@@ -132,6 +173,10 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
   function back() {
     setError(null);
     setShowTerms(false);
+    if (mode === "birth") {
+      if (bStep > 0) setBStep(bStep - 1);
+      return;
+    }
     if (step > 0) setStep(step - 1);
     else if (pushed.current) window.history.back();
     else setMode("entry");
@@ -145,17 +190,16 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (submitting.current) return;
+    if (mode === "birth") return submitBirth();
     const err = stepError(field);
     if (err) {
       setError(err);
-      react("surprised");
       return;
     }
     setError(null);
     if (!last) {
       setShowPw(false);
       setStep(step + 1);
-      react("nod");
       return;
     }
     submitting.current = true;
@@ -164,7 +208,9 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
       if (mode === "login") {
         await api("/api/auth/login", { body: { email: values.email.trim(), password: values.password } });
         markReturningDevice();
+        // 출생 정보가 아직 없으면 서버가 /start(우주 배경 출생 정보 단계)로 보낸다
         router.replace(next);
+        router.refresh();
       } else {
         await api("/api/auth/signup", {
           body: {
@@ -178,13 +224,13 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
         });
         // 다음부터 이 기기의 진입 화면은 로그인·회원가입 버튼
         markReturningDevice();
-        // 별자리가 완성되는 모습을 잠깐 보여 준 뒤 이동한다
-        setDone(true);
-        await new Promise((r) => setTimeout(r, 1100));
-        // 가입 직후에는 생년월일 입력(필수 단계)으로 간다
-        router.replace("/me/profile?welcome=1");
+        // 계정이 생겼으니 같은 우주에서 출생 정보로 이어 간다 (뒤로 가기로 가입 화면에 돌아가지 않게)
+        window.history.replaceState({ auth: "birth" }, "");
+        setMode("birth");
+        setBStep(0);
+        setBusy(false);
+        submitting.current = false;
       }
-      router.refresh();
     } catch (e) {
       if (e instanceof ApiError) {
         const s = splitServerError(e, steps, CODE_FIELD);
@@ -194,7 +240,33 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
           setError(s.fields[steps[target]] ?? null);
         } else setError(s.rest);
       } else setError(errorText(e));
-      react("surprised");
+      setBusy(false);
+      submitting.current = false;
+    }
+  }
+
+  async function submitBirth() {
+    const err = birthStepError(bField, birth);
+    if (err) {
+      setError(err);
+      return;
+    }
+    setError(null);
+    if (!bLast) {
+      setBStep(bStep + 1);
+      return;
+    }
+    submitting.current = true;
+    setBusy(true);
+    try {
+      await api("/api/me/birth", { method: "PUT", body: { birth: birthPayload(birth) } });
+      // 별자리 완성 → '???'가 별이로 정체를 드러낸다. 우주는 그대로 두고 잠시 뒤 오늘의 운세로
+      setDone(true);
+      await new Promise((r) => setTimeout(r, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 1200 : REVEAL_MS));
+      router.replace("/today");
+      router.refresh();
+    } catch (e) {
+      setError(errorText(e));
       setBusy(false);
       submitting.current = false;
     }
@@ -204,28 +276,44 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
     setValues((cur) => ({ ...cur, [field]: v }));
     if (error) setError(null);
   };
+  const setB = (patch: Partial<BirthValues>) => {
+    setBirth((cur) => {
+      const nextB = { ...cur, ...patch };
+      // 달·연·달력이 바뀌어 그날이 없어지면 그 달의 마지막 날로
+      nextB.day = Math.min(nextB.day, daysIn(nextB.calendar, nextB.year, nextB.month));
+      if (nextB.calendar === "solar") nextB.leap = false;
+      return nextB;
+    });
+    if (error) setError(null);
+  };
   const checkCaps = (e: KeyboardEvent<HTMLInputElement>) => {
     if (typeof e.getModifierState === "function") setCaps(e.getModifierState("CapsLock"));
   };
 
   const isPassword = meta.type === "password";
-  const prompt = mode === "login" ? (meta.login ?? meta.signup) : meta.signup;
   const boxStyle = vv ? { height: vv.height, top: vv.top } : undefined;
   const ease = "transition-all duration-700 ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none";
   const intro = screen === "intro" || screen === "pending";
-  const signup = screen === "signup";
+  const asking = mode === "signup" || mode === "birth";
   const loginLink = "min-h-11 px-2 text-[13px] text-white/75 underline underline-offset-4";
+  const question = done
+    ? "사실 나는 별이야! 네 별자리가 완성됐어. 이제 함께 운세를 보러 가자!"
+    : mode === "birth"
+      ? bField === "calendar"
+        ? `${initialMode === "birth" ? "다시 왔구나!" : "가입 완료!"} ${BIRTH_PROMPT.calendar}`
+        : BIRTH_PROMPT[bField]
+      : meta.signup;
 
   return (
     // 키보드가 오르내릴 때 높이가 툭 바뀌지 않게 부드럽게 따라간다
     <div className="fixed inset-x-0 top-0 z-10 mx-auto flex h-dvh w-full max-w-[440px] flex-col overflow-hidden transition-[height,top] duration-300 ease-out motion-reduce:transition-none" style={boxStyle}>
       {/* 화면 전체(시트 뒤까지) 우주 */}
-      <AuthCosmos screen={screen} field={field} total={steps.length} step={step} done={done} />
-      {/* 위: 무대(뒤로·진행 표시·별이·말) / 아래: 크림색 시트(버튼·입력). 첫 화면에서는 시트 없이 우주만 */}
+      <AuthCosmos screen={screen} field={mode === "birth" ? bField : field} total={starTotal} lit={starLit} current={starLit} done={done} />
+      {/* 위: 무대(뒤로·진행 표시·말) / 아래: 크림색 시트(버튼·입력). 첫 화면에서는 시트 없이 우주만 */}
       <div className="scene-dark relative flex min-h-0 flex-1 flex-col">
       {/* 상단: 뒤로 + 진행 표시(로그인) 또는 로그인 링크(회원가입 1단계) */}
       <div className="relative flex h-14 shrink-0 items-center px-3 pt-[env(safe-area-inset-top)]">
-        {(mode === "login" || mode === "signup") && (
+        {(mode === "login" || mode === "signup" || (mode === "birth" && bStep > 0 && !done)) && (
           <button type="button" onClick={back} aria-label="뒤로" className="flex h-11 w-11 items-center justify-center rounded-full text-ink active:bg-white/10">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M15 18l-6-6 6-6" />
@@ -239,14 +327,14 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
             ))}
           </div>
         )}
-        {signup && step === 0 && !done && (
+        {mode === "signup" && step === 0 && (
           <button type="button" onClick={() => enter("login")} className={`ml-auto ${loginLink}`}>
             이미 계정이 있어요? 로그인
           </button>
         )}
       </div>
 
-      {/* 무대: 하늘 + (회원가입 중) 별이 */}
+      {/* 무대: 하늘 + (마지막에) 별이 */}
       <div className="relative min-h-0 flex-1 overflow-hidden pb-6">
         {/* 버튼 화면의 앱 이름 */}
         <div
@@ -257,33 +345,30 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
           <h1 className="text-gradient mt-1 text-[34px] font-extrabold leading-tight">{BRAND.appName}</h1>
         </div>
 
-        {/* 별이: 회원가입 중에만 아래 구석에서 하늘을 올려다보며 말을 건넨다 */}
+        {/* 별이: 가입·출생 정보 내내 '???'로 숨어 있다가, 별자리가 완성되면 아래 구석에 나타난다 */}
         <div
-          className={`absolute h-[384px] w-[384px] origin-center ${ease} ${signup ? "opacity-100" : "pointer-events-none opacity-0"}`}
-          style={{ left: "18%", top: "84%", transform: `translate(-50%,-50%) scale(${signup ? 0.26 : 0.2})` }}
-          aria-hidden={!signup}
+          className={`absolute h-[384px] w-[384px] origin-center ${ease} ${done ? "opacity-100" : "pointer-events-none opacity-0"}`}
+          style={{ left: "18%", top: "84%", transform: `translate(-50%,-50%) scale(${done ? 0.28 : 0.14})` }}
+          aria-hidden={!done}
         >
           {/* 스프라이트 원본(384px) 크기로 그리고 배율로 줄인다 */}
-          <FortuneMascot
-            state={done ? "celebrate" : (reaction?.state ?? "idle")}
-            playId={reaction?.id ?? 0}
-            size={384}
-            preload={["nod", "surprised", "celebrate"]}
-            onAnimationComplete={(st) => {
-              if (st !== "celebrate") setReaction((r) => (r?.state === st ? null : r));
-            }}
-          />
+          <FortuneMascot state={done ? "celebrate" : "idle"} playId={done ? 1 : 0} size={384} preload={["celebrate"]} />
         </div>
 
-        {/* 별이의 말풍선(회원가입) / 안내 문구(로그인: 별이 없이 화면 위쪽 가운데) */}
-        {signup && (
-          <p
-            key={`signup-${field}`}
-            aria-live="polite"
-            className="absolute bottom-[12%] left-[34%] right-4 animate-[rise_.35s_ease-out] rounded-2xl bg-white px-4 py-2.5 text-[15px] font-semibold text-[#2a2440] shadow-lg motion-reduce:animate-none"
-          >
-            {done ? "별자리가 완성됐어!" : prompt}
-          </p>
+        {/* '???'의 말 (가입·출생 정보). 마지막에 이름표가 '별이'로 바뀐다 */}
+        {asking && (
+          <div className={`absolute bottom-[12%] right-4 ${ease} ${done ? "left-[36%]" : "left-4"}`}>
+            <p
+              key={`${mode}-${mode === "birth" ? bField : field}-${done}`}
+              aria-live="polite"
+              className="relative animate-[rise_.35s_ease-out] rounded-2xl bg-white px-4 pb-2.5 pt-3.5 text-[15px] font-semibold text-[#2a2440] shadow-lg motion-reduce:animate-none"
+            >
+              <span className={`absolute -top-3 left-3 rounded-full px-2.5 py-0.5 text-[12px] font-extrabold tracking-wider text-white shadow ${done ? "bg-accent" : "bg-[#2a2440]"}`}>
+                {done ? "별이" : "???"}
+              </span>
+              {question}
+            </p>
+          </div>
         )}
         {mode === "login" && (
           <p
@@ -296,7 +381,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
         )}
 
         {/* 동의 내용 (무대 위에 겹쳐 보여 준다) */}
-        {showTerms && signup && field === "agreePrivacy" && (
+        {showTerms && mode === "signup" && field === "agreePrivacy" && (
           <div id="auth-terms" className="absolute inset-3 overflow-y-auto rounded-2xl bg-[#140f33]/95 p-4 text-[13px] leading-relaxed text-ink-2 backdrop-blur">
             <p className="mb-2 font-semibold text-ink">{PRIVACY_CONSENT.title}</p>
             <dl className="space-y-1.5">
@@ -328,11 +413,11 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
         />
       )}
 
-      {/* 하단: 버튼 또는 입력 (시트). 첫 화면에서는 크림색 판이 아래로 내려가 있고 터치 안내만 보인다 */}
+      {/* 하단: 버튼 또는 입력 (시트). 첫 화면·별자리 완성 때는 크림색 판이 아래로 내려가 우주만 보인다 */}
       <div className="relative -mt-6 shrink-0 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-5">
         <div
           aria-hidden
-          className={`absolute inset-0 rounded-t-[28px] bg-[var(--bg)] shadow-[0_-12px_24px_-16px_rgba(30,20,70,0.6)] ${ease} ${intro ? "translate-y-full opacity-0" : "translate-y-0 opacity-100"}`}
+          className={`absolute inset-0 rounded-t-[28px] bg-[var(--bg)] shadow-[0_-12px_24px_-16px_rgba(30,20,70,0.6)] ${ease} ${intro || done ? "translate-y-full opacity-0" : "translate-y-0 opacity-100"}`}
         />
         {intro ? (
           <div className="relative text-center">
@@ -360,9 +445,16 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
               {error ?? "비밀번호를 잊었다면 운영자에게 문의해 주세요."}
             </p>
           </div>
+        ) : done ? (
+          // 별자리 완성: 입력 없이 우주와 별이만 (곧 오늘의 운세로 넘어간다)
+          <p className="relative flex h-14 items-center justify-center text-[15px] font-semibold text-white/85 drop-shadow-[0_2px_8px_rgba(10,6,40,0.8)]" role="status">
+            별자리를 따라 운세로 가는 중…
+          </p>
         ) : (
           <SafeForm onSubmit={onSubmit} noValidate className="relative space-y-2.5">
-            {field === "agreePrivacy" ? (
+            {mode === "birth" ? (
+              <BirthStep field={bField} birth={birth} setB={setB} invalid={!!error} hourRef={hourRef} />
+            ) : field === "agreePrivacy" ? (
               <div className={`flex items-center rounded-2xl border px-3 ${error ? "border-bad/70" : "border-line"}`}>
                 <label className="flex min-h-12 flex-1 items-center gap-3 text-[14px]">
                   <input
@@ -437,20 +529,96 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
             )}
             <p id="auth-msg" role={error ? "alert" : undefined} className={`min-h-5 px-1 text-[13px] ${error ? "text-bad" : caps ? "text-warn" : "text-ink-2/80"}`}>
               {error ??
-                (caps && isPassword
+                (mode !== "birth" && caps && isPassword
                   ? "Caps Lock이 켜져 있어요."
-                  : field === "passwordConfirm" && values.passwordConfirm && values.password === values.passwordConfirm
+                  : mode === "signup" && field === "passwordConfirm" && values.passwordConfirm && values.password === values.passwordConfirm
                     ? "비밀번호가 같아요."
-                    : "")}
+                    : mode === "birth" && (bField === "calendar" || bField === "gender")
+                      ? "나중에 프로필에서 바꿀 수 있어요."
+                      : "")}
             </p>
             <Button type="submit" size="lg" loading={busy} className="w-full" onMouseDown={(e) => e.preventDefault()}>
-              {last ? (mode === "login" ? "로그인" : "가입하고 시작하기") : "다음"}
+              {mode === "birth" ? (bLast ? "별자리 완성하기" : "다음") : last ? (mode === "login" ? "로그인" : "가입하고 계속하기") : "다음"}
             </Button>
           </SafeForm>
         )}
       </div>
     </div>
   );
+}
+
+/** 출생 정보 한 단계의 입력: 양력/음력·윤달·성별은 큰 버튼, 연·월·일은 목록(휠), 시각은 시·분 숫자 */
+function BirthStep({
+  field,
+  birth,
+  setB,
+  invalid,
+  hourRef,
+}: {
+  field: BirthField;
+  birth: BirthValues;
+  setB: (patch: Partial<BirthValues>) => void;
+  invalid: boolean;
+  hourRef: React.Ref<HTMLInputElement>;
+}) {
+  switch (field) {
+    case "calendar":
+      return (
+        <ChoiceButtons
+          label="양력 또는 음력"
+          value={birth.calendar}
+          onChange={(calendar) => setB({ calendar })}
+          options={[
+            { value: "solar", label: "양력", hint: "일반 달력" },
+            { value: "lunar", label: "음력", hint: "음력 생일" },
+          ]}
+        />
+      );
+    case "year":
+      return <WheelPicker label="태어난 해" values={range(BIRTH_MIN_YEAR, birthMaxYear())} value={birth.year} onChange={(year) => setB({ year })} format={(v) => `${v}년`} />;
+    case "month":
+      return <WheelPicker label="태어난 달" values={range(1, 12)} value={birth.month} onChange={(month) => setB({ month })} format={(v) => `${birth.calendar === "lunar" ? "음력 " : ""}${v}월`} />;
+    case "day":
+      return <WheelPicker label="태어난 날" values={range(1, daysIn(birth.calendar, birth.year, birth.month))} value={birth.day} onChange={(day) => setB({ day })} format={(v) => `${v}일`} />;
+    case "leap":
+      return (
+        <ChoiceButtons
+          label="윤달 여부"
+          value={birth.leap ? "yes" : "no"}
+          onChange={(v) => setB({ leap: v === "yes" })}
+          options={[
+            { value: "no", label: "평달", hint: "대부분 여기" },
+            { value: "yes", label: "윤달" },
+          ]}
+        />
+      );
+    case "time":
+      return (
+        <TimeFields
+          hour={birth.hour}
+          minute={birth.minute}
+          known={birth.timeKnown}
+          invalid={invalid}
+          onHour={(hour) => setB({ hour })}
+          onMinute={(minute) => setB({ minute })}
+          onKnown={(timeKnown) => setB({ timeKnown })}
+          hourRef={hourRef}
+        />
+      );
+    case "gender":
+      return (
+        <ChoiceButtons
+          label="성별"
+          value={birth.gender === "" ? "none" : birth.gender}
+          onChange={(v) => setB({ gender: v === "none" ? "" : v })}
+          options={[
+            { value: "female", label: "여" },
+            { value: "male", label: "남" },
+            { value: "none", label: "선택 안 함" },
+          ]}
+        />
+      );
+  }
 }
 
 function EyeIcon({ off }: { off: boolean }) {

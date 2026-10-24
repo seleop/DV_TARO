@@ -112,32 +112,33 @@ export function ShootingStar({ director, paths, clock }: { director: Director; p
       aura.current.geometry.getAttribute("position").needsUpdate = true;
       const au = (aura.current.material as ShaderMaterial).uniforms;
       // 전환 가속 때 더 밝게 타오른다
-      au.uBrightness.value = brightness * (0.42 + 0.35 * director.surge);
+      au.uBrightness.value = brightness * (0.22 + 0.15 * director.surge);
       au.uTime.value = t;
     }
 
     HEAD.copy(director.star);
-    const flash = 1 + director.surge * 0.5;
+    // 눈부시지 않게(2026-10-24 사용자 의견): 머리는 작고 은은하게, 전환 때도 조금만 커진다
+    const flash = 1 + director.surge * 0.15;
     if (core.current) {
       core.current.position.copy(HEAD);
-      core.current.scale.setScalar((1.05 + brightness * 0.35) * flash);
+      core.current.scale.setScalar((0.8 + brightness * 0.2) * flash);
       // 별 모양 머리가 천천히 돈다
       (core.current.material as SpriteMaterial).rotation = t * 0.6;
     }
     if (core2.current) {
       // 두 번째 별빛(청록): 반대로 돌며 크기가 숨 쉬듯 변해 반짝임이 겹쳐 보인다
       core2.current.position.copy(HEAD);
-      core2.current.scale.setScalar((1.5 + brightness * 0.4) * (0.85 + 0.15 * Math.sin(t * 2.7)) * flash);
+      core2.current.scale.setScalar((1.05 + brightness * 0.2) * (0.85 + 0.15 * Math.sin(t * 2.7)) * flash);
       (core2.current.material as SpriteMaterial).rotation = 0.4 - t * 0.35;
     }
     if (streak.current) {
       // 렌즈 빛줄기: 머리를 가로지르는 가늘고 긴 빛 (화면 가로 방향)
       streak.current.position.copy(HEAD);
-      streak.current.scale.set((4.5 + brightness * 1.5) * flash, 0.14 + 0.04 * Math.sin(t * 3.1), 1);
+      streak.current.scale.set((2.4 + brightness * 0.7) * flash, 0.08 + 0.02 * Math.sin(t * 3.1), 1);
     }
     if (glow.current) {
       glow.current.position.copy(HEAD);
-      const pulse = 2.3 + Math.sin(t * 1.3) * 0.25;
+      const pulse = 1.6 + Math.sin(t * 1.3) * 0.15;
       glow.current.scale.setScalar(pulse * brightness);
     }
   });
@@ -169,12 +170,12 @@ export function ShootingStar({ director, paths, clock }: { director: Director; p
         </spriteMaterial>
       </sprite>
       <sprite ref={streak} renderOrder={4}>
-        <spriteMaterial transparent depthWrite={false} blending={AdditiveBlending} color="#dff6ff" opacity={0.6}>
+        <spriteMaterial transparent depthWrite={false} blending={AdditiveBlending} color="#dff6ff" opacity={0.25}>
           <canvasTexture attach="map" args={[glowTex]} />
         </spriteMaterial>
       </sprite>
       <sprite ref={core2} renderOrder={4}>
-        <spriteMaterial transparent depthWrite={false} blending={AdditiveBlending} color="#9ff4ff" opacity={0.55}>
+        <spriteMaterial transparent depthWrite={false} blending={AdditiveBlending} color="#9ff4ff" opacity={0.28}>
           <canvasTexture attach="map" args={[coreTex]} />
         </spriteMaterial>
       </sprite>

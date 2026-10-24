@@ -16,7 +16,7 @@ const FAR = 140;
 /** 지금 날아오는 속도(초당): 장의 속도·전환 가속이 클수록 빠르다 */
 function rushSpeed(director: Director) {
   const pace = Math.max(0, director.pace() - 0.3);
-  return 16 + 48 * pace + 40 * director.surge;
+  return 26 + 62 * pace + 55 * director.surge;
 }
 
 /**
@@ -36,7 +36,7 @@ export function OncomingLights({ director, clock, count, pixelRatio }: { directo
     for (let i = 0; i < count; i++) {
       spawn(rand, position, i, -rand() * FAR);
       // 대부분은 작은 먼지, 가끔 큰 빛 덩이
-      size[i] = rand() < 0.12 ? 1.6 + rand() * 1.6 : 0.4 + rand() * 0.8;
+      size[i] = rand() < 0.16 ? 1.6 + rand() * 1.8 : 0.4 + rand() * 0.9;
       const c = TINTS[Math.floor(rand() * TINTS.length)];
       color.set([c.r, c.g, c.b], i * 3);
       speed[i] = 0.7 + rand() * 0.6;
@@ -79,7 +79,7 @@ export function OncomingLights({ director, clock, count, pixelRatio }: { directo
 /** 새 빛 알갱이: 화면 가운데를 비운 고리 모양 영역, 깊이 z */
 function spawn(rand: () => number, pos: Float32Array, i: number, z: number) {
   const a = rand() * Math.PI * 2;
-  const r = 2.5 + Math.pow(rand(), 0.7) * 16;
+  const r = 3.2 + Math.pow(rand(), 0.7) * 16;
   pos[i * 3] = Math.cos(a) * r * 0.7;
   pos[i * 3 + 1] = Math.sin(a) * r;
   pos[i * 3 + 2] = z;
@@ -140,7 +140,7 @@ export function FlybyComet({ seed, director, clock }: { seed: number; director: 
     if (st.pos.z > -1.5) {
       st.alive = false;
       // 역동적인 장일수록 자주
-      st.next = t + (6 - 3.5 * director.values.energy) + st.rand() * 4;
+      st.next = t + (4.5 - 3 * director.values.energy) + st.rand() * 3;
       g.visible = false;
       return;
     }

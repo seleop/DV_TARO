@@ -89,7 +89,7 @@ export function SpeedStreaks({ director, clock, count }: { director: Director; c
       pos[j + 5] = k.z - len;
     }
     l.geometry.getAttribute("position").needsUpdate = true;
-    (l.material as ShaderMaterial).uniforms.uIntensity.value = Math.min(0.9, 0.2 + pace * 0.6 + director.surge * 0.25) * (1 - v.finale * 0.6);
+    (l.material as ShaderMaterial).uniforms.uIntensity.value = Math.min(1, 0.3 + pace * 0.7 + director.surge * 0.3) * (1 - v.finale * 0.6);
   });
 
   return (
@@ -110,5 +110,5 @@ export function SpeedStreaks({ director, clock, count }: { director: Director; c
 function spawn(rand: () => number, z: number) {
   const a = rand() * Math.PI * 2;
   const r = 3.5 + rand() * 12;
-  return { x: Math.cos(a) * r * 0.75, y: Math.sin(a) * r, z, v: 22 + rand() * 18, len: 2 + rand() * 5 };
+  return { x: Math.cos(a) * r * 0.75, y: Math.sin(a) * r, z, v: 30 + rand() * 25, len: 2.5 + rand() * 6 };
 }

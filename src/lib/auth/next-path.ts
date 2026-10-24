@@ -30,8 +30,8 @@ export function loginHref(next: string, page: "/login" | "/signup" = "/login"): 
   return safe === DEFAULT_NEXT ? page : `${page}?next=${encodeURIComponent(safe)}`;
 }
 
-/** 생년월일(내 사주)이 없어도 들어갈 수 있는 화면: MY(로그아웃·계정 삭제), 프로필 설정, 관리자 화면 */
+/** 생년월일(내 사주)이 없어도 들어갈 수 있는 화면: 출생 정보 이어 하기(/start), MY(로그아웃·계정 삭제), 프로필 설정, 관리자 화면 */
 export function isBirthOptionalPath(path: string): boolean {
   const p = path.split(/[?#]/)[0];
-  return ["/me", "/admin"].some((prefix) => p === prefix || p.startsWith(`${prefix}/`));
+  return ["/start", "/me", "/admin"].some((prefix) => p === prefix || p.startsWith(`${prefix}/`));
 }

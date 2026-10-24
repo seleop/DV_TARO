@@ -94,10 +94,10 @@ export function cosmicBudget(env: { width: number; cores: number; dpr: number })
     wisps: lite ? 4 : 6,
     debris: lite ? 36 : 60,
     comets: lite ? 1 : 2,
-    streaks: lite ? 56 : 96,
-    /** 앞에서 날아오는 빛 알갱이·스쳐 가는 작은 혜성 */
-    oncoming: lite ? 90 : 150,
-    flybys: lite ? 2 : 3,
+    streaks: lite ? 80 : 130,
+    /** 앞에서 날아오는 빛 알갱이·스쳐 가는 작은 혜성 (비행하는 속도감) */
+    oncoming: lite ? 150 : 240,
+    flybys: lite ? 3 : 4,
     sparkleCapacity: lite ? 380 : 600,
     sparkleRate: lite ? 220 : 340,
     maxDpr: Math.min(env.dpr, lite ? 1.5 : 2),

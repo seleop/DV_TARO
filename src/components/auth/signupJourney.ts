@@ -1,5 +1,6 @@
 import type { SignupField } from "@/lib/auth/validate";
 import type { JourneyStage } from "../cosmos/stages";
+import { birthJourneyStage, type BirthField } from "./birthSteps";
 
 /**
  * 회원가입의 현재 입력칸(AuthFlow의 기존 상태) → 우주 유람의 장.
@@ -26,17 +27,17 @@ export function signupJourneyStage(field: SignupField, done: boolean): JourneySt
   }
 }
 
-/** 인증 화면의 지금 화면: 판단 전(pending)·최초 접속(intro)·버튼(choose)·로그인·회원가입 */
-export type AuthScreen = "pending" | "intro" | "choose" | "login" | "signup";
+/** 인증 화면의 지금 화면: 판단 전(pending)·최초 접속(intro)·버튼(choose)·로그인·회원가입·출생 정보 */
+export type AuthScreen = "pending" | "intro" | "choose" | "login" | "signup" | "birth";
 
 /**
  * 인증 화면 전체 → 우주 유람의 장.
  *  - 최초 접속(터치 전): 은하 바깥 멀고 높은 곳에서 천천히 (터치하면 이메일 단계의 '진입'으로 다가간다)
  *  - 버튼 화면(가입·로그인한 적 있는 기기): 별똥별이 날아가는 기본 유람
  *  - 로그인: 이메일=진입, 비밀번호=별똥별이 밝아짐
- *  - 회원가입: 단계별 (signupJourneyStage)
+ *  - 회원가입: 단계별 (signupJourneyStage), 이어지는 출생 정보: 단계별 (birthJourneyStage)
  */
-export function authJourneyStage(screen: AuthScreen, field: SignupField, done: boolean): JourneyStage {
+export function authJourneyStage(screen: AuthScreen, field: SignupField | BirthField, done: boolean): JourneyStage {
   switch (screen) {
     case "pending":
     case "intro":
@@ -46,6 +47,8 @@ export function authJourneyStage(screen: AuthScreen, field: SignupField, done: b
     case "login":
       return field === "password" ? "ignite" : "enter";
     case "signup":
-      return signupJourneyStage(field, done);
+      return signupJourneyStage(field as SignupField, done);
+    case "birth":
+      return birthJourneyStage(field as BirthField, done);
   }
 }
