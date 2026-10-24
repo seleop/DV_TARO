@@ -18,7 +18,7 @@ type Variant = "primary" | "light" | "ghost" | "danger" | "blue";
 const VARIANT: Record<Variant, string> = {
   primary: "btn-primary text-white",
   blue: "bg-blue text-white shadow-[0_8px_24px_-8px_rgba(79,124,240,0.8)]",
-  light: "bg-[#ecebf3] text-[#3a3550]",
+  light: "btn-light bg-[#ecebf3] text-[#3a3550]",
   ghost: "glass text-ink",
   danger: "border border-bad/40 text-bad bg-bad/5",
 };

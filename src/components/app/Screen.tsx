@@ -5,6 +5,7 @@ import { Children, useEffect, useRef, useState, type ComponentProps, type ReactN
 import { SCENE_INK, sceneForPath } from "@/lib/scene";
 import { CharacterStage } from "../Character";
 import { SceneArt } from "./SceneArt";
+import { StarlitPath } from "./StarlitPath";
 
 /**
  * 스크롤 없는 화면 틀: 머리(header) · 본문(남는 높이만 사용) · 하단 버튼(footer).
@@ -14,6 +15,7 @@ import { SceneArt } from "./SceneArt";
  * scene 을 주면 "장면 + 시트" 화면이 된다 (레퍼런스: 위는 캐릭터가 서 있는 일러스트, 아래는 조작 시트).
  *  - 장면: 경로별 일러스트(SceneArt) 위에 header·scene 을 그린다. 남는 높이를 모두 쓰고, 별이는 바닥에 맞춘다
  *  - 시트: 크림색 둥근 판. children·footer 를 담고, 장면 아래를 살짝 덮어 둘이 이어져 보이게 한다
+ *  - 오늘의 운세(path)는 움직이는 별빛 오솔길: sceneWalking=true면 별이 걸음에 맞춰 배경이 흐른다
  */
 export function Screen({
   header,
@@ -21,6 +23,7 @@ export function Screen({
   children,
   scene,
   scroll = false,
+  sceneWalking = false,
   className = "",
 }: {
   header?: ReactNode;
@@ -29,6 +32,8 @@ export function Screen({
   /** 장면 영역 내용 (제목·별이). 주면 장면 + 시트 화면 */
   scene?: ReactNode;
   scroll?: boolean;
+  /** 장면 배경이 걷는 중처럼 흐른다 (움직이는 장면에서만, 지금은 오늘의 운세 별빛 오솔길) */
+  sceneWalking?: boolean;
   className?: string;
 }) {
   const kind = sceneForPath(usePathname());
@@ -36,13 +41,22 @@ export function Screen({
     return (
       <div className="flex min-h-0 flex-1 flex-col">
         <div className={`relative -mx-5 -mt-[env(safe-area-inset-top)] flex min-h-0 flex-1 flex-col px-5 pt-[env(safe-area-inset-top)] ${SCENE_INK[kind]}`}>
-          <SceneArt kind={kind} className="absolute inset-0 h-full w-full" />
+          {kind === "path" ? (
+            <StarlitPath walking={sceneWalking} className="absolute inset-0 h-full w-full" />
+          ) : (
+            <SceneArt kind={kind} className="absolute inset-0 h-full w-full" />
+          )}
           <div className="relative flex min-h-0 flex-1 flex-col pb-6">
             {header}
             {scene}
           </div>
         </div>
-        <div className={`relative -mx-5 -mt-6 flex shrink-0 flex-col rounded-t-[28px] bg-[var(--bg)] px-5 pt-4 shadow-[0_-12px_24px_-16px_rgba(110,60,40,0.45)] ${className}`}>
+        <div
+          className={`relative -mx-5 -mt-6 flex shrink-0 flex-col rounded-t-[28px] px-5 pt-4 ${
+            // 밤 장면(오늘의 운세 별빛 오솔길)은 어두운 보랏빛 유리 시트, 그 밖은 크림색 시트
+            kind === "path" ? "glass-night glass-sheet" : "bg-[var(--bg)] shadow-[0_-12px_24px_-16px_rgba(110,60,40,0.45)]"
+          } ${className}`}
+        >
           {children}
           {footer && <div className="shrink-0 space-y-2 pb-3 pt-2">{footer}</div>}
         </div>

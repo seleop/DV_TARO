@@ -82,6 +82,9 @@ const range = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i)
 export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode; next: string; signupMode: SignupMode }) {
   const router = useRouter();
   const vv = useVisualViewport();
+  // 키보드가 없을 때의 화면 높이(지금까지 본 가장 큰 높이, 화면 폭이 바뀌면 다시 잼): 우주 배경은 이 높이를 유지한다
+  const [fullView, setFullView] = useState<{ h: number; w: number } | null>(null);
+  if (vv && (!fullView || vv.width !== fullView.w || vv.height > fullView.h)) setFullView({ h: vv.height, w: vv.width });
   const [mode, setMode] = useState<Mode>(initialMode);
   const [step, setStep] = useState(0);
   const [values, setValues] = useState<SignupValues>(EMPTY);
@@ -312,6 +315,8 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
   const isPassword = meta.type === "password";
   const asking = mode === "signup" || mode === "birth";
   const boxStyle = vv ? { height: vv.height, top: vv.top } : undefined;
+  // 우주 배경: 보이는 영역의 위쪽에만 맞추고 높이는 키보드가 없을 때 그대로 (키보드가 올라와도 밀리거나 찌그러지지 않게)
+  const bgStyle = vv && fullView ? { height: fullView.h, top: vv.top } : undefined;
   const ease = "transition-all duration-700 ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none";
   const intro = screen === "intro" || screen === "pending";
   const loginLink = "min-h-11 px-2 text-[13px] text-white/75 underline underline-offset-4";
@@ -330,9 +335,9 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
       : meta.signup;
 
   return (
-    // 키보드가 오르내릴 때 높이가 툭 바뀌지 않게 부드럽게 따라간다
-    <div className="fixed inset-x-0 top-0 z-10 mx-auto flex h-dvh w-full max-w-[440px] flex-col overflow-hidden transition-[height,top] duration-300 ease-out motion-reduce:transition-none" style={boxStyle}>
-      {/* 화면 전체(시트 뒤까지) 우주 */}
+    <>
+    {/* 화면 전체(시트 뒤까지) 우주: 입력 화면 틀과 따로 두어 키보드가 올라와도 크기가 바뀌지 않는다 (그 아래는 키보드에 가려질 뿐) */}
+    <div className="pointer-events-none fixed inset-x-0 top-0 z-10 mx-auto h-dvh w-full max-w-[440px]" style={bgStyle}>
       <AuthCosmos
         screen={screen}
         field={mode === "birth" ? bField : field}
@@ -343,6 +348,9 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
         leaving={leaving}
         beat={asking ? (done ? starTotal : starLit) : undefined}
       />
+    </div>
+    {/* 입력 화면 틀: 키보드를 뺀 보이는 영역에 맞춘다. 키보드가 오르내릴 때 높이가 툭 바뀌지 않게 부드럽게 따라간다 */}
+    <div className="fixed inset-x-0 top-0 z-10 mx-auto flex h-dvh w-full max-w-[440px] flex-col overflow-hidden transition-[height,top] duration-300 ease-out motion-reduce:transition-none" style={boxStyle}>
       {/* 위: 무대(뒤로·진행 표시·말) / 아래: 크림색 시트(버튼·입력). 첫 화면에서는 시트 없이 우주만 */}
       <div className="scene-dark relative flex min-h-0 flex-1 flex-col">
       {/* 상단: 뒤로 + 진행 표시(로그인) 또는 로그인 링크(회원가입 1단계) */}
@@ -444,11 +452,12 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
       )}
 
       {/* 하단: 버튼 또는 입력 (시트). 첫 화면·별자리 완성 때는 크림색 판이 아래로 내려가 우주만 보인다 */}
-      {/* 여백(2026-10-24 사용자 결정: 시안 A '여유 기본'): 좌우·위 24, 아래 24(안전 영역 이상), 요소 사이 16 */}
-      <div className="relative -mt-6 shrink-0 px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6">
+      {/* 여백(2026-10-24 사용자 결정: 시안 A '여유 기본'): 좌우·위 24, 아래 24(안전 영역 이상), 요소 사이 16.
+          판은 어두운 보랏빛 유리(글래스모피즘), 버튼은 진한 보라~남색 (globals.css .glass-night) */}
+      <div className="glass-night relative -mt-6 shrink-0 px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6">
         <div
           aria-hidden
-          className={`absolute inset-0 rounded-t-[28px] bg-[var(--bg)] shadow-[0_-12px_24px_-16px_rgba(30,20,70,0.6)] ${ease} ${intro || (done && finale !== "ask") ? "translate-y-full opacity-0" : "translate-y-0 opacity-100"}`}
+          className={`glass-sheet absolute inset-0 rounded-t-[28px] ${ease} ${intro || (done && finale !== "ask") ? "translate-y-full opacity-0" : "translate-y-0 opacity-100"}`}
         />
         {intro ? (
           <div className="relative text-center">
@@ -588,6 +597,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
         )}
       </div>
     </div>
+    </>
   );
 }
 

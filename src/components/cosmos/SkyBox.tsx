@@ -3,7 +3,6 @@
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import { AdditiveBlending, Color, Object3D, Vector3, type CatmullRomCurve3, type Group, type Mesh, type ShaderMaterial, type Sprite } from "three";
-import { PLANET_FRAG, PLANET_VERT } from "./Planets";
 import { faceAndLight, nebulaUniforms } from "./CosmicEffects";
 import { flareCanvas, type JourneyClock } from "./common";
 import { gaussian, mulberry32 } from "./journey";
@@ -26,12 +25,9 @@ export function SkyBox({ clock, paths, heroStars, skyNebulae, flares, pixelRatio
   const spins = useRef<Array<Group | null>>([]);
   const galaxies = useMemo(() => buildGalaxies(paths, heroStars, pixelRatio), [paths, heroStars, pixelRatio]);
   const light = useMemo(() => new Vector3(...galaxies[0].position).normalize(), [galaxies]);
-  const planet = useMemo(() => placePlanet(paths), [paths]);
   const clouds = useMemo(() => placeSkyNebulae(skyNebulae), [skyNebulae]);
   const flareList = useMemo(() => placeFlares(flares), [flares]);
   const flareTex = useMemo(() => flareCanvas(), []);
-  const skyPlanet = useMemo(() => planetUniforms("#26308f", "#8a63f0", "#c2b0ff", light), [light]);
-  const skyMoon = useMemo(() => planetUniforms("#5a3a2a", "#e8b890", "#ffe0c4", light), [light]);
 
   useFrame(({ camera }) => {
     const t = clock.time;
@@ -93,17 +89,6 @@ export function SkyBox({ clock, paths, heroStars, skyNebulae, flares, pixelRatio
         </group>
       ))}
 
-      {/* 행성과 위성: 첫 은하 쪽에서 빛을 받아 그쪽 가장자리가 빛난다.
-          하늘 성운·은하보다 가까우므로 그 다음(renderOrder -0.5)에 그려 가린다 */}
-      <mesh position={planet.planet} scale={10} rotation={[0.4, 0.8, 0.2]} renderOrder={-0.5}>
-        <sphereGeometry args={[1, 48, 32]} />
-        <shaderMaterial vertexShader={PLANET_VERT} fragmentShader={PLANET_FRAG} uniforms={skyPlanet} depthTest={false} depthWrite={false} />
-      </mesh>
-      <mesh position={planet.moon} scale={2.2} renderOrder={-0.5}>
-        <sphereGeometry args={[1, 32, 24]} />
-        <shaderMaterial vertexShader={PLANET_VERT} fragmentShader={PLANET_FRAG} uniforms={skyMoon} depthTest={false} depthWrite={false} />
-      </mesh>
-
       {flareList.map((f, i) => (
         <Flare key={`f${i}`} flare={f} tex={flareTex} clock={clock} />
       ))}
@@ -145,12 +130,6 @@ const YAW_T = new Vector3();
 function yawAt(curve: CatmullRomCurve3, u: number) {
   curve.getTangentAt(u, YAW_T);
   return (Math.atan2(YAW_T.z, YAW_T.x) * 180) / Math.PI;
-}
-
-/** 행성·위성: 첫 은하보다 왼쪽 아래 */
-function placePlanet(paths: JourneyPaths) {
-  const az = yawAt(paths.a, 0.12);
-  return { planet: skyDir(az - 15, -7, SKY_R * 0.75), moon: skyDir(az - 8, -11, SKY_R * 0.74) };
 }
 
 /** 하늘을 채우는 성운: 수평선 위아래로 크고 진한 보라·파랑 구름을 고르게 두른다 */
@@ -255,8 +234,4 @@ function buildSpiral(n: number, radius: number, arms: number, twist: number, see
     phase[i] = rand();
   }
   return { position, size, phase, color };
-}
-
-function planetUniforms(a: string, b: string, rim: string, light: Vector3) {
-  return { uLight: { value: light.clone() }, uColorA: { value: new Color(a) }, uColorB: { value: new Color(b) }, uRim: { value: new Color(rim) } };
 }

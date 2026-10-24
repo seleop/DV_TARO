@@ -66,11 +66,13 @@ function Bubble({ line, skip, onSkip, onGone }: { line: Line; skip: boolean; onS
       onAnimationEnd={(e) => {
         if (line.out && e.target === e.currentTarget) onGone();
       }}
-      className={`origin-bottom-left rounded-2xl bg-white px-4 pb-3 pt-4 text-[15px] font-semibold leading-relaxed text-[#2a2440] shadow-lg ${
+      className={`bubble-soft origin-bottom-left rounded-2xl px-4 pb-3 pt-4 text-[15px] font-semibold leading-relaxed ${
         line.out ? "sb-out absolute inset-x-0 bottom-0" : "sb-pop relative"
       } ${skip ? "sb-skip" : ""}`}
     >
-      <span className={`absolute -top-3 left-3 rounded-full px-2.5 py-0.5 text-[12px] font-extrabold tracking-wider text-white shadow ${line.accent ? "bg-accent" : "bg-[#2a2440]"}`}>
+      <span
+        className={`absolute -top-3 left-3 rounded-full border border-white/20 px-2.5 py-0.5 text-[12px] font-extrabold tracking-wider text-white shadow ${line.accent ? "bg-[linear-gradient(135deg,#6a4fd0,#3a3aa8)]" : "bg-[#120d36]"}`}
+      >
         {line.label}
       </span>
       {/* 화면 읽기용: 문장 전체 (사라지는 말풍선은 읽지 않음) */}

@@ -8,7 +8,8 @@ import { GalaxyField } from "./GalaxyField";
 import { JourneyClock } from "./common";
 import { cosmicBudget, createJourneyCurve } from "./journey";
 import { MinorShootingStar, ShootingStar, SparkleTrail } from "./ShootingStar";
-import { AsteroidField, NearDebris, Planets } from "./Planets";
+import { AsteroidField, NearDebris } from "./Planets";
+import { SolarPlanets } from "./SolarSystem";
 import { Comet } from "./Comet";
 import { AdaptiveQuality } from "./AdaptiveQuality";
 import { Shockwave } from "./Shockwave";
@@ -27,6 +28,8 @@ export type CosmicSceneProps = {
   stage: JourneyStage;
   /** 지금까지 마친 단계 수 (바뀔 때마다 워프·다음 구도) */
   beat?: number;
+  /** 유람 경로의 출발 지점(진행률 0~1, 관리자 미리보기에서 특정 구간을 바로 볼 때) */
+  startU?: number;
   onReady?: () => void;
   onContextLost?: () => void;
 };
@@ -40,7 +43,7 @@ export type CosmicSceneProps = {
  *  중간 층     경로 둘레 성운(빛나는 구름·어두운 먼지 구름), 소행성 무리, 중간 별층
  *  가까운 층   가까운 별층·빛 알갱이, 가까이 스치는 구름·파편, 별똥별(주인공·반짝이 입자·보조), 빛줄기
  */
-export default function CosmicScene({ running, moving, stage, beat, onReady, onContextLost }: CosmicSceneProps) {
+export default function CosmicScene({ running, moving, stage, beat, startU = 0.08, onReady, onContextLost }: CosmicSceneProps) {
   const budget = useMemo(
     () => cosmicBudget({ width: window.innerWidth, cores: navigator.hardwareConcurrency || 4, dpr: window.devicePixelRatio || 1 }),
     [],
@@ -48,7 +51,7 @@ export default function CosmicScene({ running, moving, stage, beat, onReady, onC
   const curve = useMemo(() => createJourneyCurve(), []);
   const paths = useMemo(() => createJourneyPaths(curve), [curve]);
   // 장이 정해져 있으면(회원가입) 은하 바깥 멀고 높은 곳에서 시작해 첫 장의 자리로 다가온다(진입)
-  const [director] = useState(() => new Director(stage === "cruise" ? STAGE_TARGETS.cruise : INTRO_VALUES, 0.08));
+  const [director] = useState(() => new Director(stage === "cruise" ? STAGE_TARGETS.cruise : INTRO_VALUES, startU));
   // 처음 보이는 장면이 은하를 가로지르는 구간이 되도록 조금 진행된 시점에서 시작한다
   const [clock] = useState(() => new JourneyClock(12));
   const pixelRatio = Math.min(typeof window === "undefined" ? 1 : window.devicePixelRatio || 1, budget.maxDpr);
@@ -81,7 +84,7 @@ export default function CosmicScene({ running, moving, stage, beat, onReady, onC
       <GalaxyField clock={clock} director={director} galaxyStars={budget.galaxyStars} farStars={budget.farStars} bandStars={budget.bandStars} pixelRatio={pixelRatio} />
       <ParallaxStars clock={clock} near={budget.nearStars} mid={budget.midStars} bokeh={budget.bokeh} pixelRatio={pixelRatio} />
       <CosmicEffects curve={curve} clock={clock} director={director} nebulae={budget.nebulae} bandClouds={budget.bandClouds} wisps={budget.wisps} dust={budget.dust} pixelRatio={pixelRatio} />
-      <Planets />
+      <SolarPlanets paths={paths} clock={clock} />
       <AsteroidField paths={paths} director={director} clock={clock} count={budget.asteroids} />
       <NearDebris director={director} clock={clock} count={budget.debris} />
       <Comet seed={5} clock={clock} />

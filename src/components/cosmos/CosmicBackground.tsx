@@ -18,7 +18,20 @@ const CosmicScene = dynamic(() => import("./CosmicScene"), { ssr: false, loading
  * - 탭이 숨겨지면 그리기를 멈춘다. '동작 줄이기' 설정이면 움직이지 않는 정지 장면
  * - WebGL을 못 쓰거나 3D에서 오류·그래픽 끊김이 나면 정적인 우주색 그라데이션으로 대신한다
  */
-export function CosmicBackground({ active = true, stage = "cruise", beat, className = "" }: { active?: boolean; stage?: JourneyStage; beat?: number; className?: string }) {
+export function CosmicBackground({
+  active = true,
+  stage = "cruise",
+  beat,
+  startU,
+  className = "",
+}: {
+  active?: boolean;
+  stage?: JourneyStage;
+  beat?: number;
+  /** 유람 경로의 출발 지점(관리자 미리보기용) */
+  startU?: number;
+  className?: string;
+}) {
   const webgl = useSyncExternalStore(noop, hasWebGL, () => false);
   const reduced = useSyncExternalStore(subscribeReducedMotion, prefersReducedMotion, () => false);
   const pageVisible = useSyncExternalStore(subscribeVisibility, () => document.visibilityState !== "hidden", () => true);
@@ -48,6 +61,7 @@ export function CosmicBackground({ active = true, stage = "cruise", beat, classN
               moving={!reduced}
               stage={stage}
               beat={beat}
+              startU={startU}
               onReady={() => setReady(true)}
               onContextLost={() => setFailed(true)}
             />

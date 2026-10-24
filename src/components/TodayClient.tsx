@@ -10,6 +10,12 @@ import { ShareBar } from "./ShareBar";
 import { Button, Card, Disclaimer, ErrorBox, MockNotice, Tile, TopBar } from "./ui";
 
 type Result = { reading: { content: DailyReading; provider: string }; today: { date: string; day: string; tenGod?: string }; cached: boolean };
+/**
+ * 운세 보는 중: 별이가 별빛 오솔길을 걷는 장면을 최소 이만큼은 보여 준다 (결과가 바로 와도, 2026-10-24 사용자 결정 기본값).
+ * 결과가 준비된 뒤에는 화면을 누르면 바로 볼 수 있다. '동작 줄이기' 설정이면 기다리지 않는다.
+ */
+const MIN_WALK_MS = 3000;
+
 const TABS = [
   { key: "love", emoji: "💘", label: "연애운" },
   { key: "work", emoji: "💼", label: "직업운" },
@@ -23,11 +29,18 @@ export function TodayClient({ calculationId, displayName, aiProvider }: { calcul
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("love");
   const captureRef = useRef<HTMLDivElement>(null);
+  // 최소 걷기 시간이 지났는지 (load 때마다 다시 센다)
+  const [walkDone, setWalkDone] = useState(false);
+  const walkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(
     async (regenerate: boolean) => {
       setLoading(true);
       setError(null);
+      setWalkDone(false);
+      if (walkTimer.current) clearTimeout(walkTimer.current);
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      walkTimer.current = setTimeout(() => setWalkDone(true), reduced ? 0 : MIN_WALK_MS);
       try {
         setData(await api<Result>(`/api/saju/${calculationId}/daily`, { body: { regenerate } }));
       } catch (e) {
@@ -43,7 +56,20 @@ export function TodayClient({ calculationId, displayName, aiProvider }: { calcul
     // 화면에 들어오면 오늘 운세를 불러온다 (같은 날에는 저장된 결과를 재사용)
     // eslint-disable-next-line react-hooks/set-state-in-effect -- 최초 데이터 요청
     void load(false);
+    return () => {
+      if (walkTimer.current) clearTimeout(walkTimer.current);
+    };
   }, [load]);
+
+  // 운세 보는 중(받아 오는 중 + 최소 걷기 시간): 별이가 걷고 배경이 흐른다
+  const walking = !error && (loading || !walkDone);
+  // 결과가 준비됐으면 걷는 중에도 화면을 눌러 바로 보기
+  const ready = walking && !loading && !!data;
+  const skipWalk = () => {
+    if (!ready) return;
+    if (walkTimer.current) clearTimeout(walkTimer.current);
+    setWalkDone(true);
+  };
 
   const r = data?.reading.content;
   const [y, m, d] = (data?.today.date ?? "").split("-");
@@ -51,13 +77,13 @@ export function TodayClient({ calculationId, displayName, aiProvider }: { calcul
     ? { love: r.love, work: r.work, luck: r.luck, food: `${r.food.name} — ${r.food.reason}` }[tab]
     : "";
 
-  // 위: 천막 입구 장면(별이) / 아래: 크림색 시트(결과)
+  // 위: 별빛 오솔길 장면(별이) / 아래: 크림색 시트(결과)
   const scene = (
-    <div className="flex min-h-0 flex-1 flex-col items-center text-center">
-      {loading && !r ? (
+    <div className="flex min-h-0 flex-1 flex-col items-center text-center" onClick={skipWalk}>
+      {walking ? (
         <>
           <p className="mt-1 shrink-0 text-[17px] font-semibold text-ink">{josa(BRAND.characterName, "이/가")} 점치는 중…</p>
-          <p className="mt-0.5 shrink-0 text-sm text-ink-2">오늘의 일진을 살펴보고 있어요</p>
+          <p className="mt-0.5 shrink-0 text-sm text-ink-2">오늘의 일진을 따라 걷고 있어요</p>
           <FitCharacter pose="thinking" min={100} max={280} className="w-full items-end" />
         </>
       ) : error && !r ? (
@@ -78,8 +104,9 @@ export function TodayClient({ calculationId, displayName, aiProvider }: { calcul
     <Screen
       header={<TopBar back="/" />}
       scene={scene}
+      sceneWalking={walking}
       footer={
-        r ? (
+        r && !walking ? (
           <ShareBar
             targetRef={captureRef}
             fileName={`오늘의운세-${data!.today.date}`}
@@ -89,8 +116,14 @@ export function TodayClient({ calculationId, displayName, aiProvider }: { calcul
         ) : undefined
       }
     >
-      {loading && !r ? (
-        <p className="pb-6 pt-2 text-center text-sm text-ink-2">잠시만 기다려 주세요</p>
+      {walking ? (
+        ready ? (
+          <button type="button" onClick={skipWalk} className="mx-auto block pb-6 pt-2 text-center text-sm text-ink-2 underline underline-offset-4">
+            준비됐어요 · 눌러서 바로 보기
+          </button>
+        ) : (
+          <p className="pb-6 pt-2 text-center text-sm text-ink-2">잠시만 기다려 주세요</p>
+        )
       ) : error && !r ? (
         <div className="space-y-3 pb-4">
           <ErrorBox message={error} />

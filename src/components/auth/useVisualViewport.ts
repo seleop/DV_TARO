@@ -20,12 +20,12 @@ function subscribe(cb: () => void) {
 
 function snapshot() {
   const vv = window.visualViewport;
-  return vv ? `${Math.round(vv.height)}|${Math.round(vv.offsetTop)}` : "";
+  return vv ? `${Math.round(vv.height)}|${Math.round(vv.offsetTop)}|${Math.round(vv.width)}` : "";
 }
 
-export function useVisualViewport(): { height: number; top: number } | null {
+export function useVisualViewport(): { height: number; top: number; width: number } | null {
   const s = useSyncExternalStore(subscribe, snapshot, () => "");
   if (!s) return null;
-  const [height, top] = s.split("|").map(Number);
-  return { height, top };
+  const [height, top, width] = s.split("|").map(Number);
+  return { height, top, width };
 }

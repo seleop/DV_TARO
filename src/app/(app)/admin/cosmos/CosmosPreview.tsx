@@ -16,12 +16,23 @@ const STAGES: Array<[JourneyStage, string]> = [
   ["arrive", "완료"],
 ];
 
+/**
+ * 출발 지점 바로가기: 태양계 행성이 화면에 들어오는 구간 (몇 초 뒤 행성이 위쪽에 보인다)
+ */
+const SPOTS: Array<[number, string]> = [
+  [0.08, "처음"],
+  [0.11, "지구"],
+  [0.43, "토성"],
+  [0.83, "화성"],
+];
+
 /** 우주 배경 단독 미리보기: 장(회원가입 단계별 연출) 전환, 단계 완료 워프, 사라지기/나타나기, 초당 프레임을 확인한다 */
 export function CosmosPreview() {
   const [active, setActive] = useState(true);
   const [stage, setStage] = useState<JourneyStage>("cruise");
   // 지금까지 마친 단계 수 (누를 때마다 워프·다음 구도·하늘 색조·충격파)
   const [beat, setBeat] = useState<number | undefined>(undefined);
+  const [startU, setStartU] = useState(0.08);
   const fpsRef = useRef<HTMLSpanElement>(null);
 
   // 초당 프레임 표시 (화면 글자만 바꾸고 React 렌더링은 일으키지 않는다)
@@ -44,7 +55,8 @@ export function CosmosPreview() {
 
   return (
     <div className="relative -mx-5 flex min-h-0 flex-1">
-      <CosmicBackground active={active} stage={stage} beat={beat} />
+      {/* 출발 지점을 바꾸면 장면을 새로 만든다 */}
+      <CosmicBackground key={startU} active={active} stage={stage} beat={beat} startU={startU} />
       <div className="relative flex flex-1 flex-col justify-between p-4 pt-[max(1rem,env(safe-area-inset-top))] text-white">
         <div className="flex items-center justify-between">
           <Link href="/admin" className="rounded-full bg-white/10 px-3 py-2 text-sm backdrop-blur">
@@ -70,6 +82,19 @@ export function CosmosPreview() {
             <button type="button" onClick={() => setBeat((b) => (b ?? 0) + 1)} className="rounded-full bg-accent px-3 py-1.5 text-xs font-semibold">
               단계 완료(워프){beat !== undefined ? ` ${beat}` : ""}
             </button>
+          </div>
+          <div className="flex flex-wrap justify-center gap-1.5">
+            {SPOTS.map(([u, label]) => (
+              <button
+                key={u}
+                type="button"
+                onClick={() => setStartU(u)}
+                aria-pressed={startU === u}
+                className={`rounded-full px-2.5 py-1 text-[11px] backdrop-blur ${startU === u ? "bg-white text-[#1c1640]" : "bg-white/10"}`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
           <p className="text-[13px] text-white/70">우주 배경 미리보기 · 회원가입 단계별 연출을 골라 볼 수 있어요</p>
           <span ref={fpsRef} className="text-xs tabular-nums text-white/50">

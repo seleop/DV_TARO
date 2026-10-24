@@ -92,7 +92,7 @@ describe("화면별 장면", () => {
   it("경로에 맞는 장면을 고른다", async () => {
     const { sceneForPath } = await import("@/lib/scene");
     expect(sceneForPath("/")).toBe("entrance");
-    expect(sceneForPath("/today")).toBe("entrance");
+    expect(sceneForPath("/today")).toBe("path");
     expect(sceneForPath("/saju")).toBe("inside");
     expect(sceneForPath("/saju/new")).toBe("plain");
     expect(sceneForPath("/tarot")).toBe("inside");

@@ -88,7 +88,7 @@ export function ChoiceButtons<T extends string>({ options, value, onChange, labe
             aria-checked={on}
             onClick={() => onChange(o.value)}
             className={`flex min-h-14 flex-col items-center justify-center rounded-2xl border px-2 py-2 text-[16px] font-semibold transition-colors ${
-              on ? "border-accent bg-accent text-white" : "border-line bg-white text-[#2a2440]"
+              on ? "btn-primary border-white/25 text-white" : "border-line bg-white text-ink"
             }`}
           >
             {o.label}
