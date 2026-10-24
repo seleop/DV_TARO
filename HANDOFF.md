@@ -20,7 +20,10 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
-- **진행 중: 메인 화면 세션/claude/vigilant-hopper-402c8c — 홈 화면 UI** (`src/app/(app)/page.tsx`, 새 폴더 `src/components/home/**`, 필요 시 `src/lib/home*.ts`·홈 전용 API·관련 테스트. 마스코트·배경·auth·패키지는 건드리지 않음)
+- **홈(메인) 화면 개편 (main 반영, 2026-10-24)**: 브랜치 `claude/vigilant-hopper-402c8c`. 사용자 결정: 메뉴 디자인·별이와 주고받는 느낌·완성도 위주, 넣을 내용은 인사 말풍선, AI 추가 호출 없음, PC 안내 없음
+  - 장면: 날짜 + 시간대 인사 제목("좋은 저녁이에요 / ○○님") + 별이 말풍선(시간대 6종·요일 문구, 미리 쓴 문구, 누르면 다음 말). 별이를 누르면 별이 자체 말풍선과 겹치지 않게 홈 말풍선을 2.4초 숨김. 앱을 다시 열면 시간대 갱신 (`src/components/home/HomeGreeting.tsx`, `src/lib/home-greeting.ts`)
+  - 시트: 오늘의 운세 큰 카드(시작 버튼 겸용) + 사주·타로·별자리 세 칸(설명 한 줄). 오늘 운세를 이미 봤으면 "✓ 오늘 봤어요" — 저장된 결과만 조회(`src/lib/home.ts`, 캐시 키는 `interpret.ts`의 `dailyReadingCacheKey` 공용) (`src/components/home/HomeMenu.tsx`)
+  - 확인: 320×568·360×600·375×812 넘침 없음. 실기기(iOS·Android) 확인은 아직. 별이가 천막보다 크게 보이는 점은 캐릭터 세션 영역이라 그대로
 - **별이 얼굴 크기 고정 (main 미반영, 2026-10-24)**: 숨쉬기 배율을 머리가 물려받아 얼굴이 최대 9% 커지던 문제 → `DEF-spine.008` 의 `inherit_scale=NONE`, 놀람 눈 1.25→1.15, 전체 동작 재렌더 (`docs/MASCOT.md` 15절)
 - **회원가입 3D 우주 연출 완료(main 미반영, 2026-10-24)**: 브랜치 `claude/youthful-shamir-aa9bf7`. 패키지 `three`·`@react-three/fiber`·`@types/three` 추가(사용자 승인)
   - 가입 중에만 위쪽 무대가 별빛 정원 → 3D 우주로 전환(정원이 가라앉고 우주가 내려옴). 진입·로그인은 그대로. `AuthFlow.tsx`는 연결부만 수정
