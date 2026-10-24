@@ -320,7 +320,9 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
   const ease = "transition-all duration-700 ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none";
   const intro = screen === "intro" || screen === "pending";
   // 뒤가 밝은 성운이어도 읽히게 글자 그림자
-  const loginLink = "min-h-11 px-2 text-[13px] text-white/85 underline underline-offset-4 drop-shadow-[0_1px_4px_rgba(10,6,40,0.95)]";
+  // 우주 위에 바로 놓인 버튼의 키보드 포커스 표시 (브라우저 기본 테두리는 어두운 배경에서 안 보인다)
+  const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d9ccff]";
+  const loginLink = `min-h-11 rounded-md px-2 text-[13px] text-white/85 underline underline-offset-4 drop-shadow-[0_1px_4px_rgba(10,6,40,0.95)] ${focusRing}`;
   const question = leaving
     ? finale.leaving === "/today"
       ? "좋아! 별자리를 따라 오늘의 운세로 가자."
@@ -349,6 +351,8 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
         leaving={leaving}
         beat={asking ? (done ? starTotal : starLit) : undefined}
       />
+      {/* 위쪽 가장자리를 살짝 어둡게: 반짝이는 별이 뒤로·로그인 글자 위에 겹쳐도 글자가 묻히지 않게 */}
+      <div className="absolute inset-x-0 top-0 h-[calc(7rem+env(safe-area-inset-top))] bg-[linear-gradient(180deg,rgba(6,4,26,0.55),rgba(6,4,26,0))]" />
     </div>
     {/* 입력 화면 틀: 키보드를 뺀 보이는 영역에 맞춘다. 키보드가 오르내릴 때 높이가 툭 바뀌지 않게 부드럽게 따라간다 */}
     <div className="fixed inset-x-0 top-0 z-10 mx-auto flex h-dvh w-full max-w-[440px] flex-col overflow-hidden transition-[height,top] duration-300 ease-out motion-reduce:transition-none" style={boxStyle}>
@@ -357,7 +361,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
       {/* 상단: 뒤로 + 진행 표시(로그인) 또는 로그인 링크(회원가입 1단계) */}
       <div className="relative flex h-14 shrink-0 items-center px-3 pt-[env(safe-area-inset-top)]">
         {(mode === "login" || mode === "signup" || (mode === "birth" && bStep > 0 && !done)) && (
-          <button type="button" onClick={back} aria-label="뒤로" className="flex h-11 w-11 items-center justify-center rounded-full text-ink drop-shadow-[0_1px_4px_rgba(10,6,40,0.95)] active:bg-white/10">
+          <button type="button" onClick={back} aria-label="뒤로" className={`flex h-11 w-11 items-center justify-center rounded-full text-ink drop-shadow-[0_1px_4px_rgba(10,6,40,0.95)] active:bg-white/10 ${focusRing}`}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M15 18l-6-6 6-6" />
             </svg>
@@ -449,7 +453,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
           onClick={() => enter("signup")}
           disabled={screen === "pending"}
           aria-label="화면을 터치해 회원가입 시작하기"
-          className="absolute inset-0 z-20 cursor-pointer"
+          className="absolute inset-0 z-20 cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-[#d9ccff]"
         />
       )}
 

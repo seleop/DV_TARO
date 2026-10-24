@@ -1,7 +1,8 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Sprite } from "three";
 import { CameraJourney, JourneyDirector, JourneyTimer } from "./CameraJourney";
 import { CosmicEffects } from "./CosmicEffects";
 import { GalaxyField } from "./GalaxyField";
@@ -109,6 +110,18 @@ export default function CosmicScene({ running, moving, stage, beat, startU = 0.0
       {Array.from({ length: budget.flybys }, (_, i) => (
         <FlybyComet key={i} seed={7 + i * 13} director={director} clock={clock} />
       ))}
+      <ReleaseSharedSprite />
     </Canvas>
   );
+}
+
+/**
+ * three.js의 Sprite는 모든 인스턴스가 모듈 전역 사각형 도형 하나를 함께 쓰고, 렌더러는 그 도형에 dispose 리스너와 GPU 버퍼를 걸어 둔다.
+ * 그래서 캔버스가 사라질 때 이 도형을 dispose하지 않으면 이전 렌더러·WebGL 문맥·캔버스(와 함께 떨어져 나간 화면 DOM)가
+ * 해제되지 않고 화면을 오갈 때마다 쌓인다. dispose해도 도형은 다음에 그릴 때 다시 올라가므로 살아 있는 다른 캔버스에는 영향이 없다.
+ * (useEffect 정리는 장면에서 스프라이트가 빠진 뒤에 실행되므로 이 렌더러가 다시 리스너를 거는 일은 없다)
+ */
+function ReleaseSharedSprite() {
+  useEffect(() => () => new Sprite().geometry.dispose(), []);
+  return null;
 }
