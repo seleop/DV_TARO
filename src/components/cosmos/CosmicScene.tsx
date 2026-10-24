@@ -8,7 +8,10 @@ import { GalaxyField } from "./GalaxyField";
 import { JourneyClock } from "./common";
 import { cosmicBudget, createJourneyCurve } from "./journey";
 import { MinorShootingStar, ShootingStar, SparkleTrail } from "./ShootingStar";
-import { AsteroidField, Planets } from "./Planets";
+import { AsteroidField, NearDebris, Planets } from "./Planets";
+import { Comet } from "./Comet";
+import { AdaptiveQuality } from "./AdaptiveQuality";
+import { ParallaxStars } from "./ParallaxStars";
 import { SkyBox } from "./SkyBox";
 import { SpeedStreaks } from "./SpeedStreaks";
 import { Director, INTRO_VALUES, STAGE_TARGETS, createJourneyPaths, type JourneyStage } from "./stages";
@@ -27,8 +30,11 @@ export type CosmicSceneProps = {
 /**
  * 3D 우주 장면(Canvas). CosmicBackground가 브라우저에서만 지연 로딩한다.
  * 매 프레임 순서: 시계 → 연출 감독(장 → 연출 값·별똥별 위치) → 카메라 → 카메라를 따라다니는 하늘·빛줄기 → 나머지.
- * 장면 구성(레퍼런스: 나선 은하·성운·행성·소행성·반짝이 꼬리의 별똥별·빛줄기):
- * 하늘(은하 3·성운·십자 빛 별) / 별의 바다(원반·먼 별·은하수 띠) / 성운·먼지 / 행성·소행성 / 별똥별(주인공·반짝이 입자·보조) / 빛줄기
+ * 장면 구성(레퍼런스: 나선 은하·성운·행성·소행성·혜성·반짝이 꼬리의 별똥별·빛줄기). 깊이마다 움직임 속도가 달라 시차가 생긴다:
+ *  가장 먼 층  하늘(나선 은하 5·성운·십자 빛 별·행성), 먼 별 껍질·은하수 띠
+ *  먼~중간 층  은하 원반의 별, 은하수 띠 성운, 혜성, 행성
+ *  중간 층     경로 둘레 성운(빛나는 구름·어두운 먼지 구름), 소행성 무리, 중간 별층
+ *  가까운 층   가까운 별층·빛 알갱이, 가까이 스치는 구름·파편, 별똥별(주인공·반짝이 입자·보조), 빛줄기
  */
 export default function CosmicScene({ running, moving, stage, onReady, onContextLost }: CosmicSceneProps) {
   const budget = useMemo(
@@ -63,14 +69,19 @@ export default function CosmicScene({ running, moving, stage, onReady, onContext
       }}
     >
       <color attach="background" args={["#050826"]} />
+      {moving && <AdaptiveQuality min={0.75} max={budget.maxDpr} />}
       <JourneyTimer clock={clock} moving={moving} />
       <JourneyDirector director={director} paths={paths} stage={stage} clock={clock} moving={moving} />
       <CameraJourney director={director} paths={paths} clock={clock} />
-      <SkyBox clock={clock} heroStars={budget.heroStars} skyNebulae={budget.skyNebulae} flares={budget.flares} pixelRatio={pixelRatio} />
+      <SkyBox clock={clock} paths={paths} heroStars={budget.heroStars} skyNebulae={budget.skyNebulae} flares={budget.flares} pixelRatio={pixelRatio} />
       <GalaxyField clock={clock} director={director} galaxyStars={budget.galaxyStars} farStars={budget.farStars} bandStars={budget.bandStars} pixelRatio={pixelRatio} />
-      <CosmicEffects curve={curve} clock={clock} director={director} nebulae={budget.nebulae} bandClouds={budget.bandClouds} dust={budget.dust} pixelRatio={pixelRatio} />
+      <ParallaxStars clock={clock} near={budget.nearStars} mid={budget.midStars} bokeh={budget.bokeh} pixelRatio={pixelRatio} />
+      <CosmicEffects curve={curve} clock={clock} director={director} nebulae={budget.nebulae} bandClouds={budget.bandClouds} wisps={budget.wisps} dust={budget.dust} pixelRatio={pixelRatio} />
       <Planets />
       <AsteroidField paths={paths} director={director} clock={clock} count={budget.asteroids} />
+      <NearDebris director={director} clock={clock} count={budget.debris} />
+      <Comet seed={5} clock={clock} />
+      {budget.comets > 1 && <Comet seed={17} clock={clock} />}
       <ShootingStar director={director} paths={paths} clock={clock} />
       <SparkleTrail director={director} clock={clock} capacity={budget.sparkleCapacity} rate={budget.sparkleRate} pixelRatio={pixelRatio} />
       <MinorShootingStar seed={11} clock={clock} />

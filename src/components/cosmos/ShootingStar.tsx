@@ -298,7 +298,7 @@ export function MinorShootingStar({ seed, clock }: { seed: number; clock: Journe
 }
 
 /** 띠(꼬리) 버퍼: 샘플마다 양옆 두 점, 이웃 샘플끼리 사각형(삼각형 2개)으로 잇는다 */
-function ribbonBuffers(samples: number) {
+export function ribbonBuffers(samples: number) {
   const position = new Float32Array(samples * 2 * 3);
   const along = new Float32Array(samples * 2);
   const across = new Float32Array(samples * 2);
