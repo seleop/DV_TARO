@@ -20,7 +20,12 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
-- **진행 중**: 로그인·가입 세션/`claude/youthful-shamir-aa9bf7` — 회원가입 3D 우주 연출(three·@react-three/fiber, 사용자 승인). 가입 중에만 위쪽 무대를 3D 우주로 전환, 미지원·동작 줄이기는 기존 SVG 별자리. 범위: `src/components/auth/**`(신규 `SignupCosmos.tsx`·`cosmos/*`, `AuthFlow.tsx` 연결부만), `package.json`·`package-lock.json`
+- **회원가입 3D 우주 연출 완료(main 미반영, 2026-10-24)**: 브랜치 `claude/youthful-shamir-aa9bf7`. 패키지 `three`·`@react-three/fiber`·`@types/three` 추가(사용자 승인)
+  - 가입 중에만 위쪽 무대가 별빛 정원 → 3D 우주로 전환(정원이 가라앉고 우주가 내려옴). 진입·로그인은 그대로. `AuthFlow.tsx`는 연결부만 수정
+  - `src/components/auth/SignupCosmos.tsx`: 3D를 지연 로딩(`next/dynamic` ssr:false, 압축 약 245KB, 가입에 들어갈 때만). WebGL 미지원·동작 줄이기·그래픽 끊김(context lost)·오류·로딩 중에는 기존 SVG 별자리(`Constellation`)
+  - `src/components/auth/cosmos/CosmosScene.tsx`: 셰이더 성운(보라·남색·자주), 반짝이는 별, 나선 은하, 단계별 별자리(켜질 때 빛 고리, 선이 그려짐), 별똥별, 손가락·마우스를 따라 기우는 카메라, 단계마다 카메라 상승, 완료 시 물러남. 해상도 배율 최대 1.5, 작은 화면·4코어 이하 기기는 입자 감소(`cosmos/layout.ts`, `tests/cosmos-layout.test.ts`), 가입 화면이 아니거나 탭이 숨겨지면 그리기 멈춤
+  - 별이 원본 3D 모델은 재배포 불가 라이선스라 3D에 넣지 않고 기존처럼 그림(스프라이트)으로 겹침
+  - 확인: 배포 빌드에서 375×812·360×600·키보드 높이(375×430) 화면, 단계 진행(별 점등·선·카메라 상승). 데스크톱 앱 브라우저 창이 숨겨져 있으면 그리기가 멈춰(0프레임) 3D 대신 SVG가 보임 — 앱 문제 아님. 실기기(iOS Safari·Android Chrome) 성능·발열·완료 연출은 아직 확인 안 함
 - **마스코트 교체: 별이 (main 미반영, 2026-10-24)**: 복이 대신 BlenderKit 무료 모델 Aurora Fox(Rigged)를 "별이"로 앱 전체에 사용(사용자 결정). `scripts/mascot/build_fox.py`(네 발 동물 동작·모자+옆 소품 의상), 모델은 저장소 제외(`fetch_fox.mjs`로 받음), 텍스처의 눈 자국 자동 정리(`docs/MASCOT.md` 15절)
 - **복이 소프트 2.5D·천막 배경 (main 반영, 2026-10-24)**: `claude/lucid-solomon-5113d2`. 복이를 소프트 2.5D(툰 셰이딩·직교 카메라)로 다시 렌더·시트 경량화(약 30%↓, 미리 불러오기는 디코딩 안 함). 우주 배경(`CosmicBackdrop`)을 지우고 장면 일러스트로: 홈·오늘의 운세=천막 입구, 사주 목록·타로=천막 안, 별자리·로그인/가입=별빛 정원, 나머지=크림색(`SceneArt`, `lib/scene.ts`). 테마 토큰을 밝은 크림색으로, 장면 위 글자는 `.scene-light/.scene-dark`. `Screen` 의 `scene` 으로 장면 + 시트 화면(`docs/MASCOT.md` 14절)
 - **진입 화면·복이 연출·스크롤 없는 화면 완료(2026-10-24 main 반영)**: 브랜치 `claude/youthful-shamir-aa9bf7`
