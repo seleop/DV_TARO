@@ -20,7 +20,8 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
-- **독립 3D 우주 배경(은하수·별똥별 유람) 완료(main 미반영, 2026-10-24)**: 브랜치 `claude/youthful-shamir-aa9bf7`. 회원가입·기존 화면에는 아직 연결하지 않음(새 패키지 없음, 기존 three·@react-three/fiber 사용)
+- **진행 중**: 로그인·가입 세션/`claude/youthful-shamir-aa9bf7` — 우주 유람(`CosmicBackground`)을 회원가입 단계와 연동. 인증·검증·제출 로직은 건드리지 않음. 범위: `src/components/cosmos/**`, `src/components/auth/SignupCosmos.tsx`·(신규) 단계 매핑, `AuthFlow.tsx`는 연결부 한 줄, 가입 전용 이전 3D(`src/components/auth/cosmos/*`) 정리, `src/app/(app)/admin/cosmos/*` 미리보기, 관련 테스트
+- **독립 3D 우주 배경(은하수·별똥별 유람) 완료(2026-10-24 main 반영)**: 브랜치 `claude/youthful-shamir-aa9bf7`. 회원가입·기존 화면에는 아직 연결하지 않음(새 패키지 없음, 기존 three·@react-three/fiber 사용)
   - 진입점 `src/components/cosmos/CosmicBackground.tsx`(부모를 꽉 채우는 장식 레이어, `active`로 부드럽게 사라짐·나타남, 3D 지연 로딩, WebGL 미지원·오류·그래픽 끊김은 정적 그라데이션, 동작 줄이기는 정지 장면, 탭 숨김 시 그리기 멈춤)
   - `CosmicScene`(Canvas) · `GalaxyField`(나선 은하 원반·먼 별 껍질·하늘을 가로지르는 은하수 띠) · `CosmicEffects`(경로 주변·은하수 띠의 성운, 먼지) · `ShootingStar`(주인공: 빛의 핵·발광·숨 쉬는 꼬리 띠 / 보조 최대 2개) · `CameraJourney`(뒤·위·옆에서 지수 감쇠로 추적, 위쪽 고정) · `journey.ts`(닫힌 경로·시간 기반 진행·damp·예산, `tests/cosmic-journey.test.ts`)
   - 미리보기: 관리자 로그인 후 `/admin/cosmos` (사라지기/나타나기 버튼, fps 표시)
