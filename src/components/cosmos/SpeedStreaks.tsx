@@ -56,7 +56,8 @@ export function SpeedStreaks({ director, clock, count }: { director: Director; c
     const s = st.current;
     const v = director.values;
     const dt = clock.dt;
-    const pace = Math.max(0, v.speed - 0.4) * (0.7 + 0.3 * v.tail);
+    // 장 전환 가속(surge) 때 빛줄기가 길고 진해진다
+    const pace = Math.max(0, director.pace() - 0.4) * (0.7 + 0.3 * v.tail);
     if (s.streaks.length === 0) {
       for (let i = 0; i < count; i++) s.streaks.push(spawn(s.rand, FAR + s.rand() * (NEAR - FAR)));
     }
@@ -75,7 +76,7 @@ export function SpeedStreaks({ director, clock, count }: { director: Director; c
       pos[j + 5] = k.z - len;
     }
     l.geometry.getAttribute("position").needsUpdate = true;
-    (l.material as ShaderMaterial).uniforms.uIntensity.value = Math.min(0.75, 0.2 + pace * 0.6) * (1 - v.finale * 0.6);
+    (l.material as ShaderMaterial).uniforms.uIntensity.value = Math.min(0.9, 0.2 + pace * 0.6 + director.surge * 0.25) * (1 - v.finale * 0.6);
   });
 
   return (

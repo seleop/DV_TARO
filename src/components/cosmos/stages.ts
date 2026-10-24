@@ -1,4 +1,4 @@
-import { CatmullRomCurve3, Vector3 } from "three";
+import { CatmullRomCurve3, Quaternion, Vector3 } from "three";
 import { JOURNEY, damp, wrap01 } from "./journey";
 
 /**
@@ -38,6 +38,14 @@ export type DirectorValues = {
   gather: number;
   /** 별똥별이 은하 중심의 빛으로 들어가는 정도 (0~1) */
   finale: number;
+  /** 카메라가 별똥별 둘레를 옆으로 도는 각도(라디안, +는 오른쪽) */
+  orbit: number;
+  /** 세로 시야각(도). 넓을수록 속도감이 커진다 */
+  fov: number;
+  /** 화면 기울기(라디안) */
+  roll: number;
+  /** 역동성(0~1): 단계가 넘어갈수록 커져 장 전환의 가속·카메라 흔들림이 커진다 */
+  energy: number;
 };
 
 const BASE: DirectorValues = {
@@ -52,15 +60,20 @@ const BASE: DirectorValues = {
   nebula: 0,
   gather: 0,
   finale: 0,
+  orbit: 0.12,
+  fov: 55,
+  roll: 0,
+  energy: 0.4,
 };
 
 export const STAGE_TARGETS: Record<JourneyStage, DirectorValues> = {
   cruise: BASE,
-  enter: { ...BASE, speed: 0.55, followDistance: 12, followHeight: 3.8, brightness: 0.9, tail: 0.85 },
-  ignite: { ...BASE, speed: 0.95, followDistance: 8, followHeight: 2.3, pathB: 1, brightness: 1.3, tail: 1.6 },
-  nebula: { ...BASE, speed: 0.75, followDistance: 6.8, followHeight: 1.9, pathB: 1, brightness: 1.15, tail: 1.3, nebula: 1, gather: 1 },
-  core: { ...BASE, speed: 0.7, followDistance: 7.5, followHeight: 2.4, pathB: 0.5, inward: 1, coreLook: 1, brightness: 1.05, tail: 1.2 },
-  arrive: { ...BASE, speed: 0.9, followDistance: 10, followHeight: 3.2, pathB: 0.5, inward: 1, coreLook: 1, brightness: 1.15, tail: 1.1, finale: 1 },
+  // 단계가 넘어갈수록 빠르고(속도), 크게 돌며(orbit), 기울고(roll), 장 전환의 가속이 세진다(energy)
+  enter: { ...BASE, speed: 0.6, followDistance: 12, followHeight: 3.8, brightness: 0.9, tail: 0.85, orbit: 0, fov: 52, energy: 0.25 },
+  ignite: { ...BASE, speed: 1.1, followDistance: 8, followHeight: 2.1, pathB: 1, brightness: 1.3, tail: 1.6, orbit: -0.45, fov: 60, roll: 0.05, energy: 0.6 },
+  nebula: { ...BASE, speed: 0.95, followDistance: 6.8, followHeight: 1.6, pathB: 1, brightness: 1.15, tail: 1.3, nebula: 1, gather: 1, orbit: 0.5, fov: 58, roll: -0.06, energy: 0.8 },
+  core: { ...BASE, speed: 1.15, followDistance: 7.5, followHeight: 3.2, pathB: 0.5, inward: 1, coreLook: 1, brightness: 1.05, tail: 1.2, orbit: -0.3, fov: 56, roll: 0.04, energy: 1 },
+  arrive: { ...BASE, speed: 1.3, followDistance: 10, followHeight: 3.2, pathB: 0.5, inward: 1, coreLook: 1, brightness: 1.15, tail: 1.1, finale: 1, orbit: 0.12, fov: 64, energy: 1 },
 };
 
 /** 처음 나타날 때의 값: 은하 바깥 멀고 높은 곳 (여기서 첫 장의 목표값으로 다가오며 '진입'이 된다) */
@@ -79,6 +92,10 @@ const LAMBDA: Record<keyof DirectorValues, number> = {
   nebula: 0.9,
   gather: 0.8,
   finale: 2.2,
+  orbit: 0.6,
+  fov: 0.9,
+  roll: 0.7,
+  energy: 1,
 };
 
 const KEYS = Object.keys(LAMBDA) as Array<keyof DirectorValues>;
@@ -103,13 +120,46 @@ export class Director {
   path = new Vector3();
   star = new Vector3();
   tangent = new Vector3(1, 0, 0);
+  /** 장이 바뀔 때 생기는 가속(0~1): 순간 크게 올랐다가 몇 초에 걸쳐 잦아든다 */
+  surge = 0;
+  /** 가속 순간 카메라가 휘도는 쪽 (+1 오른쪽, -1 왼쪽) */
+  swingDir = 1;
+  /** 연출 시간(초): 카메라의 느린 흔들림에 쓴다 */
+  time = 0;
+  private target: DirectorValues | null = null;
   constructor(start: DirectorValues, u = 0) {
     this.values = { ...start };
     this.u = u;
   }
   update(target: DirectorValues, dt: number) {
+    // 장이 바뀌면 가속: 다음 장의 역동성만큼 세게, 카메라는 다음 장의 자리 쪽으로 휘돈다
+    if (this.target && this.target !== target) {
+      this.surge = Math.max(this.surge, 0.5 + 0.5 * target.energy);
+      this.swingDir = target.orbit >= this.values.orbit ? 1 : -1;
+    }
+    this.target = target;
     stepDirector(this.values, target, dt);
-    this.u = wrap01(this.u + (dt * this.values.speed) / JOURNEY.loopSeconds);
+    this.surge *= Math.exp(-1.1 * dt);
+    this.time += dt;
+    this.u = wrap01(this.u + (dt * this.pace()) / JOURNEY.loopSeconds);
+  }
+  /** 실제 진행 속도 = 장의 속도 × 전환 가속 */
+  pace() {
+    return this.values.speed * (1 + 1.1 * this.surge);
+  }
+  /** 지금 카메라가 별똥별 둘레를 도는 각도: 장의 각도 + 전환 때 휘도는 각도 + 느린 흔들림(역동성만큼) */
+  orbitAngle() {
+    const v = this.values;
+    return v.orbit + this.surge * 0.4 * this.swingDir + Math.sin(this.time * 0.21) * 0.16 * v.energy;
+  }
+  /** 화면 기울기: 장의 기울기 + 전환 때 기울어짐 + 느린 흔들림 */
+  rollAngle() {
+    const v = this.values;
+    return v.roll + this.surge * 0.07 * this.swingDir + Math.sin(this.time * 0.29) * 0.03 * v.energy;
+  }
+  /** 시야각: 전환 가속 때 넓어졌다(속도감) 돌아온다 */
+  fov() {
+    return this.values.fov + this.surge * 9;
   }
   /** 움직임 없이 목표값으로 바로 맞춘다 ('동작 줄이기' 설정의 정지 장면) */
   snap(target: DirectorValues) {
@@ -210,6 +260,7 @@ export const CORE_POINT = new Vector3(0, 1.2, 0);
 const C_UP = new Vector3(0, 1, 0);
 const C_TAN = new Vector3();
 const C_SIDE = new Vector3();
+const C_OFF = new Vector3();
 
 /**
  * 카메라가 가려는 자리(pos)와 바라볼 곳(look)을 계산한다 (3인칭: 별똥별 뒤·위·옆).
@@ -227,31 +278,65 @@ export function cameraGoal(d: Director, paths: JourneyPaths, pos: Vector3, look:
   pos.x += (d.star.x - d.path.x) * 0.7;
   pos.y += (d.star.y - d.path.y) * 0.7;
   pos.z += (d.star.z - d.path.z) * 0.7;
+  // 별똥별 둘레로 돌아 옆에서 보고, 전환 가속 때는 조금 뒤처졌다가(늘어남) 따라붙는다. 높이도 천천히 출렁인다
+  const orbit = d.orbitAngle();
+  C_OFF.subVectors(pos, d.star).applyAxisAngle(C_UP, orbit);
+  C_OFF.multiplyScalar(1 + d.surge * 0.35 * v.energy);
+  pos.copy(d.star).add(C_OFF);
+  pos.y += Math.sin(d.time * 0.37) * 0.45 * v.energy;
 
   journeyPoint(paths, wrap01(d.u + JOURNEY.lookAhead / d.length), d.weights, look);
-  look.lerp(d.star, Math.max(0.35, 0.75 * v.inward));
+  // 옆으로 돌수록 '앞쪽 점'이 화면 옆으로 밀리므로 시선을 별똥별에 더 모은다
+  look.lerp(d.star, Math.max(0.35 + 0.4 * Math.min(1, Math.abs(orbit)), 0.75 * v.inward));
   // 중심까지 거리가 멀어(20 이상) 조금만 돌려도 좁은 가로 시야에서 별똥별이 밀려나므로 아주 살짝만
   look.lerp(CORE_POINT, v.coreLook * 0.025 * (1 - v.finale));
   look.lerp(d.star, v.finale);
 }
+
+const R_FWD = new Vector3();
+const R_STAR = new Vector3();
+const R_Q = new Quaternion();
+const R_ID = new Quaternion();
+const R_PART = new Quaternion();
+
+/** 시선과 별똥별 방향 사이 최대 각도(라디안): 세로 화면의 가장 좁은 가로 시야(반각 약 16°)의 60% 안쪽 */
+export const MAX_STAR_ANGLE = 0.16;
 
 /** 카메라의 실제 자리·시선: 목표를 지수 감쇠로 부드럽게 따라간다 (급한 회전 없음) */
 export class CameraRig {
   pos = new Vector3();
   look = new Vector3();
   ready = false;
-  /** dt=0(정지 장면)이거나 처음이면 목표로 바로 맞춘다 */
-  follow(goalPos: Vector3, goalLook: Vector3, dt: number) {
+  /**
+   * dt=0(정지 장면)이거나 처음이면 목표로 바로 맞춘다.
+   * star를 주면 시선이 별똥별에서 MAX_STAR_ANGLE보다 멀어지지 않게 붙잡는다
+   * (장 전환 가속·안쪽 경로로 옮겨 갈 때 별똥별이 옆으로 빠르게 밀려도 화면 밖으로 나가지 않게)
+   */
+  follow(goalPos: Vector3, goalLook: Vector3, dt: number, star?: Vector3) {
     if (!this.ready || dt === 0) {
       this.pos.copy(goalPos);
       this.look.copy(goalLook);
       this.ready = true;
-      return;
+    } else {
+      const kp = 1 - Math.exp(-JOURNEY.positionLambda * dt);
+      const kl = 1 - Math.exp(-JOURNEY.lookLambda * dt);
+      this.pos.lerp(goalPos, kp);
+      this.look.lerp(goalLook, kl);
     }
-    const kp = 1 - Math.exp(-JOURNEY.positionLambda * dt);
-    const kl = 1 - Math.exp(-JOURNEY.lookLambda * dt);
-    this.pos.lerp(goalPos, kp);
-    this.look.lerp(goalLook, kl);
+    if (!star) return;
+    R_FWD.subVectors(this.look, this.pos);
+    const dist = R_FWD.length();
+    R_STAR.subVectors(star, this.pos);
+    if (dist < 1e-6 || R_STAR.lengthSq() < 1e-8) return;
+    R_FWD.divideScalar(dist);
+    R_STAR.normalize();
+    const angle = R_FWD.angleTo(R_STAR);
+    if (angle <= MAX_STAR_ANGLE) return;
+    // 넘친 만큼만 별똥별 쪽으로 돌린다
+    R_Q.setFromUnitVectors(R_FWD, R_STAR);
+    R_PART.slerpQuaternions(R_ID, R_Q, (angle - MAX_STAR_ANGLE) / angle);
+    R_FWD.applyQuaternion(R_PART);
+    this.look.copy(this.pos).addScaledVector(R_FWD, dist);
   }
 }
 

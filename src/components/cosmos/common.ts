@@ -69,3 +69,14 @@ export function glowCanvas(stops: string[], size = 128): HTMLCanvasElement {
   g.fillRect(0, 0, size, size);
   return c;
 }
+
+/** 0~size 범위로 감는다 (음수도) */
+export function wrap(v: number, size: number) {
+  return v - Math.floor(v / size) * size;
+}
+
+/** edge0~edge1 사이 부드러운 0→1 */
+export function smooth(edge0: number, edge1: number, x: number) {
+  const k = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
+  return k * k * (3 - 2 * k);
+}

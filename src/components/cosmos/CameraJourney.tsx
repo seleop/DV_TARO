@@ -2,7 +2,7 @@
 
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useState } from "react";
-import { Vector3 } from "three";
+import { Vector3, type PerspectiveCamera } from "three";
 import type { JourneyClock } from "./common";
 import { JOURNEY } from "./journey";
 import { CameraRig, STAGE_TARGETS, cameraGoal, type Director, type JourneyPaths, type JourneyStage } from "./stages";
@@ -44,16 +44,25 @@ export function JourneyDirector({ director, paths, stage, clock, moving }: { dir
 /**
  * 3인칭 카메라: 별똥별보다 조금 뒤·위·옆에서 따라가며, 별똥별 약간 앞을 바라본다.
  * 위치·시선 모두 지수 감쇠(damp)로 부드럽게 따라가 급격한 회전이 없고, 위쪽 방향을 고정해 화면이 기울지 않는다.
- * 장에 따라 따라가는 거리·높이, 은하 중심을 바라보는 정도가 바뀐다.
+ * 장에 따라 따라가는 거리·높이, 은하 중심을 바라보는 정도, 별똥별 둘레를 도는 각도·화면 기울기·시야각이 바뀐다.
+ * 장이 바뀌는 순간에는 가속하며 시야가 넓어지고 카메라가 다음 자리로 휘돌아 들어간다(Director.surge).
  */
 export function CameraJourney({ director, paths, clock }: { director: Director; paths: JourneyPaths; clock: JourneyClock }) {
   const [rig] = useState(() => new CameraRig());
   useFrame(({ camera }) => {
     cameraGoal(director, paths, GOAL_POS, GOAL_LOOK);
-    rig.follow(GOAL_POS, GOAL_LOOK, clock.dt);
+    rig.follow(GOAL_POS, GOAL_LOOK, clock.dt, director.star);
     camera.position.copy(rig.pos);
     camera.up.copy(UP);
     camera.lookAt(rig.look);
+    // 시선 축으로 살짝 기울인다 (위쪽 방향 벡터는 그대로라 다른 계산에 영향 없음)
+    camera.rotateZ(director.rollAngle());
+    const cam = camera as PerspectiveCamera;
+    const fov = director.fov();
+    if (Math.abs(cam.fov - fov) > 0.01) {
+      cam.fov = fov;
+      cam.updateProjectionMatrix();
+    }
   });
   return null;
 }

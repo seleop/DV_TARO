@@ -74,6 +74,40 @@ describe("연출 값 전환", () => {
   });
 });
 
+describe("장 전환의 역동성", () => {
+  it("장이 바뀌면 가속이 생겼다가 몇 초 안에 잦아들고, 같은 장에서는 생기지 않는다", () => {
+    const d = new Director(STAGE_TARGETS.enter);
+    for (let i = 0; i < 120; i++) d.update(STAGE_TARGETS.enter, 1 / 60);
+    expect(d.surge).toBe(0);
+    d.update(STAGE_TARGETS.ignite, 1 / 60);
+    expect(d.surge).toBeGreaterThan(0.7);
+    expect(d.pace()).toBeGreaterThan(d.values.speed * 1.5);
+    for (let i = 0; i < 60 * 5; i++) d.update(STAGE_TARGETS.ignite, 1 / 60);
+    expect(d.surge).toBeLessThan(0.01);
+  });
+
+  it("단계가 넘어갈수록 더 역동적이다 (속도·선회·가속 세기)", () => {
+    const order = ["enter", "ignite", "nebula", "core"] as const;
+    for (let i = 1; i < order.length; i++) expect(STAGE_TARGETS[order[i]].energy).toBeGreaterThan(STAGE_TARGETS[order[i - 1]].energy);
+    expect(Math.abs(STAGE_TARGETS.ignite.orbit)).toBeGreaterThan(Math.abs(STAGE_TARGETS.enter.orbit));
+    expect(STAGE_TARGETS.core.speed).toBeGreaterThan(STAGE_TARGETS.enter.speed);
+    const surgeOf = (from: "enter" | "nebula", to: "ignite" | "core") => {
+      const d = new Director(STAGE_TARGETS[from]);
+      d.update(STAGE_TARGETS[from], 1 / 60);
+      d.update(STAGE_TARGETS[to], 1 / 60);
+      return d.surge;
+    };
+    expect(surgeOf("nebula", "core")).toBeGreaterThan(surgeOf("enter", "ignite"));
+  });
+
+  it("뒤로 가면 카메라는 반대쪽으로 휘돈다", () => {
+    const d = new Director(STAGE_TARGETS.nebula);
+    for (let i = 0; i < 600; i++) d.update(STAGE_TARGETS.nebula, 1 / 60);
+    d.update(STAGE_TARGETS.ignite, 1 / 60);
+    expect(d.swingDir).toBe(-1);
+  });
+});
+
 describe("세 갈래 경로 섞기", () => {
   const paths = createJourneyPaths(createJourneyCurve());
 
@@ -113,12 +147,12 @@ describe("세 갈래 경로 섞기", () => {
 
 describe("카메라가 별똥별을 화면 안에 잡는다", () => {
   const paths = createJourneyPaths(createJourneyCurve());
-  // 가입 화면 위쪽 무대(세로) 기준: 세로 시야 55°, 가로/세로 비율 약 0.58
-  const tanV = Math.tan((55 / 2) * (Math.PI / 180));
-  const tanH = tanV * 0.58;
+  // 가입 화면 위쪽 무대(세로) 기준: 세로 시야는 장의 시야각, 가로/세로 비율 약 0.58
 
   /** 별똥별이 화면에서 어디에 보이는지 (-1~1: 화면 끝) */
-  function screenPos(pos: Vector3, look: Vector3, star: Vector3) {
+  function screenPos(pos: Vector3, look: Vector3, star: Vector3, fov: number) {
+    const tanV = Math.tan((fov / 2) * (Math.PI / 180));
+    const tanH = tanV * 0.58;
     const f = look.clone().sub(pos).normalize();
     const right = f.clone().cross(new Vector3(0, 1, 0)).normalize();
     const up = right.clone().cross(f).normalize();
@@ -126,6 +160,29 @@ describe("카메라가 별똥별을 화면 안에 잡는다", () => {
     const z = rel.dot(f);
     return { x: rel.dot(right) / z / tanH, y: rel.dot(up) / z / tanV, z };
   }
+
+  it("단계를 빠르게 넘기고 되돌려도(전환 가속 중에도) 별똥별이 화면 밖으로 나가지 않는다", () => {
+    const seq = ["enter", "ignite", "ignite", "nebula", "ignite", "nebula", "core", "core", "nebula", "core"] as const;
+    const d = new Director(INTRO_VALUES, 0.08);
+    const rig = new CameraRig();
+    const gp = new Vector3();
+    const gl = new Vector3();
+    const dt = 1 / 60;
+    let worst = 0;
+    seq.forEach((stage, k) => {
+      for (let i = 0; i < 60 * 5; i++) {
+        d.update(STAGE_TARGETS[stage], dt);
+        d.locate(paths);
+        cameraGoal(d, paths, gp, gl);
+        rig.follow(gp, gl, dt, d.star);
+        if (k > 0) {
+          const sp = screenPos(rig.pos, rig.look, d.star, d.fov());
+          worst = Math.max(worst, Math.abs(sp.x), Math.abs(sp.y));
+        }
+      }
+    });
+    expect(worst).toBeLessThan(0.75);
+  });
 
   for (const stage of ["cruise", "enter", "ignite", "nebula", "core", "arrive"] as const) {
     it(`${stage}: 장이 자리 잡은 뒤 한참 동안 별똥별이 화면 안쪽에 있다`, () => {
@@ -139,9 +196,9 @@ describe("카메라가 별똥별을 화면 안에 잡는다", () => {
         d.update(STAGE_TARGETS[stage], dt);
         d.locate(paths);
         cameraGoal(d, paths, gp, gl);
-        rig.follow(gp, gl, dt);
+        rig.follow(gp, gl, dt, d.star);
         if (i > 60 * 15) {
-          const p = screenPos(rig.pos, rig.look, d.star);
+          const p = screenPos(rig.pos, rig.look, d.star, d.fov());
           expect(p.z).toBeGreaterThan(0);
           worst = Math.max(worst, Math.abs(p.x), Math.abs(p.y));
         }
