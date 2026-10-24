@@ -30,7 +30,7 @@
   - 미리보기: 관리자 로그인 후 `/admin/cosmos` (사라지기/나타나기 버튼, fps 표시)
   - 확인: 화면 없는 Edge(소프트웨어 WebGL)로 실제 시간 캡처 — 390×844·360×600·430×600, 사라지기/나타나기, 앱 콘솔 오류 없음(라이브러리 내부 `THREE.Clock` 사용 중단 예고 경고 1건). 소프트웨어 렌더링 26~56fps. 실기기 GPU 성능·발열은 미확인
   - 데스크톱 앱 브라우저 창이 숨겨져 있으면 requestAnimationFrame이 0이라 3D가 멈춘 것처럼 보임 — 확인할 때는 창을 보이게 하거나 위 방식으로
-- **진행 중: 메인 화면 세션/claude/vigilant-hopper-402c8c — 하단 탭바 앱 전체 제거(사용자 결정)** (`src/app/(app)/layout.tsx`, `BottomTabBar.tsx` 삭제, 새 `src/components/app/HomeButton.tsx`, 사주 목록·타로·별자리·MY 화면에 홈 버튼, 홈 날짜·인사 제목 삭제·오른쪽 위 MY 아이콘)
+- **하단 탭바 앱 전체 제거 (main 미반영, 2026-10-24 사용자 결정)**: 브랜치 `claude/vigilant-hopper-402c8c`. `BottomTabBar.tsx` 삭제, `(app)/layout`이 아래 안전 영역 여백을 맡음. 이동: 홈 = 메뉴 카드 + 오른쪽 위 MY 아이콘, 사주 목록·타로·별자리 고르기 = 장면 왼쪽 위 홈 버튼(`src/components/app/HomeButton.tsx`, 레이아웃 높이 차지 안 함), 별자리 결과 = TopBar 뒤로(홈), MY = 프로필 줄 왼쪽 홈 버튼. 홈 날짜·인사 제목은 삭제(말풍선은 유지). 320×568·360×600 넘침 없음 확인
 - **홈(메인) 화면 개편 (main 반영, 2026-10-24)**: 브랜치 `claude/vigilant-hopper-402c8c`. 사용자 결정: 메뉴 디자인·별이와 주고받는 느낌·완성도 위주, 넣을 내용은 인사 말풍선, AI 추가 호출 없음, PC 안내 없음
   - 장면: 날짜 + 시간대 인사 제목("좋은 저녁이에요 / ○○님") + 별이 말풍선(시간대 6종·요일 문구, 미리 쓴 문구, 누르면 다음 말). 별이를 누르면 별이 자체 말풍선과 겹치지 않게 홈 말풍선을 2.4초 숨김. 앱을 다시 열면 시간대 갱신 (`src/components/home/HomeGreeting.tsx`, `src/lib/home-greeting.ts`)
   - 시트: 오늘의 운세 큰 카드(시작 버튼 겸용) + 사주·타로·별자리 세 칸(설명 한 줄). 오늘 운세를 이미 봤으면 "✓ 오늘 봤어요" — 저장된 결과만 조회(`src/lib/home.ts`, 캐시 키는 `interpret.ts`의 `dailyReadingCacheKey` 공용) (`src/components/home/HomeMenu.tsx`)

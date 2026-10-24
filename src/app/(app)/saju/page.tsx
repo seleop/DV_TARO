@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requirePageUser } from "@/lib/auth/session";
 import { listCalculations } from "@/lib/repo/records";
+import { HomeButton } from "@/components/app/HomeButton";
 import { FitCharacter, Pager, Screen } from "@/components/app/Screen";
 import { LinkButton, StatusBadge } from "@/components/ui";
 
@@ -18,6 +19,7 @@ export default async function SajuHub() {
       // 위: 천막 안에서 사주책을 읽는 별이 / 아래: 내 사주·가족 사주 목록
       scene={
         <div className="flex min-h-0 flex-1 flex-col items-center pt-[clamp(3.25rem,8dvh,4.75rem)] text-center">
+          <HomeButton />
           <h1 className="shrink-0 text-[26px] font-extrabold text-ink">사주 풀이</h1>
           <p className="mt-0.5 shrink-0 text-sm text-ink-2">여러 계산 엔진으로 교차검증한 원국을 AI가 풀어 드려요</p>
           <FitCharacter pose="saju" min={90} max={280} className="w-full items-end" />

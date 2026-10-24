@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Mood } from "@/lib/character";
 import { api, errorText } from "@/lib/client";
+import { HomeButton } from "./app/HomeButton";
 import { FitCharacter, Pager, Screen } from "./app/Screen";
 import { ShareBar } from "./ShareBar";
 import { Button, Card, Disclaimer, ErrorBox, MockNotice, TopBar } from "./ui";
@@ -56,7 +57,7 @@ export function HoroscopeClient({ signs, profileSignId }: { signs: Sign[]; profi
     const r = result.content;
     return (
       <Screen
-        header={<TopBar title="별자리 운세" back={null} right={<button onClick={() => setResult(null)} className="text-sm text-ink-2">변경</button>} />}
+        header={<TopBar title="별자리 운세" back="/" right={<button onClick={() => setResult(null)} className="text-sm text-ink-2">변경</button>} />}
         // 위: 별빛 정원에서 망원경을 든 별이 / 아래: 운세 내용 (좌우로 넘김)
         scene={
           <div className="flex min-h-0 flex-1 flex-col items-center text-center">
@@ -120,6 +121,7 @@ ${r.overall}`} />}
       // 위: 별빛 정원의 별이 / 아래: 별자리 고르기
       scene={
         <div className="flex min-h-0 flex-1 flex-col items-center pt-[clamp(0.5rem,3dvh,2rem)] text-center">
+          <HomeButton />
           <p className="shrink-0 text-[clamp(15px,2.4dvh,18px)] font-semibold text-ink">오늘 별들이 전하는 이야기</p>
           <h1 className="text-gradient mt-1 shrink-0 text-[clamp(28px,4.6dvh,36px)] font-extrabold">별자리 운세</h1>
           <FitCharacter pose="star" min={70} max={240} className="w-full items-end" />

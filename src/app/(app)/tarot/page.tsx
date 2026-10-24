@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { BRAND } from "@/config/brand";
+import { HomeButton } from "@/components/app/HomeButton";
 import { FitCharacter, Pager, Screen } from "@/components/app/Screen";
 import { SafeForm } from "@/components/SafeForm";
 import { ShareBar } from "@/components/ShareBar";
@@ -90,6 +91,7 @@ export default function TarotPage() {
         // 위: 천막 안 탁자에 펼친 카드 / 아래: 카드 풀이 (좌우로 넘김)
         scene={
           <div className="flex min-h-0 flex-1 flex-col items-center pt-[clamp(3rem,7dvh,4.25rem)] text-center">
+            <HomeButton />
             <p className="shrink-0 text-sm text-ink-2">“{c.question}”</p>
             <h1 className="mt-0.5 shrink-0 text-[clamp(20px,3.2dvh,24px)] font-extrabold text-ink">카드가 답했어요</h1>
             <div className="flex min-h-0 w-full flex-1 items-end justify-center gap-1">
@@ -152,6 +154,7 @@ ${c.overall}`} />}
         // 위: 천막 안에서 카드를 든 별이 / 아래: 펼치는 방식·질문 입력
         scene={
           <div className="flex min-h-0 flex-1 flex-col items-center pt-[clamp(3.25rem,8dvh,4.75rem)] text-center">
+            <HomeButton />
             <p className="shrink-0 text-[clamp(15px,2.4dvh,18px)] font-semibold leading-snug text-ink">
               마음속 질문을 떠올리면 {josa(BRAND.characterName, "이/가")} 카드를 펼쳐 줄게요
             </p>

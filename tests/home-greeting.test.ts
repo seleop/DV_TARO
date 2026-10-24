@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SLOT_TITLE, formatHomeDate, greetingLines, pickGreeting, timeSlot } from "@/lib/home-greeting";
+import { greetingLines, pickGreeting, timeSlot } from "@/lib/home-greeting";
 
 describe("홈 인사 문구", () => {
   it("시간대 경계", () => {
@@ -17,7 +17,6 @@ describe("홈 인사 문구", () => {
       "night",
       "night",
     ]);
-    expect(SLOT_TITLE[timeSlot(19)]).toBe("좋은 저녁이에요");
   });
 
   it("요일 문구가 있는 날은 그 문구로 시작하고, 누르면 차례로 돌아온다", () => {
@@ -34,9 +33,5 @@ describe("홈 인사 문구", () => {
     const wed = new Date(2026, 9, 21, 8, 0);
     expect(greetingLines(tue)).toEqual(greetingLines(wed));
     expect(pickGreeting(tue, 0)).not.toBe(pickGreeting(wed, 0));
-  });
-
-  it("날짜 표시", () => {
-    expect(formatHomeDate(new Date(2026, 9, 24))).toBe("10월 24일 토요일");
   });
 });

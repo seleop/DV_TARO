@@ -1,5 +1,5 @@
 /**
- * 홈 화면 인사: 시간대·요일에 맞춘 제목과 별이 말풍선 문구.
+ * 홈 화면 별이 말풍선 문구: 시간대·요일에 맞춘다.
  * AI를 부르지 않는 미리 쓴 문구라 비용이 들지 않는다 (2026-10-24 사용자 결정).
  * 시간은 사용자 기기 시간 기준이다.
  */
@@ -13,16 +13,6 @@ export function timeSlot(hour: number): TimeSlot {
   if (hour < 22) return "evening";
   return "night";
 }
-
-/** 장면 제목에 붙는 인사 ("좋은 저녁이에요, ○○님") */
-export const SLOT_TITLE: Record<TimeSlot, string> = {
-  dawn: "고요한 새벽이에요",
-  morning: "좋은 아침이에요",
-  noon: "즐거운 점심이에요",
-  afternoon: "좋은 오후예요",
-  evening: "좋은 저녁이에요",
-  night: "편안한 밤이에요",
-};
 
 const SLOT_LINES: Record<TimeSlot, readonly string[]> = {
   dawn: ["아직 안 주무셨어요? 별이 제일 반짝일 시간이에요", "조용한 새벽, 마음속 질문을 떠올려 봐요", "따뜻한 차 한 잔 하고 푹 쉬어요"],
@@ -54,11 +44,4 @@ export function pickGreeting(date: Date, n: number): string {
   const lines = greetingLines(date);
   const start = WEEKDAY_LINES[date.getDay()] ? 0 : date.getDate() % lines.length;
   return lines[(start + n) % lines.length];
-}
-
-const WEEKDAY_NAMES = ["일", "월", "화", "수", "목", "금", "토"] as const;
-
-/** "10월 24일 토요일" */
-export function formatHomeDate(date: Date): string {
-  return `${date.getMonth() + 1}월 ${date.getDate()}일 ${WEEKDAY_NAMES[date.getDay()]}요일`;
 }

@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { BRAND } from "@/config/brand";
+import { MyButton } from "@/components/app/HomeButton";
 import { FitCharacter } from "@/components/app/Screen";
-import { SLOT_TITLE, formatHomeDate, pickGreeting, timeSlot } from "@/lib/home-greeting";
+import { pickGreeting } from "@/lib/home-greeting";
 
 /** 별이가 들어올 때 띄우는 인사 말풍선(약 0.45초 뒤 2.4초)이 끝난 뒤에 홈 말풍선을 띄운다 */
 const FIRST_BUBBLE_DELAY_MS = 2900;
@@ -24,7 +25,7 @@ const subscribeMinute = (cb: () => void) => {
 };
 const minuteNow = () => Math.floor(Date.now() / 60_000);
 
-/** 홈 장면: 날짜·시간대 인사 제목 + 별이 말풍선(누르면 다음 문구) + 남는 높이에 맞춘 별이 */
+/** 홈 장면: MY 버튼 + 별이 말풍선(시간대·요일 문구, 누르면 다음 문구) + 남는 높이에 맞춘 별이 */
 export function HomeGreeting({ name }: { name: string }) {
   const minute = useSyncExternalStore(subscribeMinute, minuteNow, () => null);
   const now = minute === null ? null : new Date(minute * 60_000);
@@ -45,16 +46,13 @@ export function HomeGreeting({ name }: { name: string }) {
   const visible = shown && !hiddenUntilTap && line;
 
   return (
-    // 작은 화면에서는 제목이 천막 줄무늬 위에 겹치므로 글자 뒤에 옅은 빛을 깔아 읽기 쉽게 한다
-    <div className="flex min-h-0 flex-1 flex-col items-center pt-[clamp(0.5rem,2.5dvh,1.75rem)] text-center [text-shadow:0_0_12px_rgba(255,236,220,0.95),0_0_3px_rgba(255,236,220,0.9)]">
-      <p className="animate-rise h-[1.4em] text-[clamp(12px,1.9dvh,14px)] font-semibold text-ink-2">{now ? formatHomeDate(now) : ""}</p>
-      <h1 className="animate-rise mt-0.5 max-w-full text-[clamp(22px,3.7dvh,30px)] font-extrabold leading-tight tracking-tight text-ink">
-        <span className="block">{now ? SLOT_TITLE[timeSlot(now.getHours())] : " "}</span>
-        <span className="block truncate text-accent">{name}님</span>
-      </h1>
+    // 날짜·인사 제목은 없앴다(2026-10-24 사용자 결정). 위는 MY 버튼, 그 아래 말풍선, 나머지는 별이
+    <div className="flex min-h-0 flex-1 flex-col items-center pt-[clamp(3.25rem,8dvh,4.5rem)] text-center">
+      <h1 className="sr-only">{name}님의 홈</h1>
+      <MyButton />
 
       {/* 말풍선 자리는 늘 잡아 두어 문구가 떠도 별이 크기가 바뀌지 않게 한다 */}
-      <div className="mt-[clamp(0.25rem,1.5dvh,0.75rem)] flex h-[3.6rem] w-full shrink-0 items-end justify-center">
+      <div className="flex h-[3.6rem] w-full shrink-0 items-end justify-center">
         <button
           type="button"
           onClick={() => setN((x) => x + 1)}

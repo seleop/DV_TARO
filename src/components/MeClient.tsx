@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { api, errorText, formatDate } from "@/lib/client";
 import { CharacterStage } from "./Character";
+import { HomeButton } from "./app/HomeButton";
 import { Pager } from "./app/Screen";
 import { Button, Card, ErrorBox, Field, H2, inputCls, StatusBadge } from "./ui";
 
@@ -52,6 +53,7 @@ export function MeClient({
     // 스크롤 없이: 프로필 줄 + 바로가기 + 탭(사주 기록 / 타로·별자리 / 개인정보·계정). 목록은 장으로 넘긴다
     <div className="flex min-h-0 flex-1 flex-col gap-3 pt-[clamp(0.75rem,3dvh,2rem)]">
       <div className="flex shrink-0 items-center gap-3 px-1">
+        <HomeButton floating={false} />
         <CharacterStage size={64} orbs={false} />
         <div className="min-w-0 flex-1">
           <p className="text-[19px] font-bold">{user.displayName}님</p>
