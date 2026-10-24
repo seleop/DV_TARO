@@ -6,7 +6,7 @@ import { CameraJourney, JourneyDirector, JourneyTimer } from "./CameraJourney";
 import { CosmicEffects } from "./CosmicEffects";
 import { GalaxyField } from "./GalaxyField";
 import { JourneyClock } from "./common";
-import { cosmicBudget, createJourneyCurve } from "./journey";
+import { cosmicBudget, createJourneyCurve, lowerBudget } from "./journey";
 import { MinorShootingStar, ShootingStar, SparkleTrail } from "./ShootingStar";
 import { AsteroidField, NearDebris } from "./Planets";
 import { SolarPlanets } from "./SolarSystem";
@@ -44,10 +44,20 @@ export type CosmicSceneProps = {
  *  가까운 층   가까운 별층·빛 알갱이, 가까이 스치는 구름·파편, 별똥별(주인공·반짝이 입자·보조), 빛줄기
  */
 export default function CosmicScene({ running, moving, stage, beat, startU = 0.08, onReady, onContextLost }: CosmicSceneProps) {
-  const budget = useMemo(
-    () => cosmicBudget({ width: window.innerWidth, cores: navigator.hardwareConcurrency || 4, dpr: window.devicePixelRatio || 1 }),
+  // 기기 성능 단계: 화면 크기·코어 수·메모리·화면 배율로 정하고, 실행 중 많이 버벅이면 대체 모드(low)로 낮춘다
+  const base = useMemo(
+    () =>
+      cosmicBudget({
+        width: window.innerWidth,
+        height: window.innerHeight,
+        cores: navigator.hardwareConcurrency || 4,
+        dpr: window.devicePixelRatio || 1,
+        memoryGb: (navigator as Navigator & { deviceMemory?: number }).deviceMemory,
+      }),
     [],
   );
+  const [low, setLow] = useState(false);
+  const budget = useMemo(() => (low ? lowerBudget(base) : base), [low, base]);
   const curve = useMemo(() => createJourneyCurve(), []);
   const paths = useMemo(() => createJourneyPaths(curve), [curve]);
   // 장이 정해져 있으면(회원가입) 은하 바깥 멀고 높은 곳에서 시작해 첫 장의 자리로 다가온다(진입)
@@ -76,7 +86,7 @@ export default function CosmicScene({ running, moving, stage, beat, startU = 0.0
       }}
     >
       <color attach="background" args={["#050826"]} />
-      {moving && <AdaptiveQuality min={0.75} max={budget.maxDpr} />}
+      {moving && <AdaptiveQuality min={0.75} max={budget.maxDpr} onLow={() => setLow(true)} />}
       <JourneyTimer clock={clock} moving={moving} />
       <JourneyDirector director={director} paths={paths} stage={stage} beat={beat} clock={clock} moving={moving} />
       <CameraJourney director={director} paths={paths} clock={clock} />

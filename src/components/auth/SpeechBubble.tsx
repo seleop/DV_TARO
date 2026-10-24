@@ -18,6 +18,8 @@ const STYLE = `
 @media (prefers-reduced-motion: reduce) { .sb-pop, .sb-out, .sb-ch { animation: none; } }
 `;
 
+const reducedMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 type Line = { id: string; label: string; text: string; accent: boolean; out?: boolean };
 
 /**
@@ -33,7 +35,8 @@ export function SpeechBubble({ id, label, text, accent = false }: { id: string; 
   const [skipped, setSkipped] = useState<string | null>(null);
   const current = lines[lines.length - 1];
   // 새 말: 지금 말풍선은 사라지는 중으로 두고 새 말풍선을 더한다 (렌더링 중 이전 값과 비교하는 React 권장 방식)
-  if (current.id !== id) setLines([{ ...current, out: true }, { id, label, text, accent }]);
+  // '동작 줄이기'면 사라지는 애니메이션(과 그 끝 이벤트)이 없으므로 이전 말풍선을 바로 지운다
+  if (current.id !== id) setLines(reducedMotion() ? [{ id, label, text, accent }] : [{ ...current, out: true }, { id, label, text, accent }]);
   else if (current.text !== text || current.label !== label || current.accent !== accent) setLines([...lines.slice(0, -1), { id, label, text, accent }]);
 
   return (

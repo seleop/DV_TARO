@@ -319,7 +319,8 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
   const bgStyle = vv && fullView ? { height: fullView.h, top: vv.top } : undefined;
   const ease = "transition-all duration-700 ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none";
   const intro = screen === "intro" || screen === "pending";
-  const loginLink = "min-h-11 px-2 text-[13px] text-white/75 underline underline-offset-4";
+  // 뒤가 밝은 성운이어도 읽히게 글자 그림자
+  const loginLink = "min-h-11 px-2 text-[13px] text-white/85 underline underline-offset-4 drop-shadow-[0_1px_4px_rgba(10,6,40,0.95)]";
   const question = leaving
     ? finale.leaving === "/today"
       ? "좋아! 별자리를 따라 오늘의 운세로 가자."
@@ -356,7 +357,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
       {/* 상단: 뒤로 + 진행 표시(로그인) 또는 로그인 링크(회원가입 1단계) */}
       <div className="relative flex h-14 shrink-0 items-center px-3 pt-[env(safe-area-inset-top)]">
         {(mode === "login" || mode === "signup" || (mode === "birth" && bStep > 0 && !done)) && (
-          <button type="button" onClick={back} aria-label="뒤로" className="flex h-11 w-11 items-center justify-center rounded-full text-ink active:bg-white/10">
+          <button type="button" onClick={back} aria-label="뒤로" className="flex h-11 w-11 items-center justify-center rounded-full text-ink drop-shadow-[0_1px_4px_rgba(10,6,40,0.95)] active:bg-white/10">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M15 18l-6-6 6-6" />
             </svg>

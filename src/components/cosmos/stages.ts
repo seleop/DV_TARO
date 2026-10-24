@@ -160,9 +160,12 @@ export class Director {
   tintAmt = 0;
   tintAmtTarget = 0;
   private target: DirectorValues | null = null;
+  /** 실제 진행 속도(부드럽게 따라가는 값): 장 전환·워프 때 속도가 한 프레임에 튀지 않게 */
+  private paceNow: number;
   constructor(start: DirectorValues, u = 0) {
     this.values = { ...start };
     this.u = u;
+    this.paceNow = start.speed;
   }
   update(target: DirectorValues, dt: number) {
     // 장이 바뀌면 가속: 다음 장의 역동성만큼 세게, 카메라는 다음 장의 자리 쪽으로 휘돈다
@@ -183,7 +186,10 @@ export class Director {
     this.tint.lerp(this.tintTarget, kt);
     this.tintAmt += (this.tintAmtTarget - this.tintAmt) * kt;
     this.time += dt;
-    this.u = wrap01(this.u + (dt * this.pace()) / JOURNEY.loopSeconds);
+    // 목표 속도(장의 속도 × 전환 가속 × 워프)로 약 0.2초에 걸쳐 다가간다 → 별똥별이 갑자기 튀어 나가지 않는다
+    const goal = this.values.speed * (1 + 1.1 * this.surge + 1.4 * this.warp);
+    this.paceNow += (goal - this.paceNow) * (1 - Math.exp(-5 * dt));
+    this.u = wrap01(this.u + (dt * this.paceNow) / JOURNEY.loopSeconds);
   }
   /**
    * 단계 완료(또는 되돌아감): 워프로 순간 가속하며 다음 구도(SHOTS[index])로 휘돌아 들어가고, 하늘 색조가 바뀐다.
@@ -215,9 +221,9 @@ export class Director {
     this.tint.copy(this.tintTarget);
     this.tintAmt = this.tintAmtTarget;
   }
-  /** 실제 진행 속도 = 장의 속도 × 전환 가속(워프 때 더 빠르게) */
+  /** 실제 진행 속도 = 장의 속도 × 전환 가속(워프 때 더 빠르게), 부드럽게 따라간 값 */
   pace() {
-    return this.values.speed * (1 + 1.1 * this.surge + 1.4 * this.warp);
+    return this.paceNow;
   }
   /** 지금 카메라가 별똥별 둘레를 도는 각도: 장의 각도 + 전환 때 휘도는 각도 + 느린 흔들림(역동성만큼) */
   orbitAngle() {
@@ -374,11 +380,29 @@ const R_PART = new Quaternion();
 /** 시선과 별똥별 방향 사이 최대 각도(라디안): 세로 화면의 가장 좁은 가로 시야(반각 약 16°)의 60% 안쪽 */
 export const MAX_STAR_ANGLE = 0.16;
 
-/** 카메라의 실제 자리·시선: 목표를 지수 감쇠로 부드럽게 따라간다 (급한 회전 없음) */
+/** 카메라의 실제 자리·시선·시야각·기울기: 목표를 지수 감쇠로 부드럽게 따라간다 (급한 회전·확대 없음) */
 export class CameraRig {
   pos = new Vector3();
   look = new Vector3();
+  fov = 55;
+  roll = 0;
   ready = false;
+  private lensReady = false;
+  /**
+   * 시야각·기울기: 장 전환·워프로 목표가 한 프레임에 바뀌어도 약 0.15초에 걸쳐 따라간다 (화면이 툭 줌되거나 기울지 않게).
+   * dt=0(정지 장면)이거나 처음이면 바로 맞춘다
+   */
+  lens(goalFov: number, goalRoll: number, dt: number) {
+    if (!this.lensReady || dt === 0) {
+      this.fov = goalFov;
+      this.roll = goalRoll;
+      this.lensReady = true;
+      return;
+    }
+    const k = 1 - Math.exp(-7 * dt);
+    this.fov += (goalFov - this.fov) * k;
+    this.roll += (goalRoll - this.roll) * k;
+  }
   /**
    * dt=0(정지 장면)이거나 처음이면 목표로 바로 맞춘다.
    * star를 주면 시선이 별똥별에서 MAX_STAR_ANGLE보다 멀어지지 않게 붙잡는다

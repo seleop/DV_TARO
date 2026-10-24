@@ -85,11 +85,11 @@ export function CameraJourney({ director, paths, clock }: { director: Director; 
     camera.up.copy(UP);
     camera.lookAt(rig.look);
     // 시선 축으로 살짝 기울인다 (위쪽 방향 벡터는 그대로라 다른 계산에 영향 없음)
-    camera.rotateZ(director.rollAngle());
+    rig.lens(director.fov(), director.rollAngle(), clock.dt);
+    camera.rotateZ(rig.roll);
     const cam = camera as PerspectiveCamera;
-    const fov = director.fov();
-    if (Math.abs(cam.fov - fov) > 0.01) {
-      cam.fov = fov;
+    if (Math.abs(cam.fov - rig.fov) > 0.01) {
+      cam.fov = rig.fov;
       cam.updateProjectionMatrix();
     }
   });

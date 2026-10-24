@@ -356,8 +356,9 @@ body {
 /* 시트 판: 뒤의 우주가 뿌옇게 비치는 어두운 보랏빛 유리 + 위쪽 가는 빛 테두리 (2026-10-24 사용자 의견: 더 투명하게) */
 .glass-sheet {
   background: linear-gradient(180deg, rgba(42, 30, 104, 0.3), rgba(18, 14, 52, 0.46));
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
-  backdrop-filter: blur(16px) saturate(150%);
+  /* 뒤가 밝은 성운이어도 흰 글씨·오류 문구가 읽히게, 비치는 배경을 살짝 어둡게(brightness) 흐린다 */
+  -webkit-backdrop-filter: blur(16px) saturate(150%) brightness(0.72);
+  backdrop-filter: blur(16px) saturate(150%) brightness(0.72);
   border-top: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: 0 -16px 32px -18px rgba(6, 4, 30, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
@@ -391,4 +392,15 @@ body {
 }
 .glass-night input::placeholder {
   color: rgba(201, 191, 230, 0.6);
+}
+/* 키보드로 이동할 때 어두운 유리 위에서도 잘 보이는 포커스 표시 */
+.glass-night :focus-visible {
+  outline: 2px solid #d9ccff;
+  outline-offset: 2px;
+}
+/* backdrop-filter를 못 쓰는 브라우저: 흐림 없이도 글씨가 읽히게 시트를 더 진하게 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-sheet {
+    background: linear-gradient(180deg, rgba(36, 26, 92, 0.88), rgba(16, 12, 46, 0.94));
+  }
 }

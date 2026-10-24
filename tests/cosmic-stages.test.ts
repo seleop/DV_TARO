@@ -102,7 +102,11 @@ describe("장 전환의 역동성", () => {
     expect(d.surge).toBe(0);
     d.update(STAGE_TARGETS.ignite, 1 / 60);
     expect(d.surge).toBeGreaterThan(0.7);
-    expect(d.pace()).toBeGreaterThan(d.values.speed * 1.5);
+    // 속도는 한 프레임에 튀지 않고 곧(0.5초 안에) 장의 속도보다 뚜렷이 빨라진다
+    const p1 = d.pace();
+    expect(p1).toBeLessThan(d.values.speed * 1.3);
+    for (let i = 0; i < 30; i++) d.update(STAGE_TARGETS.ignite, 1 / 60);
+    expect(d.pace()).toBeGreaterThan(d.values.speed * 1.3);
     for (let i = 0; i < 60 * 5; i++) d.update(STAGE_TARGETS.ignite, 1 / 60);
     expect(d.surge).toBeLessThan(0.01);
   });
@@ -152,6 +156,21 @@ describe("단계 완료 워프·구도", () => {
     for (let i = 0; i < 60 * 6; i++) d.update(STAGE_TARGETS.cruise, 1 / 60);
     expect(Math.abs(d.shot.orbit)).toBeLessThan(0.01);
     expect(d.tintAmt).toBeLessThan(0.01);
+  });
+});
+
+describe("카메라 렌즈(시야각·기울기) 보간", () => {
+  it("워프로 목표 시야각이 확 바뀌어도 한 프레임에 스냅하지 않고, 프레임 수와 무관하게 따라간다", () => {
+    const a = new CameraRig();
+    const b = new CameraRig();
+    a.lens(55, 0, 1 / 60);
+    b.lens(55, 0, 1 / 30);
+    a.lens(70, 0.1, 1 / 60);
+    expect(a.fov).toBeLessThan(58);
+    for (let i = 0; i < 59; i++) a.lens(70, 0.1, 1 / 60);
+    for (let i = 0; i < 30; i++) b.lens(70, 0.1, 1 / 30);
+    expect(a.fov).toBeCloseTo(b.fov, 4);
+    expect(a.fov).toBeGreaterThan(69.9);
   });
 });
 

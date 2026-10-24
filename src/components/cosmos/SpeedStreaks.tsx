@@ -12,9 +12,12 @@ const STREAK_VERT = /* glsl */ `
   attribute vec3 aColor;
   varying float vAlong;
   varying vec3 vColor;
+  varying float vFade;
   void main() {
     vAlong = aAlong;
     vColor = aColor;
+    // 멀리서 생길 때·코앞에서 사라질 때 툭 나타나거나 꺼지지 않게 깊이에 따라 옅게 (카메라 공간 z: 앞이 음수)
+    vFade = smoothstep(-70.0, -52.0, position.z) * (1.0 - smoothstep(-5.0, -1.5, position.z));
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `;
@@ -22,10 +25,11 @@ const STREAK_VERT = /* glsl */ `
 const STREAK_FRAG = /* glsl */ `
   varying float vAlong;
   varying vec3 vColor;
+  varying float vFade;
   uniform float uIntensity;
   void main() {
     // 앞(카메라 쪽) 끝이 밝고 희며, 뒤로 갈수록 제 색으로 옅어진다
-    float a = (1.0 - vAlong) * uIntensity;
+    float a = (1.0 - vAlong) * uIntensity * vFade;
     vec3 col = mix(vec3(1.0), vColor, smoothstep(0.0, 0.5, vAlong));
     gl_FragColor = vec4(col * a, a);
   }

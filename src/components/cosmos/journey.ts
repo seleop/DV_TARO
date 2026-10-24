@@ -71,19 +71,27 @@ export function tailAt(elapsed: number): { length: number; brightness: number } 
   return { length: 5.5 + breathe * 3.5, brightness: 0.78 + breathe * 0.17 + flicker * 0.05 };
 }
 
-/** 기기 성능에 맞춘 입자 수·해상도 배율. 작은 화면·코어가 적은 기기는 가볍게 */
-export function cosmicBudget(env: { width: number; cores: number; dpr: number }) {
-  const lite = env.width < 600 || env.cores <= 4;
+/** 그리는 픽셀 수 상한(가로×세로×dpr²): 고해상도 기기에서 GPU가 과하게 일하지 않게 */
+export const PIXEL_BUDGET = { lite: 1_600_000, full: 3_000_000 } as const;
+
+/**
+ * 기기 성능에 맞춘 입자 수·해상도 배율. 작은 화면·코어가 적은 기기·메모리가 적은 기기는 가볍게(lite).
+ * 해상도 배율(maxDpr)은 기기 배율, 단계 상한(lite 1.5·full 2), 픽셀 수 상한 중 가장 작은 값.
+ */
+export function cosmicBudget(env: { width: number; height: number; cores: number; dpr: number; memoryGb?: number }) {
+  const lite = env.width < 600 || env.cores <= 4 || (env.memoryGb !== undefined && env.memoryGb <= 4);
+  const area = Math.max(1, env.width * env.height);
+  const pixelCap = Math.sqrt((lite ? PIXEL_BUDGET.lite : PIXEL_BUDGET.full) / area);
   return {
     lite,
     galaxyStars: lite ? 9000 : 18000,
     farStars: lite ? 3500 : 5000,
     bandStars: lite ? 9000 : 16000,
-    bandClouds: lite ? 6 : 8,
+    bandClouds: lite ? 5 : 8,
     dust: lite ? 700 : 1400,
-    nebulae: lite ? 9 : 13,
+    nebulae: lite ? 8 : 13,
     heroStars: lite ? 5000 : 9000,
-    skyNebulae: lite ? 8 : 12,
+    skyNebulae: lite ? 7 : 12,
     flares: lite ? 26 : 45,
     asteroids: lite ? 70 : 130,
     /** 시차 별층: 가까운 별·중간 별·빛 알갱이 */
@@ -91,7 +99,7 @@ export function cosmicBudget(env: { width: number; cores: number; dpr: number })
     midStars: lite ? 1400 : 2600,
     bokeh: lite ? 26 : 44,
     /** 가까이 스치는 구름·파편, 혜성 수 */
-    wisps: lite ? 4 : 6,
+    wisps: lite ? 3 : 6,
     debris: lite ? 36 : 60,
     comets: lite ? 1 : 2,
     streaks: lite ? 80 : 130,
@@ -100,7 +108,42 @@ export function cosmicBudget(env: { width: number; cores: number; dpr: number })
     flybys: lite ? 3 : 4,
     sparkleCapacity: lite ? 380 : 600,
     sparkleRate: lite ? 220 : 340,
-    maxDpr: Math.min(env.dpr, lite ? 1.5 : 2),
+    maxDpr: Math.max(1, Math.min(env.dpr, lite ? 1.5 : 2, pixelCap)),
+  };
+}
+
+export type CosmicBudget = ReturnType<typeof cosmicBudget>;
+
+/**
+ * 대체 모드(저사양): 해상도를 최저로 낮춰도 버벅일 때 쓴다. 화면을 넓게 덮는 발광(성운·가까운 구름·은하수 띠 구름)과
+ * 파티클(별·먼지·반짝이·빛 알갱이·빛줄기)을 크게 줄이고, 혜성·스쳐 가는 혜성은 하나씩만.
+ */
+export function lowerBudget(b: CosmicBudget): CosmicBudget {
+  const cut = (n: number, k: number, min = 0) => Math.max(min, Math.round(n * k));
+  return {
+    ...b,
+    lite: true,
+    galaxyStars: cut(b.galaxyStars, 0.5),
+    farStars: cut(b.farStars, 0.6),
+    bandStars: cut(b.bandStars, 0.5),
+    bandClouds: cut(b.bandClouds, 0.5, 2),
+    dust: cut(b.dust, 0.5),
+    nebulae: cut(b.nebulae, 0.5, 3),
+    heroStars: cut(b.heroStars, 0.5),
+    skyNebulae: cut(b.skyNebulae, 0.5, 3),
+    flares: cut(b.flares, 0.6),
+    asteroids: cut(b.asteroids, 0.5),
+    nearStars: cut(b.nearStars, 0.5),
+    midStars: cut(b.midStars, 0.5),
+    bokeh: cut(b.bokeh, 0.4),
+    wisps: cut(b.wisps, 0.34),
+    debris: cut(b.debris, 0.5),
+    comets: Math.min(b.comets, 1),
+    streaks: cut(b.streaks, 0.6),
+    oncoming: cut(b.oncoming, 0.5),
+    flybys: Math.min(b.flybys, 1),
+    sparkleCapacity: cut(b.sparkleCapacity, 0.5),
+    sparkleRate: cut(b.sparkleRate, 0.5),
   };
 }
 
