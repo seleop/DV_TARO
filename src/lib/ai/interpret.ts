@@ -192,6 +192,11 @@ export function latestSajuReading(userId: string, calcId: string) {
 }
 
 // ── 오늘의 운세 ──
+/** 오늘의 운세 캐시 키 (date: 한국 날짜 YYYY-MM-DD). 홈 화면의 "오늘 봤어요" 표시도 이 키로 찾는다 (lib/home.ts) */
+export function dailyReadingCacheKey(calculationId: string, date: string) {
+  return hmac(`daily:${calculationId}:${date}:${PROMPT_VERSIONS.daily}`);
+}
+
 export async function generateDailyReading(userId: string, calc: StoredCalculation, opts: { regenerate: boolean; now?: Date }) {
   const c = calc.result;
   const dm = c.canonical.dayMaster;
@@ -199,7 +204,7 @@ export async function generateDailyReading(userId: string, calc: StoredCalculati
   const today = await verifiedDateGanji(opts.now ?? new Date());
   if (!today) throw new AiError("AI_UNGROUNDED", "오늘의 일진을 검증하지 못했습니다.");
   const tenGod = getTenGod(dm.stem as Stem, today.day[0] as Stem) as string;
-  const cacheKey = hmac(`daily:${calc.id}:${today.date}:${PROMPT_VERSIONS.daily}`);
+  const cacheKey = dailyReadingCacheKey(calc.id, today.date);
   if (!opts.regenerate) {
     const hit = await findReadingByCacheKey<DailyReading>(userId, cacheKey);
     if (hit) return { reading: hit, today: { ...today, tenGod }, cached: true };

@@ -201,3 +201,4 @@ FFMPEG_PATH=<ffmpeg.exe 경로> node scripts/mascot/encode.mjs
 - **뼈대**: glTF 로 가져오면 Rigify 제어(제약)가 사라지므로 변형 뼈를 직접 돌린다 — 머리 `DEF-spine.009~011`(눈은 `DEF-spine.011` 에 다시 붙임), 꼬리 `MCH-ROT-tail`(+`spine.003~001`), 앞다리 `DEF-front_thigh/shin`, 뒷다리 `DEF-thigh/shin`, 숨쉬기 `DEF-spine.005~007` 크기.
 - **동작(네 발 동물에 맞춤)**: idle(숨쉬기·꼬리·깜빡임) · walk(대각선 종종걸음) · think(갸웃) · happy(깡충·꼬리 흔들기) · wave(가까운 앞발 흔들기) · nod · surprised(뒤로 깡충·꼬리 번쩍) · reveal(머리 위로 운세 카드) · celebrate(점프 한 바퀴·꽃가루) · yawn(앞으로 쭉 기지개)
 - **의상**: 모자는 머리 뼈에 붙이고(갓·마법사 모자·베레모), 소품은 옆에 띄운다 — 사주책(read: 펼쳐지고 책장 넘어감), 타로 카드 부채(draw: 한 장이 떠올라 머리 위로), 삼각대 망원경(stargaze: 하늘을 보면 별이 반짝)
+- **얼굴 크기 고정 (2026-10-24 수정)**: 숨쉬기로 몸통 뼈(DEF-spine.005~007)를 부풀리면 목·머리 뼈가 그 배율을 물려받아 얼굴이 최대 9% 커졌다(대기·고민·카드·하품). 목의 첫 뼈 `DEF-spine.008` 의 `inherit_scale` 을 `NONE` 으로 해 머리 배율을 모든 동작에서 1.000으로 고정. 놀람 눈 배율 1.25 → 1.15.

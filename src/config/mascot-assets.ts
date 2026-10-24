@@ -40,7 +40,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": true,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 340982
+    "bytes": 340678
   },
   "walk": {
     "src": "/mascot/walk.webp",
@@ -53,7 +53,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": true,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 221810
+    "bytes": 222636
   },
   "think": {
     "src": "/mascot/think.webp",
@@ -66,7 +66,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": true,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 284284
+    "bytes": 282286
   },
   "happy": {
     "src": "/mascot/happy.webp",
@@ -79,7 +79,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": true,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 231822
+    "bytes": 231834
   },
   "wave": {
     "src": "/mascot/wave.webp",
@@ -92,7 +92,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": false,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 344146
+    "bytes": 344184
   },
   "nod": {
     "src": "/mascot/nod.webp",
@@ -105,7 +105,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": false,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 202390
+    "bytes": 202442
   },
   "surprised": {
     "src": "/mascot/surprised.webp",
@@ -118,7 +118,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": false,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 282902
+    "bytes": 282032
   },
   "reveal": {
     "src": "/mascot/reveal.webp",
@@ -131,7 +131,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": false,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 493202
+    "bytes": 492392
   },
   "celebrate": {
     "src": "/mascot/celebrate.webp",
@@ -144,7 +144,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": false,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 480016
+    "bytes": 479722
   },
   "yawn": {
     "src": "/mascot/yawn.webp",
@@ -157,7 +157,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": false,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 415852
+    "bytes": 409850
   },
   "saju-idle": {
     "src": "/mascot/saju-idle.webp",
@@ -170,7 +170,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": true,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 392940
+    "bytes": 391348
   },
   "saju-wave": {
     "src": "/mascot/saju-wave.webp",
@@ -183,7 +183,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": false,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 394492
+    "bytes": 394350
   },
   "saju-nod": {
     "src": "/mascot/saju-nod.webp",
@@ -196,7 +196,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": false,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 236404
+    "bytes": 236278
   },
   "saju-surprised": {
     "src": "/mascot/saju-surprised.webp",
@@ -209,7 +209,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": false,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 323732
+    "bytes": 323142
   },
   "saju-read": {
     "src": "/mascot/saju-read.webp",
@@ -222,7 +222,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": false,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 523662
+    "bytes": 523384
   },
   "tarot-idle": {
     "src": "/mascot/tarot-idle.webp",
@@ -235,7 +235,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": true,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 448266
+    "bytes": 447834
   },
   "tarot-wave": {
     "src": "/mascot/tarot-wave.webp",
@@ -248,7 +248,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": false,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 453150
+    "bytes": 453366
   },
   "tarot-nod": {
     "src": "/mascot/tarot-nod.webp",
@@ -261,7 +261,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": false,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 274068
+    "bytes": 274288
   },
   "tarot-surprised": {
     "src": "/mascot/tarot-surprised.webp",
@@ -274,7 +274,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": false,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 369250
+    "bytes": 368860
   },
   "tarot-draw": {
     "src": "/mascot/tarot-draw.webp",
@@ -287,7 +287,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": false,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 686402
+    "bytes": 686540
   },
   "star-idle": {
     "src": "/mascot/star-idle.webp",
@@ -300,7 +300,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": true,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 424034
+    "bytes": 422020
   },
   "star-wave": {
     "src": "/mascot/star-wave.webp",
@@ -313,7 +313,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": false,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 431342
+    "bytes": 431966
   },
   "star-nod": {
     "src": "/mascot/star-nod.webp",
@@ -326,7 +326,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": false,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 258730
+    "bytes": 259194
   },
   "star-surprised": {
     "src": "/mascot/star-surprised.webp",
@@ -339,7 +339,7 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": false,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 357536
+    "bytes": 356630
   },
   "star-stargaze": {
     "src": "/mascot/star-stargaze.webp",
@@ -352,6 +352,6 @@ export const MASCOT_SHEETS: Record<MascotState, MascotSheet> = {
     "loop": false,
     "frameW": 448,
     "frameH": 448,
-    "bytes": 680004
+    "bytes": 680044
   }
 };
