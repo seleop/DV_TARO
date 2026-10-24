@@ -9,9 +9,10 @@ const MENUS = [
 
 /**
  * 홈 시트 메뉴: 위에 오늘의 운세 큰 카드(시작 버튼 겸용), 아래에 나머지 세 메뉴.
- * 생년월일이 없으면 큰 카드가 프로필 입력으로 안내한다.
+ * 생년월일이 없으면 큰 카드가 프로필 입력으로 안내하고, 오늘 운세를 이미 봤으면 "오늘 봤어요"를 붙인다.
  */
-export function HomeMenu({ hasPrimary }: { hasPrimary: boolean }) {
+export function HomeMenu({ hasPrimary, viewedToday = false }: { hasPrimary: boolean; viewedToday?: boolean }) {
+  const sub = !hasPrimary ? "입력하면 오늘의 운세를 볼 수 있어요" : viewedToday ? "오늘 결과 다시 보기" : "별이가 점쳐 둔 오늘 하루 흐름";
   return (
     <nav aria-label="메뉴" className="flex w-full shrink-0 flex-col gap-2.5 pb-3">
       <Link
@@ -22,8 +23,18 @@ export function HomeMenu({ hasPrimary }: { hasPrimary: boolean }) {
           ☀️
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[17px] font-bold leading-tight">{hasPrimary ? "오늘의 운세" : "생년월일 입력하기"}</span>
-          <span className="mt-0.5 block truncate text-[13px] text-white/80">{hasPrimary ? "별이가 점쳐 둔 오늘 하루 흐름" : "입력하면 오늘의 운세를 볼 수 있어요"}</span>
+          <span className="flex items-center gap-1.5">
+            <span className="whitespace-nowrap text-[17px] font-bold leading-tight">{hasPrimary ? "오늘의 운세" : "생년월일 입력하기"}</span>
+            {hasPrimary && viewedToday && (
+              <span className="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full bg-white px-2 py-0.5 text-[11.5px] font-bold leading-none text-accent">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M5 12.5l4.5 4.5L19 7.5" />
+                </svg>
+                오늘 봤어요
+              </span>
+            )}
+          </span>
+          <span className="mt-0.5 block truncate text-[13px] text-white/80">{sub}</span>
         </span>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-90" aria-hidden>
           <path d="M9 6l6 6-6 6" />
