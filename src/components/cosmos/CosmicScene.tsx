@@ -11,6 +11,7 @@ import { MinorShootingStar, ShootingStar, SparkleTrail } from "./ShootingStar";
 import { AsteroidField, NearDebris, Planets } from "./Planets";
 import { Comet } from "./Comet";
 import { AdaptiveQuality } from "./AdaptiveQuality";
+import { Shockwave } from "./Shockwave";
 import { ParallaxStars } from "./ParallaxStars";
 import { FlybyComet, OncomingLights } from "./Oncoming";
 import { SkyBox } from "./SkyBox";
@@ -24,6 +25,8 @@ export type CosmicSceneProps = {
   moving: boolean;
   /** 지금 장 (회원가입 단계 등). 바뀌면 연출 값이 그 장의 목표로 부드럽게 옮겨 간다 */
   stage: JourneyStage;
+  /** 지금까지 마친 단계 수 (바뀔 때마다 워프·다음 구도) */
+  beat?: number;
   onReady?: () => void;
   onContextLost?: () => void;
 };
@@ -37,7 +40,7 @@ export type CosmicSceneProps = {
  *  중간 층     경로 둘레 성운(빛나는 구름·어두운 먼지 구름), 소행성 무리, 중간 별층
  *  가까운 층   가까운 별층·빛 알갱이, 가까이 스치는 구름·파편, 별똥별(주인공·반짝이 입자·보조), 빛줄기
  */
-export default function CosmicScene({ running, moving, stage, onReady, onContextLost }: CosmicSceneProps) {
+export default function CosmicScene({ running, moving, stage, beat, onReady, onContextLost }: CosmicSceneProps) {
   const budget = useMemo(
     () => cosmicBudget({ width: window.innerWidth, cores: navigator.hardwareConcurrency || 4, dpr: window.devicePixelRatio || 1 }),
     [],
@@ -72,7 +75,7 @@ export default function CosmicScene({ running, moving, stage, onReady, onContext
       <color attach="background" args={["#050826"]} />
       {moving && <AdaptiveQuality min={0.75} max={budget.maxDpr} />}
       <JourneyTimer clock={clock} moving={moving} />
-      <JourneyDirector director={director} paths={paths} stage={stage} clock={clock} moving={moving} />
+      <JourneyDirector director={director} paths={paths} stage={stage} beat={beat} clock={clock} moving={moving} />
       <CameraJourney director={director} paths={paths} clock={clock} />
       <SkyBox clock={clock} paths={paths} heroStars={budget.heroStars} skyNebulae={budget.skyNebulae} flares={budget.flares} pixelRatio={pixelRatio} />
       <GalaxyField clock={clock} director={director} galaxyStars={budget.galaxyStars} farStars={budget.farStars} bandStars={budget.bandStars} pixelRatio={pixelRatio} />
@@ -84,6 +87,7 @@ export default function CosmicScene({ running, moving, stage, onReady, onContext
       <Comet seed={5} clock={clock} />
       {budget.comets > 1 && <Comet seed={17} clock={clock} />}
       <ShootingStar director={director} paths={paths} clock={clock} />
+      <Shockwave director={director} />
       <SparkleTrail director={director} clock={clock} capacity={budget.sparkleCapacity} rate={budget.sparkleRate} pixelRatio={pixelRatio} />
       <MinorShootingStar seed={11} clock={clock} />
       {!budget.lite && <MinorShootingStar seed={29} clock={clock} />}

@@ -16,10 +16,12 @@ const STAGES: Array<[JourneyStage, string]> = [
   ["arrive", "완료"],
 ];
 
-/** 우주 배경 단독 미리보기: 장(회원가입 단계별 연출) 전환, 사라지기/나타나기, 초당 프레임을 확인한다 */
+/** 우주 배경 단독 미리보기: 장(회원가입 단계별 연출) 전환, 단계 완료 워프, 사라지기/나타나기, 초당 프레임을 확인한다 */
 export function CosmosPreview() {
   const [active, setActive] = useState(true);
   const [stage, setStage] = useState<JourneyStage>("cruise");
+  // 지금까지 마친 단계 수 (누를 때마다 워프·다음 구도·하늘 색조·충격파)
+  const [beat, setBeat] = useState<number | undefined>(undefined);
   const fpsRef = useRef<HTMLSpanElement>(null);
 
   // 초당 프레임 표시 (화면 글자만 바꾸고 React 렌더링은 일으키지 않는다)
@@ -42,7 +44,7 @@ export function CosmosPreview() {
 
   return (
     <div className="relative -mx-5 flex min-h-0 flex-1">
-      <CosmicBackground active={active} stage={stage} />
+      <CosmicBackground active={active} stage={stage} beat={beat} />
       <div className="relative flex flex-1 flex-col justify-between p-4 pt-[max(1rem,env(safe-area-inset-top))] text-white">
         <div className="flex items-center justify-between">
           <Link href="/admin" className="rounded-full bg-white/10 px-3 py-2 text-sm backdrop-blur">
@@ -65,6 +67,9 @@ export function CosmosPreview() {
                 {label}
               </button>
             ))}
+            <button type="button" onClick={() => setBeat((b) => (b ?? 0) + 1)} className="rounded-full bg-accent px-3 py-1.5 text-xs font-semibold">
+              단계 완료(워프){beat !== undefined ? ` ${beat}` : ""}
+            </button>
           </div>
           <p className="text-[13px] text-white/70">우주 배경 미리보기 · 회원가입 단계별 연출을 골라 볼 수 있어요</p>
           <span ref={fpsRef} className="text-xs tabular-nums text-white/50">

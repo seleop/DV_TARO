@@ -1,4 +1,4 @@
-import { CatmullRomCurve3, Quaternion, Vector3 } from "three";
+import { CatmullRomCurve3, Color, Quaternion, Vector3 } from "three";
 import { JOURNEY, damp, wrap01 } from "./journey";
 
 /**
@@ -78,6 +78,25 @@ export const STAGE_TARGETS: Record<JourneyStage, DirectorValues> = {
   arrive: { ...BASE, speed: 1.3, followDistance: 10, followHeight: 3.2, pathB: 0.5, inward: 1, coreLook: 1, brightness: 1.15, tail: 1.1, finale: 1, orbit: 0.12, fov: 64, energy: 1 },
 };
 
+/**
+ * 단계 완료 때마다 바뀌는 카메라 구도(샷). 단계 번호 순서대로 돌아가며 쓴다 (2026-10-24 사용자 결정: 단계마다 다른 샷 + 워프).
+ *  orbit: 별똥별 둘레로 도는 각도(라디안) / height: 더 높이(+)·낮게(-) / dist: 거리 배율 / roll: 화면 기울기
+ */
+export type Shot = { orbit: number; height: number; dist: number; roll: number };
+export const SHOTS: Shot[] = [
+  { orbit: 0, height: 0, dist: 1, roll: 0 }, // 뒤에서 따라가기
+  { orbit: 0.9, height: -1.2, dist: 0.85, roll: 0.08 }, // 오른쪽 낮게
+  { orbit: -0.3, height: 4.5, dist: 1.1, roll: -0.04 }, // 위에서 내려다보기
+  { orbit: -1.0, height: 0.3, dist: 0.78, roll: -0.09 }, // 왼쪽 가까이
+  { orbit: 0.4, height: -2.2, dist: 0.9, roll: 0.05 }, // 아래에서 올려다보기
+  { orbit: 0.2, height: 2, dist: 1.45, roll: 0 }, // 멀리 물러나 넓게
+  { orbit: 1.3, height: 0.8, dist: 0.9, roll: 0.06 }, // 앞쪽 비스듬히
+];
+const NEUTRAL_SHOT: Shot = { orbit: 0, height: 0, dist: 1, roll: 0 };
+
+/** 단계마다 바뀌는 하늘(성운) 색조: 보라 → 청록 → 분홍 → 금빛 → 파랑 → 민트 → 라벤더 */
+export const STEP_TINTS = ["#b48cff", "#5fe0ff", "#ff8fd0", "#ffc98a", "#8fa8ff", "#9dffd8", "#d9b8ff"];
+
 /** 처음 나타날 때의 값: 은하 바깥 멀고 높은 곳 (여기서 첫 장의 목표값으로 다가오며 '진입'이 된다) */
 export const INTRO_VALUES: DirectorValues = { ...STAGE_TARGETS.enter, followDistance: 26, followHeight: 11 };
 
@@ -128,6 +147,18 @@ export class Director {
   swingDir = 1;
   /** 연출 시간(초): 카메라의 느린 흔들림에 쓴다 */
   time = 0;
+  /** 단계 완료 워프(0~1): 순간 1이 되었다가 빠르게 잦아든다 (시야 확장·빛줄기·충격파·입자 소용돌이) */
+  warp = 0;
+  /** 마지막 단계 완료 시각(연출 시간 기준, 충격파 등이 이 시각부터 퍼진다) */
+  kickAt = -100;
+  /** 지금 카메라 구도와 목표 구도 */
+  shot: Shot = { ...NEUTRAL_SHOT };
+  shotTarget: Shot = { ...NEUTRAL_SHOT };
+  /** 하늘 색조와 그 세기 (단계 완료 때마다 다음 색으로 부드럽게) */
+  tint = new Color(1, 1, 1);
+  tintTarget = new Color(1, 1, 1);
+  tintAmt = 0;
+  tintAmtTarget = 0;
   private target: DirectorValues | null = null;
   constructor(start: DirectorValues, u = 0) {
     this.values = { ...start };
@@ -142,26 +173,65 @@ export class Director {
     this.target = target;
     stepDirector(this.values, target, dt);
     this.surge *= Math.exp(-1.1 * dt);
+    this.warp *= Math.exp(-2.4 * dt);
+    const ks = 1 - Math.exp(-1.4 * dt);
+    this.shot.orbit += (this.shotTarget.orbit - this.shot.orbit) * ks;
+    this.shot.height += (this.shotTarget.height - this.shot.height) * ks;
+    this.shot.dist += (this.shotTarget.dist - this.shot.dist) * ks;
+    this.shot.roll += (this.shotTarget.roll - this.shot.roll) * ks;
+    const kt = 1 - Math.exp(-1.1 * dt);
+    this.tint.lerp(this.tintTarget, kt);
+    this.tintAmt += (this.tintAmtTarget - this.tintAmt) * kt;
     this.time += dt;
     this.u = wrap01(this.u + (dt * this.pace()) / JOURNEY.loopSeconds);
   }
-  /** 실제 진행 속도 = 장의 속도 × 전환 가속 */
+  /**
+   * 단계 완료(또는 되돌아감): 워프로 순간 가속하며 다음 구도(SHOTS[index])로 휘돌아 들어가고, 하늘 색조가 바뀐다.
+   * index는 지금까지 마친 단계 수. 같은 index로 다시 불러도 구도는 같다.
+   */
+  kick(index: number) {
+    const from = this.shot.orbit;
+    this.aim(index);
+    this.swingDir = this.shotTarget.orbit >= from ? 1 : -1;
+    this.surge = Math.max(this.surge, 0.6 + 0.4 * this.values.energy);
+    this.warp = 1;
+    this.kickAt = this.time;
+  }
+  /** 워프 없이 그 단계의 구도·색조를 목표로만 삼는다 (단계 화면에 처음 들어올 때 부드럽게) */
+  aim(index: number) {
+    this.shotTarget = { ...SHOTS[((index % SHOTS.length) + SHOTS.length) % SHOTS.length] };
+    this.tintTarget.set(STEP_TINTS[((index % STEP_TINTS.length) + STEP_TINTS.length) % STEP_TINTS.length]);
+    this.tintAmtTarget = 0.45;
+  }
+  /** 단계 화면을 떠날 때: 기본 구도·원래 색으로 부드럽게 돌아간다 */
+  release() {
+    this.shotTarget = { ...NEUTRAL_SHOT };
+    this.tintAmtTarget = 0;
+  }
+  /** 정지 장면(동작 줄이기): 워프 없이 구도·색조를 바로 맞춘다 */
+  snapKick(index: number) {
+    this.aim(index);
+    this.shot = { ...this.shotTarget };
+    this.tint.copy(this.tintTarget);
+    this.tintAmt = this.tintAmtTarget;
+  }
+  /** 실제 진행 속도 = 장의 속도 × 전환 가속(워프 때 더 빠르게) */
   pace() {
-    return this.values.speed * (1 + 1.1 * this.surge);
+    return this.values.speed * (1 + 1.1 * this.surge + 1.4 * this.warp);
   }
   /** 지금 카메라가 별똥별 둘레를 도는 각도: 장의 각도 + 전환 때 휘도는 각도 + 느린 흔들림(역동성만큼) */
   orbitAngle() {
     const v = this.values;
-    return v.orbit + this.surge * 0.4 * this.swingDir + Math.sin(this.time * 0.21) * 0.16 * v.energy;
+    return v.orbit + this.shot.orbit + this.surge * 0.45 * this.swingDir + Math.sin(this.time * 0.21) * 0.16 * v.energy;
   }
   /** 화면 기울기: 장의 기울기 + 전환 때 기울어짐 + 느린 흔들림 */
   rollAngle() {
     const v = this.values;
-    return v.roll + this.surge * 0.07 * this.swingDir + Math.sin(this.time * 0.29) * 0.03 * v.energy;
+    return v.roll + this.shot.roll + this.surge * 0.08 * this.swingDir + Math.sin(this.time * 0.29) * 0.03 * v.energy;
   }
   /** 시야각: 전환 가속 때 넓어졌다(속도감) 돌아온다 */
   fov() {
-    return this.values.fov + this.surge * 9;
+    return this.values.fov + this.surge * 9 + this.warp * 12;
   }
   /** 움직임 없이 목표값으로 바로 맞춘다 ('동작 줄이기' 설정의 정지 장면) */
   snap(target: DirectorValues) {
@@ -283,9 +353,9 @@ export function cameraGoal(d: Director, paths: JourneyPaths, pos: Vector3, look:
   // 별똥별 둘레로 돌아 옆에서 보고, 전환 가속 때는 조금 뒤처졌다가(늘어남) 따라붙는다. 높이도 천천히 출렁인다
   const orbit = d.orbitAngle();
   C_OFF.subVectors(pos, d.star).applyAxisAngle(C_UP, orbit);
-  C_OFF.multiplyScalar(1 + d.surge * 0.35 * v.energy);
+  C_OFF.multiplyScalar((1 + d.surge * 0.35 * v.energy) * d.shot.dist);
   pos.copy(d.star).add(C_OFF);
-  pos.y += Math.sin(d.time * 0.37) * 0.45 * v.energy;
+  pos.y += Math.sin(d.time * 0.37) * 0.45 * v.energy + d.shot.height;
 
   journeyPoint(paths, wrap01(d.u + JOURNEY.lookAhead / d.length), d.weights, look);
   // 옆으로 돌수록 '앞쪽 점'이 화면 옆으로 밀리므로 시선을 별똥별에 더 모은다

@@ -24,6 +24,10 @@ const DARK: Array<[string, string]> = [
   ["#0d1040", "#8aa2ff"],
 ];
 
+/** 모든 성운 판이 함께 쓰는 하늘 색조 (단계마다 바뀜, CosmicEffects가 매 프레임 연출 감독 값으로 맞춘다) */
+const NEBULA_TINT = { value: new Color(1, 1, 1) };
+const NEBULA_TINT_AMT = { value: 0 };
+
 /** 성운 판 하나의 uniform (모든 성운 판이 같은 셰이더를 쓴다) */
 export function nebulaUniforms(o: { seed: number; a: string; b: string; opacity: number; dark?: boolean; nearFade?: number }) {
   return {
@@ -35,6 +39,8 @@ export function nebulaUniforms(o: { seed: number; a: string; b: string; opacity:
     uLight: { value: new Vector2(0.6, 0.8) },
     uDark: { value: o.dark ? 1 : 0 },
     uNearFade: { value: o.nearFade ?? 22 },
+    uTint: NEBULA_TINT,
+    uTintAmt: NEBULA_TINT_AMT,
   };
 }
 
@@ -98,12 +104,15 @@ export function CosmicEffects({
 
   useFrame(({ camera }) => {
     const t = clock.time;
+    NEBULA_TINT.value.copy(director.tint);
+    NEBULA_TINT_AMT.value = director.tintAmt;
     for (const m of meshes.current) if (m) faceAndLight(m, camera, t, CORE_POINT, true);
     const dm = dustRef.current?.material as ShaderMaterial | undefined;
     if (dm) {
       dm.uniforms.uTime.value = t;
       (dm.uniforms.uCenter.value as Vector3).copy(director.star);
-      dm.uniforms.uGather.value = director.values.gather;
+      // 단계 완료 워프 때 주변 별빛 입자가 별똥별 쪽으로 빨려 들었다가 풀려난다(소용돌이)
+      dm.uniforms.uGather.value = Math.max(director.values.gather, director.warp * 0.85);
     }
   });
 

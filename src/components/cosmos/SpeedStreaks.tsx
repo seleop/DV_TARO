@@ -76,10 +76,11 @@ export function SpeedStreaks({ director, clock, count }: { director: Director; c
     const pos = (l.geometry.getAttribute("position") as BufferAttribute).array as Float32Array;
     for (let i = 0; i < count; i++) {
       const k = s.streaks[i];
-      k.z += k.v * (0.4 + pace) * dt;
+      k.z += k.v * (0.4 + pace + director.warp * 1.8) * dt;
       if (k.z > NEAR) Object.assign(k, spawn(s.rand, FAR));
       // 빠를수록·전환 가속 때 길게 늘어난다
-      const len = k.len * (0.5 + pace * 1.6 + director.surge * 1.2);
+      // 단계 완료 워프 때 별빛이 길게 늘어난다
+      const len = k.len * (0.5 + pace * 1.6 + director.surge * 1.2 + director.warp * 4);
       const j = i * 6;
       pos[j] = k.x;
       pos[j + 1] = k.y;
@@ -89,7 +90,7 @@ export function SpeedStreaks({ director, clock, count }: { director: Director; c
       pos[j + 5] = k.z - len;
     }
     l.geometry.getAttribute("position").needsUpdate = true;
-    (l.material as ShaderMaterial).uniforms.uIntensity.value = Math.min(1, 0.3 + pace * 0.7 + director.surge * 0.3) * (1 - v.finale * 0.6);
+    (l.material as ShaderMaterial).uniforms.uIntensity.value = Math.min(1, 0.3 + pace * 0.7 + director.surge * 0.3 + director.warp * 0.6) * (1 - v.finale * 0.6);
   });
 
   return (

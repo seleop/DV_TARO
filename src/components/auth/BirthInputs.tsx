@@ -14,17 +14,23 @@ export function WheelPicker({ values, value, onChange, format = String, label }:
   const ref = useRef<HTMLDivElement>(null);
   const index = Math.max(0, values.indexOf(value));
 
-  // 값이 밖에서 바뀌면(처음·칸 누름·키보드) 그 칸이 가운데 오게 굴린다. 사용자가 굴리는 중이면(이미 그 칸) 건드리지 않는다
+  // 값이 밖에서 바뀌면(처음·칸 누름·키보드) 그 칸이 가운데 오게 굴린다. 사용자가 굴리는 중이면(이미 그 칸) 건드리지 않는다.
+  // 코드가 굴리는 동안(부드러운 스크롤)에는 지나가는 칸으로 값이 바뀌지 않게 스크롤 이벤트를 무시한다
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (Math.round(el.scrollTop / ROW) !== index) el.scrollTo({ top: index * ROW, behavior: el.dataset.ready ? "smooth" : "auto" });
+    if (Math.round(el.scrollTop / ROW) === index) return;
+    const smooth = el.dataset.ready === "1";
+    el.dataset.auto = "1";
+    el.scrollTo({ top: index * ROW, behavior: smooth ? "smooth" : "auto" });
     el.dataset.ready = "1";
+    const t = setTimeout(() => delete el.dataset.auto, smooth ? 450 : 50);
+    return () => clearTimeout(t);
   }, [index]);
 
   const onScroll = () => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || el.dataset.auto) return;
     const i = Math.min(values.length - 1, Math.max(0, Math.round(el.scrollTop / ROW)));
     if (values[i] !== value) onChange(values[i]);
   };
@@ -71,7 +77,7 @@ export function WheelPicker({ values, value, onChange, format = String, label }:
 /** 큰 버튼 중 하나 고르기 (양력/음력·윤달·성별) */
 export function ChoiceButtons<T extends string>({ options, value, onChange, label }: { options: Array<{ value: T; label: string; hint?: string }>; value: T | null; onChange: (v: T) => void; label: string }) {
   return (
-    <div role="radiogroup" aria-label={label} className={`grid gap-2.5 ${options.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+    <div role="radiogroup" aria-label={label} className={`grid gap-3 ${options.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
       {options.map((o) => {
         const on = o.value === value;
         return (
@@ -137,8 +143,8 @@ export function TimeFields({
     </label>
   );
   return (
-    <div className="space-y-2.5">
-      <div className="flex items-center gap-2.5">
+    <div className="space-y-3">
+      <div className="flex items-center gap-3">
         {field(hour, onHour, "hour", "시", hourRef)}
         {field(minute, onMinute, "minute", "분")}
       </div>

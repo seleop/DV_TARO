@@ -57,6 +57,22 @@ export function flareCanvas(size = 128): HTMLCanvasElement {
   return c;
 }
 
+/** 빛의 고리(충격파용): 가운데는 비고 테두리가 밝으며 바깥으로 흐려진다 */
+export function ringCanvas(size = 128): HTMLCanvasElement {
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const g = c.getContext("2d")!;
+  const r = size / 2;
+  const grd = g.createRadialGradient(r, r, r * 0.55, r, r, r);
+  grd.addColorStop(0, "rgba(255,255,255,0)");
+  grd.addColorStop(0.55, "rgba(255,255,255,0.9)");
+  grd.addColorStop(0.7, "rgba(255,255,255,0.35)");
+  grd.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = grd;
+  g.fillRect(0, 0, size, size);
+  return c;
+}
+
 /** 부드러운 원형 빛(별똥별 머리·은하 중심용). stops: 가운데 → 바깥 색 */
 export function glowCanvas(stops: string[], size = 128): HTMLCanvasElement {
   const c = document.createElement("canvas");

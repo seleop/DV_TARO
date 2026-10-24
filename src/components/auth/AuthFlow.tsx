@@ -11,6 +11,7 @@ import { FortuneMascot } from "../FortuneMascot";
 import { SafeForm } from "../SafeForm";
 import { Button, inputCls } from "../ui";
 import { AuthCosmos } from "./AuthCosmos";
+import { SpeechBubble } from "./SpeechBubble";
 import { ChoiceButtons, TimeFields, WheelPicker } from "./BirthInputs";
 import { BIRTH_DEFAULT, BIRTH_FIELDS_ALL, BIRTH_MIN_YEAR, birthMaxYear, birthPayload, birthStarIndex, birthStepError, birthSteps, daysIn, type BirthField, type BirthValues } from "./birthSteps";
 import type { AuthScreen } from "./signupJourney";
@@ -54,8 +55,16 @@ const signupSteps = (invite: boolean): SignupField[] =>
   invite ? ["email", "password", "passwordConfirm", "displayName", "inviteCode", "agreePrivacy"] : ["email", "password", "passwordConfirm", "displayName", "agreePrivacy"];
 const CODE_FIELD: Partial<Record<string, SignupField>> = { EMAIL_TAKEN: "email", INVALID_EMAIL: "email", WEAK_PASSWORD: "password", INVALID_INVITE: "inviteCode", INVALID_CREDENTIALS: "password" };
 const EMPTY: SignupValues = { email: "", password: "", passwordConfirm: "", displayName: "", inviteCode: "", agreePrivacy: false };
-/** 마지막에 '???'가 별이로 정체를 드러낸 뒤 오늘의 운세로 넘어가기까지 */
+/** 마지막에 '???'가 별이로 정체를 드러낸 뒤 오늘의 운세를 볼지 묻기까지 */
 const REVEAL_MS = 2800;
+/** 답을 고른 뒤 별똥별이 은하 중심의 빛으로 들어가는 모습을 보여 주고 이동하기까지 */
+const LEAVE_MS = 1500;
+/**
+ * 가입 마무리 (2026-10-24 사용자 결정): reveal(별이 정체 공개) → ask('오늘의 운세를 한 번 봐줄까?' 응/다음에)
+ * → leaving(고른 곳으로: 응=오늘의 운세, 다음에=홈)
+ */
+type Finale = null | "reveal" | "ask" | { leaving: "/today" | "/" };
+const reducedMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const range = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 
 /**
@@ -80,8 +89,10 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
   const [bStep, setBStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  // 출생 정보까지 모두 저장해 별자리가 완성됨 → '???'가 별이로 정체를 드러낸다
-  const [done, setDone] = useState(false);
+  // 출생 정보까지 모두 저장해 별자리가 완성됨 → '???'가 별이로 정체를 드러내고 오늘의 운세를 볼지 묻는다
+  const [finale, setFinale] = useState<Finale>(null);
+  const done = finale !== null;
+  const leaving = typeof finale === "object" && finale !== null;
   const [showPw, setShowPw] = useState(false);
   const [caps, setCaps] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
@@ -165,7 +176,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
     setMode(m);
     setStep(0);
     setError(null);
-    setDone(false);
+    setFinale(null);
     setShowPw(false);
     setShowTerms(false);
   }
@@ -260,16 +271,24 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
     setBusy(true);
     try {
       await api("/api/me/birth", { method: "PUT", body: { birth: birthPayload(birth) } });
-      // 별자리 완성 → '???'가 별이로 정체를 드러낸다. 우주는 그대로 두고 잠시 뒤 오늘의 운세로
-      setDone(true);
-      await new Promise((r) => setTimeout(r, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 1200 : REVEAL_MS));
-      router.replace("/today");
-      router.refresh();
+      // 별자리 완성 → '???'가 별이로 정체를 드러낸다. 우주는 그대로 두고, 잠시 뒤 오늘의 운세를 볼지 한 번 묻는다
+      setFinale("reveal");
+      setBusy(false);
+      await new Promise((r) => setTimeout(r, reducedMotion() ? 1200 : REVEAL_MS));
+      setFinale((f) => (f === "reveal" ? "ask" : f));
     } catch (e) {
       setError(errorText(e));
       setBusy(false);
       submitting.current = false;
     }
+  }
+
+  /** 마지막 질문의 답: 별똥별이 은하 중심의 빛으로 들어가는 모습을 잠깐 보여 준 뒤 이동 */
+  async function leave(to: "/today" | "/") {
+    setFinale({ leaving: to });
+    await new Promise((r) => setTimeout(r, reducedMotion() ? 300 : LEAVE_MS));
+    router.replace(to);
+    router.refresh();
   }
 
   const setValue = (v: string) => {
@@ -291,14 +310,20 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
   };
 
   const isPassword = meta.type === "password";
+  const asking = mode === "signup" || mode === "birth";
   const boxStyle = vv ? { height: vv.height, top: vv.top } : undefined;
   const ease = "transition-all duration-700 ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none";
   const intro = screen === "intro" || screen === "pending";
-  const asking = mode === "signup" || mode === "birth";
   const loginLink = "min-h-11 px-2 text-[13px] text-white/75 underline underline-offset-4";
-  const question = done
-    ? "사실 나는 별이야! 네 별자리가 완성됐어. 이제 함께 운세를 보러 가자!"
-    : mode === "birth"
+  const question = leaving
+    ? finale.leaving === "/today"
+      ? "좋아! 별자리를 따라 오늘의 운세로 가자."
+      : "알겠어! 보고 싶을 때 언제든 불러 줘."
+    : finale === "ask"
+      ? "방금 알려준 대로 오늘의 운세를 한 번 봐줄까?"
+      : finale === "reveal"
+        ? "사실 나는 별이야! 네 별자리가 완성됐어."
+        : mode === "birth"
       ? bField === "calendar"
         ? `${initialMode === "birth" ? "다시 왔구나!" : "가입 완료!"} ${BIRTH_PROMPT.calendar}`
         : BIRTH_PROMPT[bField]
@@ -308,7 +333,16 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
     // 키보드가 오르내릴 때 높이가 툭 바뀌지 않게 부드럽게 따라간다
     <div className="fixed inset-x-0 top-0 z-10 mx-auto flex h-dvh w-full max-w-[440px] flex-col overflow-hidden transition-[height,top] duration-300 ease-out motion-reduce:transition-none" style={boxStyle}>
       {/* 화면 전체(시트 뒤까지) 우주 */}
-      <AuthCosmos screen={screen} field={mode === "birth" ? bField : field} total={starTotal} lit={starLit} current={starLit} done={done} />
+      <AuthCosmos
+        screen={screen}
+        field={mode === "birth" ? bField : field}
+        total={starTotal}
+        lit={starLit}
+        current={starLit}
+        done={done}
+        leaving={leaving}
+        beat={asking ? (done ? starTotal : starLit) : undefined}
+      />
       {/* 위: 무대(뒤로·진행 표시·말) / 아래: 크림색 시트(버튼·입력). 첫 화면에서는 시트 없이 우주만 */}
       <div className="scene-dark relative flex min-h-0 flex-1 flex-col">
       {/* 상단: 뒤로 + 진행 표시(로그인) 또는 로그인 링크(회원가입 1단계) */}
@@ -355,19 +389,15 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
           <FortuneMascot state={done ? "celebrate" : "idle"} playId={done ? 1 : 0} size={384} preload={["celebrate"]} />
         </div>
 
-        {/* '???'의 말 (가입·출생 정보). 마지막에 이름표가 '별이'로 바뀐다 */}
+        {/* '???'의 말 (가입·출생 정보): 한 글자씩 튀어 오르며 나타나고, 말이 바뀌면 통 튀어나온다. 마지막에 이름표가 '별이'로 */}
         {asking && (
           <div className={`absolute bottom-[12%] right-4 ${ease} ${done ? "left-[36%]" : "left-4"}`}>
-            <p
-              key={`${mode}-${mode === "birth" ? bField : field}-${done}`}
-              aria-live="polite"
-              className="relative animate-[rise_.35s_ease-out] rounded-2xl bg-white px-4 pb-2.5 pt-3.5 text-[15px] font-semibold text-[#2a2440] shadow-lg motion-reduce:animate-none"
-            >
-              <span className={`absolute -top-3 left-3 rounded-full px-2.5 py-0.5 text-[12px] font-extrabold tracking-wider text-white shadow ${done ? "bg-accent" : "bg-[#2a2440]"}`}>
-                {done ? "별이" : "???"}
-              </span>
-              {question}
-            </p>
+            <SpeechBubble
+              id={leaving ? `leave-${finale.leaving}` : finale ? `finale-${finale}` : `${mode}-${mode === "birth" ? bField : field}`}
+              label={done ? "별이" : "???"}
+              text={question}
+              accent={done}
+            />
           </div>
         )}
         {mode === "login" && (
@@ -414,10 +444,11 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
       )}
 
       {/* 하단: 버튼 또는 입력 (시트). 첫 화면·별자리 완성 때는 크림색 판이 아래로 내려가 우주만 보인다 */}
-      <div className="relative -mt-6 shrink-0 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-5">
+      {/* 여백(2026-10-24 사용자 결정: 시안 A '여유 기본'): 좌우·위 24, 아래 24(안전 영역 이상), 요소 사이 16 */}
+      <div className="relative -mt-6 shrink-0 px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6">
         <div
           aria-hidden
-          className={`absolute inset-0 rounded-t-[28px] bg-[var(--bg)] shadow-[0_-12px_24px_-16px_rgba(30,20,70,0.6)] ${ease} ${intro || done ? "translate-y-full opacity-0" : "translate-y-0 opacity-100"}`}
+          className={`absolute inset-0 rounded-t-[28px] bg-[var(--bg)] shadow-[0_-12px_24px_-16px_rgba(30,20,70,0.6)] ${ease} ${intro || (done && finale !== "ask") ? "translate-y-full opacity-0" : "translate-y-0 opacity-100"}`}
         />
         {intro ? (
           <div className="relative text-center">
@@ -433,7 +464,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
           </div>
         ) : screen === "choose" ? (
           <div className="relative">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <Button size="lg" variant="ghost" onClick={() => enter("login")}>
                 로그인
               </Button>
@@ -441,17 +472,30 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
                 회원가입
               </Button>
             </div>
-            <p className="mt-3 min-h-5 text-center text-xs text-ink-2/80" role="status">
+            <p className="mt-4 min-h-5 text-center text-xs text-ink-2/80" role="status">
               {error ?? "비밀번호를 잊었다면 운영자에게 문의해 주세요."}
             </p>
           </div>
+        ) : finale === "ask" ? (
+          // 마지막 질문: 오늘의 운세를 볼지 한 번 묻는다
+          <div className="relative">
+            <div className="grid grid-cols-2 gap-4">
+              <Button size="lg" variant="ghost" onClick={() => leave("/")}>
+                다음에 볼래
+              </Button>
+              <Button size="lg" onClick={() => leave("/today")}>
+                응, 봐줘!
+              </Button>
+            </div>
+            <p className="mt-4 min-h-5 text-center text-xs text-ink-2/80">홈에서도 언제든 볼 수 있어요.</p>
+          </div>
         ) : done ? (
-          // 별자리 완성: 입력 없이 우주와 별이만 (곧 오늘의 운세로 넘어간다)
+          // 별자리 완성(별이 공개)·이동 중: 입력 없이 우주와 별이만
           <p className="relative flex h-14 items-center justify-center text-[15px] font-semibold text-white/85 drop-shadow-[0_2px_8px_rgba(10,6,40,0.8)]" role="status">
-            별자리를 따라 운세로 가는 중…
+            {leaving ? "별자리를 따라 가는 중…" : ""}
           </p>
         ) : (
-          <SafeForm onSubmit={onSubmit} noValidate className="relative space-y-2.5">
+          <SafeForm onSubmit={onSubmit} noValidate className="relative">
             {mode === "birth" ? (
               <BirthStep field={bField} birth={birth} setB={setB} invalid={!!error} hourRef={hourRef} />
             ) : field === "agreePrivacy" ? (
@@ -527,7 +571,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
                 )}
               </div>
             )}
-            <p id="auth-msg" role={error ? "alert" : undefined} className={`min-h-5 px-1 text-[13px] ${error ? "text-bad" : caps ? "text-warn" : "text-ink-2/80"}`}>
+            <p id="auth-msg" role={error ? "alert" : undefined} className={`mt-2.5 min-h-5 px-1 text-[13px] ${error ? "text-bad" : caps ? "text-warn" : "text-ink-2/80"}`}>
               {error ??
                 (mode !== "birth" && caps && isPassword
                   ? "Caps Lock이 켜져 있어요."
@@ -537,7 +581,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
                       ? "나중에 프로필에서 바꿀 수 있어요."
                       : "")}
             </p>
-            <Button type="submit" size="lg" loading={busy} className="w-full" onMouseDown={(e) => e.preventDefault()}>
+            <Button type="submit" size="lg" loading={busy} className="mt-4 w-full" onMouseDown={(e) => e.preventDefault()}>
               {mode === "birth" ? (bLast ? "별자리 완성하기" : "다음") : last ? (mode === "login" ? "로그인" : "가입하고 계속하기") : "다음"}
             </Button>
           </SafeForm>
@@ -575,11 +619,11 @@ function BirthStep({
         />
       );
     case "year":
-      return <WheelPicker label="태어난 해" values={range(BIRTH_MIN_YEAR, birthMaxYear())} value={birth.year} onChange={(year) => setB({ year })} format={(v) => `${v}년`} />;
+      return <WheelPicker key="year" label="태어난 해" values={range(BIRTH_MIN_YEAR, birthMaxYear())} value={birth.year} onChange={(year) => setB({ year })} format={(v) => `${v}년`} />;
     case "month":
-      return <WheelPicker label="태어난 달" values={range(1, 12)} value={birth.month} onChange={(month) => setB({ month })} format={(v) => `${birth.calendar === "lunar" ? "음력 " : ""}${v}월`} />;
+      return <WheelPicker key="month" label="태어난 달" values={range(1, 12)} value={birth.month} onChange={(month) => setB({ month })} format={(v) => `${birth.calendar === "lunar" ? "음력 " : ""}${v}월`} />;
     case "day":
-      return <WheelPicker label="태어난 날" values={range(1, daysIn(birth.calendar, birth.year, birth.month))} value={birth.day} onChange={(day) => setB({ day })} format={(v) => `${v}일`} />;
+      return <WheelPicker key="day" label="태어난 날" values={range(1, daysIn(birth.calendar, birth.year, birth.month))} value={birth.day} onChange={(day) => setB({ day })} format={(v) => `${v}일`} />;
     case "leap":
       return (
         <ChoiceButtons

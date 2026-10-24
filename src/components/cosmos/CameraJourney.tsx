@@ -1,7 +1,7 @@
 "use client";
 
 import { useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Vector3, type PerspectiveCamera } from "three";
 import type { JourneyClock } from "./common";
 import { JOURNEY } from "./journey";
@@ -29,10 +29,39 @@ export function JourneyTimer({ clock, moving }: { clock: JourneyClock; moving: b
  * 연출 감독: 지금 장(stage)의 목표값으로 연출 값을 부드럽게 옮기고, 별똥별 위치를 계산해 둔다.
  * 장은 바깥(회원가입 단계 등)에서 이름만 받는다. UI 상태와 카메라 계산은 여기서 분리된다.
  */
-export function JourneyDirector({ director, paths, stage, clock, moving }: { director: Director; paths: JourneyPaths; stage: JourneyStage; clock: JourneyClock; moving: boolean }) {
+export function JourneyDirector({
+  director,
+  paths,
+  stage,
+  beat,
+  clock,
+  moving,
+}: {
+  director: Director;
+  paths: JourneyPaths;
+  stage: JourneyStage;
+  beat?: number;
+  clock: JourneyClock;
+  moving: boolean;
+}) {
   const invalidate = useThree((s) => s.invalidate);
+  const lastBeat = useRef(beat);
   // 정지 장면(필요할 때만 그림)에서는 장이 바뀔 때 한 장 다시 그리게 한다
-  useEffect(() => invalidate(), [stage, invalidate]);
+  useEffect(() => invalidate(), [stage, beat, invalidate]);
+  // 단계를 마치거나 되돌아갈 때마다: 워프 → 다음 구도로 휘돌아 들어가고 하늘 색조가 바뀐다
+  // (단계 화면에 처음 들어올 때는 워프 없이 부드럽게, 동작 줄이기면 바로 맞춤)
+  useEffect(() => {
+    if (beat === undefined) {
+      if (lastBeat.current !== undefined) director.release();
+      lastBeat.current = undefined;
+      return;
+    }
+    const first = lastBeat.current === undefined || lastBeat.current === beat;
+    lastBeat.current = beat;
+    if (!moving) director.snapKick(beat);
+    else if (first) director.aim(beat);
+    else director.kick(beat);
+  }, [beat, moving, director]);
   useFrame(() => {
     if (moving) director.update(STAGE_TARGETS[stage], clock.dt);
     else director.snap(STAGE_TARGETS[stage]);

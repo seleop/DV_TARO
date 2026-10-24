@@ -95,6 +95,8 @@ export const NEBULA_FRAG = /* glsl */ `
   uniform vec2 uLight;
   uniform float uDark;
   uniform float uNearFade;
+  uniform vec3 uTint;
+  uniform float uTintAmt;
   // sin 없는 해시: 모바일(중간 정밀도)에서도 무늬가 깨지지 않는다
   float hash(vec2 p) {
     vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -130,7 +132,7 @@ export const NEBULA_FRAG = /* glsl */ `
     float a = (dens + haze * (1.0 - dens)) * uOpacity * near;
     if (uDark > 0.5) {
       // 어두운 먼지 구름: 뒤의 별·성운을 가리고, 빛 받는 가장자리만 라벤더빛으로 빛난다
-      vec3 col = mix(uColorA * 0.45, uColorB * 1.25, lit * lit);
+      vec3 col = mix(uColorA * 0.45, uColorB * 1.25, lit * lit) * mix(vec3(1.0), uTint * 1.3, uTintAmt);
       gl_FragColor = vec4(col, a * 0.82);
       return;
     }
@@ -140,6 +142,8 @@ export const NEBULA_FRAG = /* glsl */ `
     col = mix(col, uColorB * 1.35, smoothstep(0.05, 0.75, lit));
     col += vec3(1.0, 0.86, 1.0) * pow(lit, 2.5) * 0.45 * dens;
     col += uColorB * pow(ridge, 8.0) * 0.35;
+    // 단계마다 바뀌는 하늘 색조 (단계 화면이 아니면 세기 0)
+    col *= mix(vec3(1.0), uTint * 1.3, uTintAmt);
     gl_FragColor = vec4(col * a, a);
   }
 `;

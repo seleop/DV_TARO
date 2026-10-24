@@ -16,7 +16,7 @@ const FAR = 140;
 /** 지금 날아오는 속도(초당): 장의 속도·전환 가속이 클수록 빠르다 */
 function rushSpeed(director: Director) {
   const pace = Math.max(0, director.pace() - 0.3);
-  return 26 + 62 * pace + 55 * director.surge;
+  return 26 + 62 * pace + 55 * director.surge + 90 * director.warp;
 }
 
 /**
@@ -54,7 +54,17 @@ export function OncomingLights({ director, clock, count, pixelRatio }: { directo
     const dt = clock.dt;
     const v = rushSpeed(director);
     const pos = (p.geometry.getAttribute("position") as BufferAttribute).array as Float32Array;
+    // 단계 완료 워프 때 빛 알갱이가 화면 가운데를 축으로 소용돌이친다
+    const swirl = director.warp * 2.6 * dt;
+    const cs = Math.cos(swirl);
+    const sn = Math.sin(swirl);
     for (let i = 0; i < count; i++) {
+      if (swirl > 1e-5) {
+        const x = pos[i * 3];
+        const y = pos[i * 3 + 1];
+        pos[i * 3] = x * cs - y * sn;
+        pos[i * 3 + 1] = x * sn + y * cs;
+      }
       pos[i * 3 + 2] += v * data.speed[i] * dt;
       if (pos[i * 3 + 2] > -1) spawn(data.rand, pos, i, -FAR);
     }

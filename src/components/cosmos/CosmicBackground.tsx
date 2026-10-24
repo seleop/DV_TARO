@@ -12,12 +12,13 @@ const CosmicScene = dynamic(() => import("./CosmicScene"), { ssr: false, loading
  * 부모 요소를 꽉 채우는(absolute inset-0) 장식 레이어라 글자·버튼 뒤에 깔면 된다. 터치는 가로채지 않는다.
  *
  * - stage: 지금 장(회원가입 단계 등). 바꾸면 하나의 연속된 공간 안에서 카메라·별똥별 연출이 부드럽게 옮겨 간다
+ * - beat: 지금까지 마친 단계 수. 바뀔 때마다 워프·다음 구도·하늘 색조·충격파 (없으면 이런 연출 없음)
  * - active=false로 바꾸면 부드럽게 사라진 뒤 그리기를 멈춘다(다시 true면 이어서 나타남)
  * - 처음 준비되면 어둠 속에서 서서히 나타난다
  * - 탭이 숨겨지면 그리기를 멈춘다. '동작 줄이기' 설정이면 움직이지 않는 정지 장면
  * - WebGL을 못 쓰거나 3D에서 오류·그래픽 끊김이 나면 정적인 우주색 그라데이션으로 대신한다
  */
-export function CosmicBackground({ active = true, stage = "cruise", className = "" }: { active?: boolean; stage?: JourneyStage; className?: string }) {
+export function CosmicBackground({ active = true, stage = "cruise", beat, className = "" }: { active?: boolean; stage?: JourneyStage; beat?: number; className?: string }) {
   const webgl = useSyncExternalStore(noop, hasWebGL, () => false);
   const reduced = useSyncExternalStore(subscribeReducedMotion, prefersReducedMotion, () => false);
   const pageVisible = useSyncExternalStore(subscribeVisibility, () => document.visibilityState !== "hidden", () => true);
@@ -46,6 +47,7 @@ export function CosmicBackground({ active = true, stage = "cruise", className = 
               running={pageVisible && (active || !rested)}
               moving={!reduced}
               stage={stage}
+              beat={beat}
               onReady={() => setReady(true)}
               onContextLost={() => setFailed(true)}
             />

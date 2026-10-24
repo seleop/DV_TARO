@@ -129,6 +129,32 @@ describe("장 전환의 역동성", () => {
   });
 });
 
+describe("단계 완료 워프·구도", () => {
+  it("단계를 마칠 때마다 워프가 생겨 잦아들고, 단계마다 다른 구도·하늘 색조를 목표로 삼는다", () => {
+    const d = new Director(STAGE_TARGETS.enter);
+    d.update(STAGE_TARGETS.enter, 1 / 60);
+    d.kick(1);
+    expect(d.warp).toBe(1);
+    expect(d.fov()).toBeGreaterThan(STAGE_TARGETS.enter.fov + 10);
+    const shot1 = { ...d.shotTarget };
+    for (let i = 0; i < 60 * 3; i++) d.update(STAGE_TARGETS.enter, 1 / 60);
+    expect(d.warp).toBeLessThan(0.01);
+    expect(d.shot.orbit).toBeCloseTo(shot1.orbit, 1);
+    d.kick(2);
+    expect(d.shotTarget).not.toEqual(shot1);
+    expect(d.tintAmtTarget).toBeGreaterThan(0);
+  });
+
+  it("단계 화면을 떠나면 기본 구도·원래 색으로 돌아간다", () => {
+    const d = new Director(STAGE_TARGETS.enter);
+    d.kick(3);
+    d.release();
+    for (let i = 0; i < 60 * 6; i++) d.update(STAGE_TARGETS.cruise, 1 / 60);
+    expect(Math.abs(d.shot.orbit)).toBeLessThan(0.01);
+    expect(d.tintAmt).toBeLessThan(0.01);
+  });
+});
+
 describe("세 갈래 경로 섞기", () => {
   const paths = createJourneyPaths(createJourneyCurve());
 
@@ -191,6 +217,7 @@ describe("카메라가 별똥별을 화면 안에 잡는다", () => {
     const dt = 1 / 60;
     let worst = 0;
     seq.forEach((stage, k) => {
+      d.kick(k);
       for (let i = 0; i < 60 * 5; i++) {
         d.update(STAGE_TARGETS[stage], dt);
         d.locate(paths);
