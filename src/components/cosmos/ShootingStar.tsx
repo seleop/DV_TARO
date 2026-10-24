@@ -2,9 +2,10 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
-import { AdditiveBlending, BufferAttribute, Color, DynamicDrawUsage, Vector3, type CatmullRomCurve3, type Mesh, type ShaderMaterial, type Sprite } from "three";
+import { AdditiveBlending, BufferAttribute, Color, DynamicDrawUsage, Vector3, type Mesh, type ShaderMaterial, type Sprite } from "three";
 import { glowCanvas, type JourneyClock } from "./common";
-import { mulberry32, progressAt, tailAt, wrap01 } from "./journey";
+import { mulberry32, tailAt, wrap01 } from "./journey";
+import { CORE_POINT, journeyPoint, journeyTangent, type Director, type JourneyPaths } from "./stages";
 import { TRAIL_FRAG, TRAIL_VERT } from "./shaders";
 
 /* 매 프레임 새 객체를 만들지 않도록 계산용 벡터를 미리 만들어 둔다 (장면에는 별똥별이 하나뿐이다) */
@@ -18,15 +19,15 @@ const HERO_SAMPLES = 64;
 
 /**
  * 주인공 별똥별: 작은 빛의 핵 + 부드러운 발광 + 길이·밝기가 숨 쉬듯 변하는 꼬리.
- * 닫힌 유람 경로를 등속으로 끝없이 돌기 때문에 반복할 때 처음 위치로 순간이동하지 않는다.
+ * 닫힌 유람 경로를 끝없이 돌기 때문에 반복할 때 처음 위치로 순간이동하지 않는다.
  * 꼬리는 경로상의 지난 위치들로 만든 띠이고, 늘 카메라 쪽을 향하게 펼쳐 어느 각도에서도 두께가 보인다.
+ * 장에 따라 밝기·꼬리 길이가 바뀌고, 마지막 장에서는 머리부터 은하 중심의 빛으로 끌려 들어간다.
  */
-export function ShootingStar({ curve, clock }: { curve: CatmullRomCurve3; clock: JourneyClock }) {
+export function ShootingStar({ director, paths, clock }: { director: Director; paths: JourneyPaths; clock: JourneyClock }) {
   const trail = useRef<Mesh>(null);
   const core = useRef<Sprite>(null);
   const glow = useRef<Sprite>(null);
   const geo = useMemo(() => ribbonBuffers(HERO_SAMPLES), []);
-  const length = useMemo(() => curve.getLength(), [curve]);
   const uniforms = useMemo(
     () => ({
       uBrightness: { value: 1 },
@@ -43,16 +44,22 @@ export function ShootingStar({ curve, clock }: { curve: CatmullRomCurve3; clock:
     const mesh = trail.current;
     if (!mesh) return;
     const t = clock.time;
-    const u = progressAt(t);
-    const { length: tailLen, brightness } = tailAt(t);
+    const v = director.values;
+    const u = director.u;
+    const breath = tailAt(t);
+    const tailLen = breath.length * v.tail;
+    const brightness = breath.brightness * v.brightness;
+    const w0 = director.weights;
     const cam = state.camera.position;
     const pos = (mesh.geometry.getAttribute("position") as BufferAttribute).array as Float32Array;
 
     for (let i = 0; i < HERO_SAMPLES; i++) {
       const s = i / (HERO_SAMPLES - 1);
-      const ui = wrap01(u - (s * tailLen) / length);
-      curve.getPointAt(ui, P);
-      curve.getTangentAt(ui, T);
+      const ui = wrap01(u - (s * tailLen) / director.length);
+      journeyPoint(paths, ui, w0, P);
+      journeyTangent(paths, ui, w0, T);
+      // 마지막 장: 머리 쪽일수록 은하 중심으로 더 끌려가 꼬리가 그 뒤를 잇는다
+      if (v.finale > 1e-3) P.lerp(CORE_POINT, v.finale * Math.pow(1 - s, 0.6));
       // 꼬리 띠를 카메라 쪽으로 펼친다: 진행 방향 × 카메라를 향하는 방향
       TO_CAM.subVectors(cam, P);
       SIDE.crossVectors(T, TO_CAM).normalize();
@@ -69,7 +76,7 @@ export function ShootingStar({ curve, clock }: { curve: CatmullRomCurve3; clock:
     mesh.geometry.getAttribute("position").needsUpdate = true;
     (mesh.material as ShaderMaterial).uniforms.uBrightness.value = brightness;
 
-    curve.getPointAt(u, HEAD);
+    HEAD.copy(director.star);
     if (core.current) {
       core.current.position.copy(HEAD);
       core.current.scale.setScalar(0.32 + brightness * 0.08);

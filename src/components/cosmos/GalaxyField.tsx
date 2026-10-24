@@ -2,7 +2,8 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
-import { AdditiveBlending, Color, Vector3, type Group, type Points, type ShaderMaterial } from "three";
+import { AdditiveBlending, Color, Vector3, type Group, type Points, type ShaderMaterial, type Sprite, type SpriteMaterial } from "three";
+import type { Director } from "./stages";
 import { bandPoint, gaussian, mulberry32 } from "./journey";
 import { STAR_FRAG, STAR_VERT } from "./shaders";
 import { glowCanvas, type JourneyClock } from "./common";
@@ -13,12 +14,14 @@ import { glowCanvas, type JourneyClock } from "./common";
  */
 export function GalaxyField({
   clock,
+  director,
   galaxyStars,
   farStars,
   bandStars,
   pixelRatio,
 }: {
   clock: JourneyClock;
+  director: Director;
   galaxyStars: number;
   farStars: number;
   bandStars: number;
@@ -28,6 +31,7 @@ export function GalaxyField({
   const disk = useRef<Points>(null);
   const far = useRef<Points>(null);
   const band = useRef<Points>(null);
+  const coreGlow = useRef<Sprite>(null);
 
   const diskData = useMemo(() => buildDisk(galaxyStars), [galaxyStars]);
   const farData = useMemo(() => buildFarShell(farStars), [farStars]);
@@ -37,10 +41,18 @@ export function GalaxyField({
   const farUniforms = useMemo(() => starUniforms(pixelRatio, 260, 1), [pixelRatio]);
   const core = useMemo(() => glowCanvas(["rgba(255,244,255,0.95)", "rgba(206,182,255,0.45)", "rgba(110,80,220,0.12)", "rgba(40,30,120,0)"]), []);
 
-  useFrame(() => {
+  useFrame(({ camera }) => {
     const t = clock.time;
     // 은하는 아주 천천히 돈다 (시간 기반: 프레임 수와 무관)
     if (spin.current) spin.current.rotation.y = t * 0.004;
+    // 은하 중심의 빛: 중심부로 향하거나 마지막 장에 조금만 밝아진다 (과하지 않게)
+    const cm = coreGlow.current?.material as SpriteMaterial | undefined;
+    if (cm) {
+      // 카메라가 중심에 가까워질수록 빛무리를 줄여 화면이 뿌옇게 덮이지 않게 한다
+      const dist = camera.position.length();
+      const near = Math.min(1, Math.max(0.12, (dist - 10) / 45));
+      cm.opacity = (0.8 + 0.1 * director.values.coreLook + 0.25 * director.values.finale) * near;
+    }
     for (const p of [disk.current, far.current, band.current]) {
       const m = p?.material as ShaderMaterial | undefined;
       if (m) m.uniforms.uTime.value = t;
@@ -60,7 +72,7 @@ export function GalaxyField({
           <shaderMaterial vertexShader={STAR_VERT} fragmentShader={STAR_FRAG} uniforms={diskUniforms} transparent depthWrite={false} blending={AdditiveBlending} />
         </points>
         {/* 은하 중심의 은은한 빛 */}
-        <sprite scale={[90, 90, 1]} position={[0, 0, 0]}>
+        <sprite ref={coreGlow} scale={[90, 90, 1]} position={[0, 0, 0]}>
           <spriteMaterial transparent depthWrite={false} blending={AdditiveBlending} opacity={0.8}>
             <canvasTexture attach="map" args={[core]} />
           </spriteMaterial>

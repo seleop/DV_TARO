@@ -45,7 +45,7 @@ const EMPTY: SignupValues = { email: "", password: "", passwordConfirm: "", disp
 /**
  * 진입 화면(로그인·회원가입 두 버튼) → 한 칸씩 순차 입력.
  * - 로그인: 카메라가 별이 얼굴로 줌인
- * - 회원가입: 카메라가 밤하늘로 올라가고(3D 우주, SignupCosmos), 단계마다 별이 하나씩 이어져 별자리가 된다
+ * - 회원가입: 카메라가 밤하늘로 올라가 우주 유람(SignupCosmos)이 단계마다 다르게 움직이고, 별이 하나씩 이어져 별자리가 된다
  * 화면은 실제로 보이는 영역 크기에 맞춰 스크롤 없이 쓴다. 입력칸은 한 개를 계속 써서 단계가 바뀌어도 키보드가 닫히지 않는다.
  */
 export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode; next: string; signupMode: SignupMode }) {
@@ -234,7 +234,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
       <div className="scene-dark relative flex min-h-0 flex-1 flex-col">
       {/* 가입 중에는 정원이 아래로 가라앉고 카메라가 하늘로 올라가 3D 우주가 위쪽을 채운다 */}
       <SceneArt kind="garden" className={`absolute inset-0 h-full w-full ${ease} ${mode === "signup" ? "translate-y-1/4 opacity-0" : ""}`} />
-      <SignupCosmos active={mode === "signup"} total={steps.length} step={step} done={done} />
+      <SignupCosmos active={mode === "signup"} field={field} total={steps.length} step={step} done={done} />
       {/* 상단: 뒤로 + 진행 표시 */}
       <div className="relative flex h-14 shrink-0 items-center px-3 pt-[env(safe-area-inset-top)]">
         {mode !== "choose" && (

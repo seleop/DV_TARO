@@ -1,17 +1,16 @@
 "use client";
 
-import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
-import { Vector3, type CatmullRomCurve3 } from "three";
+import { useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useState } from "react";
+import { Vector3 } from "three";
 import type { JourneyClock } from "./common";
-import { JOURNEY, damp, progressAt, wrap01 } from "./journey";
+import { JOURNEY } from "./journey";
+import { CameraRig, STAGE_TARGETS, cameraGoal, type Director, type JourneyPaths, type JourneyStage } from "./stages";
 
 /* 매 프레임 새 객체를 만들지 않도록 계산용 벡터를 미리 만들어 둔다 */
 const UP = new Vector3(0, 1, 0);
-const TARGET = new Vector3();
-const TANGENT = new Vector3();
-const SIDE = new Vector3();
-const AHEAD = new Vector3();
+const GOAL_POS = new Vector3();
+const GOAL_LOOK = new Vector3();
 
 /**
  * 장면 시계: 매 프레임 흐른 시간을 앞으로 보낸다(다른 컴포넌트보다 먼저 놓는다).
@@ -27,45 +26,34 @@ export function JourneyTimer({ clock, moving }: { clock: JourneyClock; moving: b
 }
 
 /**
+ * 연출 감독: 지금 장(stage)의 목표값으로 연출 값을 부드럽게 옮기고, 별똥별 위치를 계산해 둔다.
+ * 장은 바깥(회원가입 단계 등)에서 이름만 받는다. UI 상태와 카메라 계산은 여기서 분리된다.
+ */
+export function JourneyDirector({ director, paths, stage, clock, moving }: { director: Director; paths: JourneyPaths; stage: JourneyStage; clock: JourneyClock; moving: boolean }) {
+  const invalidate = useThree((s) => s.invalidate);
+  // 정지 장면(필요할 때만 그림)에서는 장이 바뀔 때 한 장 다시 그리게 한다
+  useEffect(() => invalidate(), [stage, invalidate]);
+  useFrame(() => {
+    if (moving) director.update(STAGE_TARGETS[stage], clock.dt);
+    else director.snap(STAGE_TARGETS[stage]);
+    director.locate(paths);
+  });
+  return null;
+}
+
+/**
  * 3인칭 카메라: 별똥별보다 조금 뒤·위·옆에서 따라가며, 별똥별 약간 앞을 바라본다.
  * 위치·시선 모두 지수 감쇠(damp)로 부드럽게 따라가 급격한 회전이 없고, 위쪽 방향을 고정해 화면이 기울지 않는다.
+ * 장에 따라 따라가는 거리·높이, 은하 중심을 바라보는 정도가 바뀐다.
  */
-export function CameraJourney({ curve, clock }: { curve: CatmullRomCurve3; clock: JourneyClock }) {
-  const length = useMemo(() => curve.getLength(), [curve]);
-  const look = useRef({ ready: false, x: 0, y: 0, z: 0 });
-
+export function CameraJourney({ director, paths, clock }: { director: Director; paths: JourneyPaths; clock: JourneyClock }) {
+  const [rig] = useState(() => new CameraRig());
   useFrame(({ camera }) => {
-    const { time, dt } = clock;
-    const u = progressAt(time);
-    const back = wrap01(u - JOURNEY.followDistance / length);
-
-    // 뒤따르는 자리: 경로상 뒤쪽 + 위로 + 옆으로 조금
-    curve.getPointAt(back, TARGET);
-    curve.getTangentAt(back, TANGENT);
-    SIDE.crossVectors(TANGENT, UP).normalize();
-    TARGET.addScaledVector(UP, JOURNEY.followHeight).addScaledVector(SIDE, JOURNEY.followSide);
-    // 바라보는 곳: 별똥별보다 조금 앞 (곡선을 돌 때 미리 고개를 돌린다)
-    curve.getPointAt(wrap01(u + JOURNEY.lookAhead / length), AHEAD);
-
-    const l = look.current;
-    if (!l.ready) {
-      camera.position.copy(TARGET);
-      l.x = AHEAD.x;
-      l.y = AHEAD.y;
-      l.z = AHEAD.z;
-      l.ready = true;
-    } else {
-      camera.position.set(
-        damp(camera.position.x, TARGET.x, JOURNEY.positionLambda, dt),
-        damp(camera.position.y, TARGET.y, JOURNEY.positionLambda, dt),
-        damp(camera.position.z, TARGET.z, JOURNEY.positionLambda, dt),
-      );
-      l.x = damp(l.x, AHEAD.x, JOURNEY.lookLambda, dt);
-      l.y = damp(l.y, AHEAD.y, JOURNEY.lookLambda, dt);
-      l.z = damp(l.z, AHEAD.z, JOURNEY.lookLambda, dt);
-    }
+    cameraGoal(director, paths, GOAL_POS, GOAL_LOOK);
+    rig.follow(GOAL_POS, GOAL_LOOK, clock.dt);
+    camera.position.copy(rig.pos);
     camera.up.copy(UP);
-    camera.lookAt(l.x, l.y, l.z);
+    camera.lookAt(rig.look);
   });
   return null;
 }

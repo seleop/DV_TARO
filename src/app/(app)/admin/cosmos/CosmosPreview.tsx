@@ -3,10 +3,22 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { CosmicBackground } from "@/components/cosmos/CosmicBackground";
+import type { JourneyStage } from "@/components/cosmos/stages";
 
-/** 우주 배경 단독 미리보기: 사라지기/나타나기 전환과 초당 프레임을 확인한다 */
+/** 장 고르기 (회원가입 단계와 같은 이름) */
+const STAGES: Array<[JourneyStage, string]> = [
+  ["cruise", "기본"],
+  ["enter", "이메일·진입"],
+  ["ignite", "비밀번호"],
+  ["nebula", "닉네임"],
+  ["core", "동의·중심부"],
+  ["arrive", "완료"],
+];
+
+/** 우주 배경 단독 미리보기: 장(회원가입 단계별 연출) 전환, 사라지기/나타나기, 초당 프레임을 확인한다 */
 export function CosmosPreview() {
   const [active, setActive] = useState(true);
+  const [stage, setStage] = useState<JourneyStage>("cruise");
   const fpsRef = useRef<HTMLSpanElement>(null);
 
   // 초당 프레임 표시 (화면 글자만 바꾸고 React 렌더링은 일으키지 않는다)
@@ -29,7 +41,7 @@ export function CosmosPreview() {
 
   return (
     <div className="relative -mx-5 flex min-h-0 flex-1">
-      <CosmicBackground active={active} />
+      <CosmicBackground active={active} stage={stage} />
       <div className="relative flex flex-1 flex-col justify-between p-4 pt-[max(1rem,env(safe-area-inset-top))] text-white">
         <div className="flex items-center justify-between">
           <Link href="/admin" className="rounded-full bg-white/10 px-3 py-2 text-sm backdrop-blur">
@@ -39,8 +51,21 @@ export function CosmosPreview() {
             {active ? "사라지기" : "나타나기"}
           </button>
         </div>
-        <div className="space-y-1 text-center">
-          <p className="text-[13px] text-white/70">우주 배경 미리보기 · 회원가입 화면에는 아직 쓰지 않아요</p>
+        <div className="space-y-2 text-center">
+          <div className="flex flex-wrap justify-center gap-1.5">
+            {STAGES.map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setStage(id)}
+                aria-pressed={stage === id}
+                className={`rounded-full px-3 py-1.5 text-xs backdrop-blur ${stage === id ? "bg-white text-[#1c1640]" : "bg-white/10"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <p className="text-[13px] text-white/70">우주 배경 미리보기 · 회원가입 단계별 연출을 골라 볼 수 있어요</p>
           <span ref={fpsRef} className="text-xs tabular-nums text-white/50">
             – fps
           </span>

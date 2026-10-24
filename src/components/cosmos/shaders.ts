@@ -36,6 +36,42 @@ export const STAR_FRAG = /* glsl */ `
   }
 `;
 
+/**
+ * 먼지(별빛 입자): 별 입자와 같지만, uGather만큼 별똥별(uCenter) 주변 껍질로 모여든다.
+ * 가까운 입자만 모이고(멀리 있는 것은 그대로), 입자마다 모이는 반지름이 달라 구름처럼 둘러싼다.
+ */
+export const DUST_VERT = /* glsl */ `
+  attribute float aSize;
+  attribute float aPhase;
+  attribute vec3 aColor;
+  uniform float uTime;
+  uniform float uPixelRatio;
+  uniform float uScale;
+  uniform float uTwinkle;
+  uniform vec3 uCenter;
+  uniform float uGather;
+  varying vec3 vColor;
+  varying float vBright;
+  void main() {
+    vec3 d = position - uCenter;
+    float r = max(length(d), 0.001);
+    float near = 1.0 - smoothstep(18.0, 55.0, r);
+    float shell = 1.6 + fract(aPhase * 7.13) * 4.5;
+    // 별똥별 둘레를 천천히 도는 껍질 위치
+    float a = uTime * 0.25 + aPhase * 6.2831;
+    vec3 dir = d / r;
+    vec3 swirl = vec3(dir.x * cos(a) - dir.z * sin(a), dir.y, dir.x * sin(a) + dir.z * cos(a));
+    vec3 gathered = uCenter + swirl * shell;
+    vec3 p = mix(position, gathered, uGather * near);
+    vec4 mv = modelViewMatrix * vec4(p, 1.0);
+    gl_Position = projectionMatrix * mv;
+    float tw = 0.6 + 0.4 * sin(uTime * (0.8 + fract(aPhase) * 1.6) + aPhase * 6.2831);
+    vBright = mix(1.0, tw, uTwinkle) * (1.0 + uGather * near * 0.8);
+    vColor = aColor;
+    gl_PointSize = clamp(aSize * uPixelRatio * (uScale / -mv.z), 1.0, 24.0 * uPixelRatio);
+  }
+`;
+
 /** 성운 구름(카메라를 향하는 판): 여러 겹 노이즈 + 가장자리 흐림 + 가까워지면 옅어짐(카메라가 통과할 때 튀지 않게) */
 export const NEBULA_VERT = /* glsl */ `
   varying vec2 vUv;
