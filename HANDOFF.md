@@ -21,10 +21,17 @@
 
 ## 현재 상태 (2026-10-23)
 - **진행 중: 메인 화면 세션/claude/vigilant-hopper-402c8c — 홈 화면 UI** (`src/app/(app)/page.tsx`, 새 폴더 `src/components/home/**`, 필요 시 `src/lib/home*.ts`·홈 전용 API·관련 테스트. 마스코트·배경·auth·패키지는 건드리지 않음)
+- **별이 얼굴 크기 고정 (main 미반영, 2026-10-24)**: 숨쉬기 배율을 머리가 물려받아 얼굴이 최대 9% 커지던 문제 → `DEF-spine.008` 의 `inherit_scale=NONE`, 놀람 눈 1.25→1.15, 전체 동작 재렌더 (`docs/MASCOT.md` 15절)
+- **회원가입 3D 우주 연출 완료(main 미반영, 2026-10-24)**: 브랜치 `claude/youthful-shamir-aa9bf7`. 패키지 `three`·`@react-three/fiber`·`@types/three` 추가(사용자 승인)
+  - 가입 중에만 위쪽 무대가 별빛 정원 → 3D 우주로 전환(정원이 가라앉고 우주가 내려옴). 진입·로그인은 그대로. `AuthFlow.tsx`는 연결부만 수정
+  - `src/components/auth/SignupCosmos.tsx`: 3D를 지연 로딩(`next/dynamic` ssr:false, 압축 약 245KB, 가입에 들어갈 때만). WebGL 미지원·동작 줄이기·그래픽 끊김(context lost)·오류·로딩 중에는 기존 SVG 별자리(`Constellation`)
+  - `src/components/auth/cosmos/CosmosScene.tsx`: 셰이더 성운(보라·남색·자주), 반짝이는 별, 나선 은하, 단계별 별자리(켜질 때 빛 고리, 선이 그려짐), 별똥별, 손가락·마우스를 따라 기우는 카메라, 단계마다 카메라 상승, 완료 시 물러남. 해상도 배율 최대 1.5, 작은 화면·4코어 이하 기기는 입자 감소(`cosmos/layout.ts`, `tests/cosmos-layout.test.ts`), 가입 화면이 아니거나 탭이 숨겨지면 그리기 멈춤
+  - 별이 원본 3D 모델은 재배포 불가 라이선스라 3D에 넣지 않고 기존처럼 그림(스프라이트)으로 겹침
+  - 확인: 배포 빌드에서 375×812·360×600·키보드 높이(375×430) 화면, 단계 진행(별 점등·선·카메라 상승). 데스크톱 앱 브라우저 창이 숨겨져 있으면 그리기가 멈춰(0프레임) 3D 대신 SVG가 보임 — 앱 문제 아님. 실기기(iOS Safari·Android Chrome) 성능·발열·완료 연출은 아직 확인 안 함
 - **마스코트 교체: 별이 (main 미반영, 2026-10-24)**: 복이 대신 BlenderKit 무료 모델 Aurora Fox(Rigged)를 "별이"로 앱 전체에 사용(사용자 결정). `scripts/mascot/build_fox.py`(네 발 동물 동작·모자+옆 소품 의상), 모델은 저장소 제외(`fetch_fox.mjs`로 받음), 텍스처의 눈 자국 자동 정리(`docs/MASCOT.md` 15절)
 - **복이 소프트 2.5D·천막 배경 (main 반영, 2026-10-24)**: `claude/lucid-solomon-5113d2`. 복이를 소프트 2.5D(툰 셰이딩·직교 카메라)로 다시 렌더·시트 경량화(약 30%↓, 미리 불러오기는 디코딩 안 함). 우주 배경(`CosmicBackdrop`)을 지우고 장면 일러스트로: 홈·오늘의 운세=천막 입구, 사주 목록·타로=천막 안, 별자리·로그인/가입=별빛 정원, 나머지=크림색(`SceneArt`, `lib/scene.ts`). 테마 토큰을 밝은 크림색으로, 장면 위 글자는 `.scene-light/.scene-dark`. `Screen` 의 `scene` 으로 장면 + 시트 화면(`docs/MASCOT.md` 14절)
 - **진입 화면·복이 연출·스크롤 없는 화면 완료(2026-10-24 main 반영)**: 브랜치 `claude/youthful-shamir-aa9bf7`
-- **우주 배경·로그인 화면 다듬기(main 미반영, 2026-10-24)**: 앱 전체 배경을 은하수(성운·반짝이는 별·십자 빛 별·SVG 별똥별)로 교체(`src/components/app/CosmicBackdrop.tsx`, 루트 `layout.tsx`의 `.stars` 대체). 진입 화면 복이 400px(작은 화면은 무대에 맞춤), 로그인 복이 약 500px(키보드가 올라와도 유지, 사용자 요청). 키보드는 줌인 연출(0.7초) 뒤 올라오고 화면 높이는 부드럽게 변함, iOS에서 자동으로 안 뜨면 입력칸이 반짝이며 눌러 달라고 안내
+- **우주 배경·로그인 화면 다듬기(main 반영, 2026-10-24 — 이후 우주 배경은 장면 일러스트로 대체됨)**: 앱 전체 배경을 은하수(성운·반짝이는 별·십자 빛 별·SVG 별똥별)로 교체(`src/components/app/CosmicBackdrop.tsx`, 루트 `layout.tsx`의 `.stars` 대체). 진입 화면 복이 400px(작은 화면은 무대에 맞춤), 로그인 복이 약 500px(키보드가 올라와도 유지, 사용자 요청). 키보드는 줌인 연출(0.7초) 뒤 올라오고 화면 높이는 부드럽게 변함, iOS에서 자동으로 안 뜨면 입력칸이 반짝이며 눌러 달라고 안내
   - `/login` 진입 화면 = 작은 복이 + 로그인·회원가입 두 버튼(손 흔들기). 누르면 한 칸씩 순차 입력(`src/components/auth/AuthFlow.tsx`), 입력칸 하나를 재사용해 단계가 바뀌어도 키보드 유지
   - 로그인 = 복이 얼굴 줌인(384px 원본으로 그리고 배율), 가입 = 카메라가 밤하늘로 올라가며 단계마다 별이 이어지는 별자리(`Constellation.tsx`), 완료 시 celebrate. 단계마다 끄덕임, 오류 때 놀람
   - 화면 높이를 `visualViewport`에 맞춰 키보드가 올라와도 스크롤 없이 입력칸·버튼 표시(`useVisualViewport.ts`). `/signup` 링크는 바로 가입 입력으로

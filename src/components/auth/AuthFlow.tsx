@@ -11,7 +11,7 @@ import { FortuneMascot } from "../FortuneMascot";
 import { SceneArt } from "../app/SceneArt";
 import { SafeForm } from "../SafeForm";
 import { Button, inputCls } from "../ui";
-import { Constellation } from "./Constellation";
+import { SignupCosmos } from "./SignupCosmos";
 import { useVisualViewport } from "./useVisualViewport";
 
 type Mode = "choose" | "login" | "signup";
@@ -45,7 +45,7 @@ const EMPTY: SignupValues = { email: "", password: "", passwordConfirm: "", disp
 /**
  * 진입 화면(로그인·회원가입 두 버튼) → 한 칸씩 순차 입력.
  * - 로그인: 카메라가 별이 얼굴로 줌인
- * - 회원가입: 카메라가 밤하늘로 올라가고, 단계마다 별이 하나씩 이어져 별자리가 된다
+ * - 회원가입: 카메라가 밤하늘로 올라가고(3D 우주, SignupCosmos), 단계마다 별이 하나씩 이어져 별자리가 된다
  * 화면은 실제로 보이는 영역 크기에 맞춰 스크롤 없이 쓴다. 입력칸은 한 개를 계속 써서 단계가 바뀌어도 키보드가 닫히지 않는다.
  */
 export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode; next: string; signupMode: SignupMode }) {
@@ -232,7 +232,9 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
     <div className="fixed inset-x-0 top-0 z-10 mx-auto flex h-dvh w-full max-w-[440px] flex-col overflow-hidden transition-[height,top] duration-300 ease-out motion-reduce:transition-none" style={boxStyle}>
       {/* 위: 별빛 정원 장면(뒤로·진행 표시·별이·별자리) / 아래: 크림색 시트(버튼·입력) */}
       <div className="scene-dark relative flex min-h-0 flex-1 flex-col">
-      <SceneArt kind="garden" className="absolute inset-0 h-full w-full" />
+      {/* 가입 중에는 정원이 아래로 가라앉고 카메라가 하늘로 올라가 3D 우주가 위쪽을 채운다 */}
+      <SceneArt kind="garden" className={`absolute inset-0 h-full w-full ${ease} ${mode === "signup" ? "translate-y-1/4 opacity-0" : ""}`} />
+      <SignupCosmos active={mode === "signup"} total={steps.length} step={step} done={done} />
       {/* 상단: 뒤로 + 진행 표시 */}
       <div className="relative flex h-14 shrink-0 items-center px-3 pt-[env(safe-area-inset-top)]">
         {mode !== "choose" && (
@@ -256,14 +258,6 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
         <div className={`absolute inset-x-0 top-0 text-center ${ease} ${mode === "choose" ? "translate-y-[6%] opacity-100" : "-translate-y-full opacity-0"}`}>
           <p className="text-[15px] text-ink-2">우리끼리 보는 운세</p>
           <h1 className="text-gradient mt-1 text-[34px] font-extrabold leading-tight">{BRAND.appName}</h1>
-        </div>
-
-        {/* 회원가입: 카메라가 하늘로 올라가며 별자리가 나타난다 */}
-        <div
-          aria-hidden={mode !== "signup"}
-          className={`absolute inset-x-6 top-[4%] h-[62%] ${ease} ${mode === "signup" ? "translate-y-0 opacity-100" : "-translate-y-1/2 opacity-0"}`}
-        >
-          <Constellation total={steps.length} lit={step} current={step} done={done} />
         </div>
 
         <div className={`absolute h-[384px] w-[384px] origin-center ${ease}`} style={mascotPos}>

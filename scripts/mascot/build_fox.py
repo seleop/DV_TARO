@@ -69,6 +69,9 @@ def import_fox(path):
     arm.location = (0, -0.22 * SCALE, 0)
     for pb in arm.pose.bones:
         pb.rotation_mode = "XYZ"
+    # 숨쉬기는 몸통 뼈(DEF-spine.005~007)만 부풀린다. 목·머리 뼈가 그 배율을 물려받으면
+    # 숨쉴 때마다 얼굴이 최대 9% 커지므로, 목의 첫 뼈부터는 부모 배율을 물려받지 않게 한다
+    arm.data.bones["DEF-spine.008"].inherit_scale = "NONE"
     body = next(o for o in bpy.data.objects if o.type == "MESH" and o.name == "Body")
     return {"root": root, "arm": arm, "pb": arm.pose.bones, "eyes": eyes, "body": body}
 
@@ -214,7 +217,7 @@ def expression(fox, kind="neutral", blink=0.0):
     happy = kind == "happy"
     for e in fox["eyes"]:
         e.hide_render = happy
-        k = 1.25 if kind == "surprised" else 1.0
+        k = 1.15 if kind == "surprised" else 1.0
         e.scale = (k, k, k * max(0.08, 1 - blink))
     for a in fox["arcs"]:
         a.hide_render = not happy
