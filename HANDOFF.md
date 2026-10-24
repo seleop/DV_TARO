@@ -20,6 +20,7 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
+- **진행 중**: 로그인·가입 세션/`claude/youthful-shamir-aa9bf7` — 회원가입 3D 우주 최적화·품질 검증(성능 단계·대체 모드, 모션 감소, 대비·포커스, 카메라·발광 다듬기, 뷰포트·WebGL 없음·모션 감소 테스트). 범위: `src/components/cosmos/**`, `src/components/auth/*`, `src/app/globals.css`(유리 UI 추가분만), 관련 테스트
 - **오늘의 운세 별빛 오솔길·태양계 행성·우주 화면 유리 UI·키보드 배경 밀림 수정 완료(2026-10-24, 브랜치 `claude/youthful-shamir-aa9bf7`, main 미반영)**
   - 오늘의 운세 배경: 시안 A 별빛 오솔길(`src/components/app/StarlitPath.tsx`, 장면 종류 `path`). 운세 보는 중(받아 오는 중 + 최소 3초)에는 별이 걸음(walk)에 맞춰 층별 속도로 오른쪽→왼쪽으로 흐르고, 준비되면 화면을 눌러 바로 보기. 홈은 기존 천막 그대로
   - 태양계 행성(`src/components/cosmos/SolarSystem.tsx`): 셰이더로 계산한 지구(+달)·토성(고리·그림자)·화성 셋만 경로에 띄엄띄엄(한 화면에 하나), 밝기·채도를 낮추고 멀수록 우주 색에 묻힘. 하늘의 목성·위성과 예전 보라 행성은 삭제. 미리보기 `/admin/cosmos`에 행성 구간 바로가기
