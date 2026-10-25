@@ -20,10 +20,11 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
-- **홈 배경: 타로 점술사의 성소 (main 미반영, 2026-10-25 사용자 결정)**: 브랜치 `claude/vigilant-hopper-402c8c`. 시안 3차례(SVG 단순 → three.js → 디테일 SVG 6개) 끝에 "타로의 성소 + 점술사의 수정구"를 섞음. 성운 하늘·별의 문 한가운데 금빛 받침 수정구(안에서 빛이 소용돌이), 흑백 기둥·휘장·매달린 별과 달, 양옆 타로 네 장, 마법진 무대 바닥·펼친 카드·촛불·향 연기 (`src/components/home/backdrops/Sanctum.tsx`, 부품 `common.tsx`·`art.tsx`, 성운은 feTurbulence)
+- **홈 배경: 타로 점술사의 성소 (main 반영, 2026-10-25 사용자 결정)**: 브랜치 `claude/vigilant-hopper-402c8c`. 시안 3차례(SVG 단순 → three.js → 디테일 SVG 6개) 끝에 "타로의 성소 + 점술사의 수정구"를 섞음. 성운 하늘·별의 문 한가운데 금빛 받침 수정구(안에서 빛이 소용돌이), 흑백 기둥·휘장·매달린 별과 달, 양옆 타로 네 장, 마법진 무대 바닥·펼친 카드·촛불·향 연기 (`src/components/home/backdrops/Sanctum.tsx`, 부품 `common.tsx`·`art.tsx`, 성운은 feTurbulence)
   - 홈 장면 종류를 `sanctum`(밤)으로 등록(`lib/scene.ts`): 글자 밝게, 시트는 오늘의 운세와 같은 어두운 유리, 상태 표시줄 뒤·아래 안전 영역도 남보라. `Screen`이 경로로 배경을 정함(오늘의 운세 `StarlitPath`와 같은 방식). 예전 천막 입구(`entrance`)는 지금 쓰는 화면 없음
   - 삼각함수 값은 서버·브라우저가 마지막 자리까지 달라 하이드레이션 경고가 나므로 `common.tsx`의 `cos`·`sin`(반올림)을 쓴다
-  - 확인: 360×600·375×812 넘침 없음. 작은 화면에서는 별이가 수정구를 많이 가림. 실기기 성능(필터·움직임 다수)은 아직
+  - 별이는 수정구가 보이게 최대 230px, 낮은 화면일수록 더 작게(`HomeGreeting`). 촛불 빛은 불꽃에서 번지는 빛 + 바닥 빛, 밝기만 일렁임
+  - 확인: 360×600·375×667·375×812 넘침 없음. 실기기 성능(필터·움직임 다수)은 아직
 - **회원가입 3D 우주 최적화·품질 검증 완료(2026-10-25, 브랜치 `claude/youthful-shamir-aa9bf7`, main 미반영)**: 인증·저장 로직 변경 없음
   - 성능: 해상도 배율 = min(기기 배율, 단계 상한 lite 1.5·full 2, 그리는 픽셀 수 상한 lite 160만·full 300만), 메모리 4GB 이하 기기도 lite (`journey.ts` `cosmicBudget`). 해상도를 최저(0.75)로 낮춰도 30fps 미만이 두 번 이어지면 대체 모드(`lowerBudget`: 성운·구름·입자 절반, 혜성 1개)
   - 메모리 누수 수정: three.js `Sprite`는 모든 인스턴스가 모듈 전역 사각형 도형을 함께 쓰고 렌더러마다 그 도형에 dispose 리스너를 걸어, 화면을 오갈 때마다 이전 렌더러·WebGL 문맥·캔버스·분리된 화면 DOM이 남았음 → 캔버스가 사라질 때 공유 도형 dispose (`CosmicScene.tsx` `ReleaseSharedSprite`). 배포 빌드에서 로그인↔가입 30회 왕복 힙 10→23MB가 9→12MB(평탄), 분리된 SVG 0개
