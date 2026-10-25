@@ -34,7 +34,15 @@ FACING_DEG = 32
 REST_Z = 0.0
 
 STATES = dict(B.STATES)
-OUTFIT_STATES = ["idle", "wave", "nod", "surprised"]
+# 대화형 결과용 동작 (lib/dialogue.ts 동작 신호: explain→talk, point→point, listen→listen, anticipate→anticipate, comfort→sit)
+STATES.update({
+    "talk": {"frames": 30, "fps": 15, "loop": True},  # 말하는 동안: 고개 까딱·꼬리 살랑
+    "sit": {"frames": 30, "fps": 15, "loop": True},  # 곁에 앉아 기다리기
+    "point": {"frames": 32, "fps": 20, "loop": False},  # 화면 아래 카드를 가리킴 (앞발)
+    "listen": {"frames": 22, "fps": 20, "loop": False},  # 귀 기울여 갸웃
+    "anticipate": {"frames": 26, "fps": 20, "loop": False},  # 공개 직전 웅크려 숨 고르기
+})
+OUTFIT_STATES = ["idle", "wave", "nod", "surprised", "talk", "point", "listen", "anticipate", "sit"]
 OUTFITS = {
     "default": {},
     "saju": {"signature": "read"},
@@ -554,6 +562,34 @@ CLIPS = {
         (0.88, {"blink": 1.0}, "neutral"),
         (1.0, {}, "neutral"),
     ],
+    # ── 대화형 결과 ──
+    "point": [  # 가까운 앞발을 들어(손 흔들기와 같은 관절 방향: 허벅지 + 무릎 굽힘 → 발이 둥글게 유지) 앞쪽 아래를 톡톡, 고개는 그쪽을 본다
+        (0.0, {}, "neutral"),
+        (0.16, {"frx": 50, "fr_knee": 60, "headx": 8, "headz": -8, "z": 0.02, "roll": -3}, "neutral"),
+        (0.3, {"frx": 68, "fr_knee": 40, "headx": 18, "headz": -14, "roll": -5, "pitch": -3, "z": 0.04, "tailz": 8}, "neutral"),
+        (0.4, {"frx": 64, "fr_knee": 58, "headx": 20, "headz": -14, "roll": -5, "pitch": -3, "z": 0.035, "tailz": -6}, "neutral"),
+        (0.5, {"frx": 68, "fr_knee": 40, "headx": 18, "headz": -14, "roll": -5, "pitch": -3, "z": 0.04, "tailz": 8}, "neutral"),
+        (0.6, {"frx": 64, "fr_knee": 58, "headx": 20, "headz": -14, "roll": -5, "pitch": -3, "z": 0.035, "tailz": -6}, "neutral"),
+        (0.7, {"frx": 66, "fr_knee": 44, "headx": 10, "headz": -10, "roll": -4, "z": 0.04, "tailz": 6}, "happy"),
+        (0.86, {"frx": 22, "fr_knee": 25, "headx": 4, "headz": -3}, "neutral"),
+        (1.0, {}, "neutral"),
+    ],
+    "listen": [  # 귀 기울이듯 고개를 갸웃하고 꼬리를 든다
+        (0.0, {}, "neutral"),
+        (0.2, {"heady": 16, "headz": -10, "headx": -4, "tailx": 12, "z": 0.02}, "neutral"),
+        (0.42, {"heady": 22, "headz": -14, "headx": -6, "tailx": 18, "tailz": 10}, "neutral"),
+        (0.64, {"heady": 18, "headz": -12, "headx": -2, "tailx": 14, "tailz": -10}, "happy"),
+        (0.84, {"heady": 4, "headz": -3}, "neutral"),
+        (1.0, {}, "neutral"),
+    ],
+    "anticipate": [  # 웅크리며 숨을 들이쉬었다가 살짝 일어서며 눈을 크게
+        (0.0, {}, "neutral"),
+        (0.24, {"z": -0.07, "pitch": 3, "fl_knee": 24, "fr_knee": 24, "hl_knee": 28, "hr_knee": 28, "headx": 10, "tailx": -12, "breath": -1}, "neutral"),
+        (0.5, {"z": -0.08, "pitch": 3, "fl_knee": 26, "fr_knee": 26, "hl_knee": 30, "hr_knee": 30, "headx": 6, "tailx": -14, "breath": 1}, "neutral"),
+        (0.7, {"z": 0.05, "headx": -10, "tailx": 20, "breath": 0.5}, "surprised"),
+        (0.86, {"headx": -3, "tailx": 6}, "neutral"),
+        (1.0, {}, "neutral"),
+    ],
     # ── 의상 대표 동작 ──
     "read": [  # 옆에 뜬 사주책이 펼쳐지고 책장이 넘어감, 고개를 갸웃·끄덕
         (0.0, {}, "neutral"),
@@ -587,6 +623,9 @@ CLIPS = {
 }
 
 
+SIT_POSE = {"z": -0.13, "fl_knee": 75, "fr_knee": 75, "hl_knee": 75, "hr_knee": 75, "flx": 20, "frx": 20, "hlx": 20, "hrx": 20, "headx": 6, "headz": -10, "tailz": 45, "tailx": -14}
+
+
 def pose(fox, state, f, n):
     tau = 2 * math.pi
     p = f / n
@@ -618,6 +657,18 @@ def pose(fox, state, f, n):
         hop = abs(math.sin(tau * p))
         c.update(z=0.2 * hop, pitch=-4 * math.sin(tau * 2 * p), flx=18 * hop, frx=18 * hop, hlx=-14 * hop, hrx=-14 * hop, tailz=28 * math.sin(tau * 2 * p), tailx=12, headx=-6)
         expr = "happy"
+    elif state == "talk":
+        # 말 리듬: 고개를 두 번 까딱, 꼬리는 반 박자 늦게 살랑 (모두 정수 주기라 처음과 끝이 이어짐)
+        s2 = math.sin(2 * tau * p)
+        c.update(headx=5 * s2, heady=4 * math.sin(tau * p), headz=6 * math.sin(tau * p), tailz=14 * math.sin(2 * tau * p - 0.8), tailx=4 * math.sin(tau * p), breath=s2, z=0.006 * s2)
+        c["blink"] = {18: 0.6, 19: 1.0, 20: 0.45}.get(f, 0.0)
+        expr = "happy" if 7 <= f <= 11 else "neutral"
+    elif state == "sit":
+        # 엉덩이를 내려 앉고(앞을 들어 올림) 꼬리로 몸을 감싼 채 천천히 숨쉬기
+        b = math.sin(tau * p)
+        c.update(SIT_POSE)
+        c.update(breath=b, headx=SIT_POSE["headx"] + 2 * b, headz=SIT_POSE["headz"] + 3 * math.sin(tau * p), tailz=SIT_POSE["tailz"] + 4 * math.sin(tau * p))
+        c["blink"] = {14: 0.6, 15: 1.0, 16: 0.45}.get(f, 0.0)
     apply_pose(fox, c, expr)
     place_extras(fox, c, t, state, t if state in CLIPS else p)
 
@@ -632,6 +683,7 @@ def main():
     ap.add_argument("--stills", default="")
     ap.add_argument("--res", type=int, default=640)
     ap.add_argument("--only-frame", type=int, default=-1)
+    ap.add_argument("--frames", default="", help="시안용: 이 프레임만 렌더 (쉼표, 음수는 끝에서부터). 예: 0,12,-1")
     a = ap.parse_args(argv)
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -680,7 +732,10 @@ def main():
         for old in os.listdir(out):
             if old.endswith(".png"):
                 os.remove(os.path.join(out, old))
-        frames = [a.only_frame] if a.only_frame >= 0 else range(n)
+        if a.frames:
+            frames = sorted({int(x) % n for x in a.frames.split(",")})
+        else:
+            frames = [a.only_frame] if a.only_frame >= 0 else range(n)
         for f in frames:
             pose(fox, st, f, n)
             B.render_frame(sc, os.path.join(out, f"{f:04d}.png"))

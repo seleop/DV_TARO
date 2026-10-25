@@ -4,7 +4,7 @@
  * - 결과 API는 사실(원국·카드·일진)과 함께 별이 대사(beats)·추천 질문(suggestions)을 한 번에 돌려준다.
  *   추천 질문의 답도 미리 만들어 두므로, 사용자가 질문을 눌러도 추가 AI 호출이 없다.
  * - 대사마다 동작 신호(cue)를 붙인다. 신호 → 실제 동작은 motionForCue 가 정하고,
- *   새 동작 시트(talk·point·listen·anticipate·sit, 별이 새 동작 세션이 만들 예정)가 없으면 지금 있는 동작으로 대체한다.
+ *   새 동작 시트(talk·point·listen·anticipate·sit, 2026-10-25 네 의상 모두 렌더)가 없으면 지금 있는 동작으로 대체한다.
  * - 예전에 저장된 해석(대사 없음)과 모의 응답은 해석 내용으로 대사를 만든다 (*DialogueFallback).
  */
 import { josa } from "./josa";
@@ -17,7 +17,7 @@ export type Cue = (typeof CUES)[number];
 /** 추천 질문 종류: 깊이(이게 나에게 무슨 뜻인지) · 실천(지금 해 볼 일) · 분야(결과에서 두드러진 분야) */
 export const SUGGESTION_KINDS = ["deeper", "action", "topic"] as const;
 
-/** 신호별 [새로 만들 동작, 지금 쓰는 동작]. reveal 은 의상 장면에서 대표 동작(책·카드·별 보기)으로 바뀐다 (lib/mascot resolveSheet) */
+/** 신호별 [대화용 동작, 그 시트가 없을 때 대체 동작]. reveal 은 의상 장면에서 대표 동작(책·카드·별 보기)으로 바뀐다 (lib/mascot resolveSheet) */
 const CUE_MOTION: Record<Cue, { want: string; now: string }> = {
   greet: { want: "wave", now: "wave" },
   explain: { want: "talk", now: "idle" },

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { DailyDialogueSchema, SajuDialogueSchema, TarotDialogueSchema, type DailyReading, type SajuReading } from "@/lib/ai/schemas";
-import { clip, cueForMood, dailyDialogueFallback, motionForCue, sajuChapters, sajuDialogueFallback, tarotDialogueFallback, tomorrowTeaser } from "@/lib/dialogue";
+import { MASCOT_SHEETS } from "@/config/mascot-assets";
+import { clip, cueForMood, dailyDialogueFallback, motionForCue, sajuChapters, sajuDialogueFallback, tarotDialogueFallback, tomorrowTeaser, type Cue } from "@/lib/dialogue";
+import { resolveSheet } from "@/lib/mascot";
 
 const long = "가나다라마바사. ".repeat(80);
 
@@ -41,6 +43,20 @@ describe("별이 동작 신호", () => {
     expect(motionForCue("anticipate", none)).toBe("reveal");
     expect(motionForCue("point", (s) => s === "point")).toBe("point");
     expect(motionForCue("comfort", (s) => s === "sit")).toBe("sit");
+  });
+
+  it("모든 의상에 새 동작 시트가 있어, 대화 신호가 대체 없이 새 동작으로 이어진다", () => {
+    const names = new Set(Object.keys(MASCOT_SHEETS));
+    const want: Partial<Record<Cue, string>> = { explain: "talk", point: "point", listen: "listen", anticipate: "anticipate", comfort: "sit" };
+    for (const outfit of ["default", "saju", "tarot", "star"] as const) {
+      const has = (s: string) => names.has(outfit === "default" ? s : `${outfit}-${s}`);
+      for (const [cue, state] of Object.entries(want)) {
+        const motion = motionForCue(cue as Cue, has);
+        expect(motion).toBe(state);
+        expect(resolveSheet(outfit, motion, names)).toBe(outfit === "default" ? state : `${outfit}-${state}`);
+      }
+    }
+    for (const s of Object.values(MASCOT_SHEETS)) expect(s.bytes).toBeLessThan(800 * 1024);
   });
 
   it("결과 분위기에 맞는 공개 신호", () => {

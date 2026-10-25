@@ -211,3 +211,21 @@ FFMPEG_PATH=<ffmpeg.exe 경로> node scripts/mascot/encode.mjs
   - 별자리 망원경은 몸 가까이
 - 다시 만들기: 기존 렌더(기본 의상 포함)를 `assets/mascot/render`에 둔 채 `--outfits saju,tarot,star`만 렌더 → `node scripts/mascot/encode.mjs --height 448 --quality 82` (타로 카드 뽑기 시트가 85에서 800KB를 넘어 82로). 칸 418×448
 
+## 17. 대화형 결과용 동작 (2026-10-25)
+결과 화면에서 별이가 한 마디씩 말하며 카드를 짚는 '별이의 해설석'용. 결과 API의 동작 신호(cue, `src/lib/dialogue.ts`)가 `motionForCue`로 이 동작들에 이어진다(시트가 없으면 대체 동작).
+
+| 신호 | 동작(시트) | 종류 | 프레임·fps | 내용 |
+|---|---|---|---|---|
+| explain | `talk` | 반복 | 30·15 | 말하는 동안: 고개를 두 번 까딱, 꼬리는 반 박자 늦게 살랑, 중간에 잠깐 웃는 눈 |
+| point | `point` | 한 번 | 32·20 | 가까운 앞발을 들어 앞쪽 아래를 두 번 톡톡, 고개도 그쪽을 봄 |
+| listen | `listen` | 한 번 | 22·20 | 귀 기울이듯 고개를 갸웃하고 꼬리를 듦 |
+| anticipate | `anticipate` | 한 번 | 26·20 | 웅크리며 숨을 들이쉬었다가 살짝 일어서며 눈을 크게 |
+| comfort | `sit` | 반복 | 30·15 | 다리를 접고 엎드려(식빵 자세) 꼬리를 옆으로 두르고 천천히 숨쉬기 |
+
+- 네 의상(기본·사주·타로·별자리) 모두 렌더 → 새 시트 20장, 시트당 214~548KB(합계 약 7.7MB). 화면이 그 동작을 쓸 때만 받는다(미리 받기 목록에 넣지 않음)
+- **가리키기 시안**: A(앞발)·B(코끝으로 숙이기) 중 A로 결정(사용자). 다리가 짧아 허벅지를 반대로 크게 돌리고 무릎을 펴면 메시가 납작한 지느러미처럼 일그러진다 → 손 흔들기(wave)와 같은 관절 방향(앞다리 `frx` +, 무릎 굽힘)으로 발을 둥글게 든다. 앞다리 `frx` +에 무릎을 펴면 발이 뒤로 뻗는다
+- **앉기**: 엉덩이를 내리는 앉기는 짧은 다리 때문에 뒤로 기대는 것처럼 보여, 모든 무릎을 접고 몸을 낮춘 엎드리기(`SIT_POSE`)로 바꿈
+- 자르기 영역(칸 418×448)은 그대로 — 새 동작이 기존 동작의 영역 안에 있어 기존 시트·포스터는 바이트까지 같고, 말풍선 머리 높이(`HEAD_TOP`)도 그대로 유효
+- 이음새 검사 통과: 한 번 재생 동작은 첫·끝 프레임 = 휴식 자세(PSNR ∞), 반복 동작은 끝→처음 차이가 보통 프레임 간 차이와 같은 수준
+- 렌더: `blender -b --factory-startup -P scripts/mascot/build_fox.py -- --states talk,point,listen,anticipate,sit --outfits default,saju,tarot,star --res 640`(약 2분) → `node scripts/mascot/encode.mjs --height 448 --quality 82`(약 6분, 전체 다시 인코딩). 시안은 `--frames 0,12,-1 --out <임시 폴더>`로 몇 프레임만
+- 화면 연결은 아직 없음(대화형 결과 화면 작업에서 `motionForCue` → `resolveSheet`로 씀). `tests/dialogue.test.ts`가 모든 의상에서 신호가 대체 없이 새 시트로 이어지는지 검사
