@@ -20,6 +20,7 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
+- **진행 중: 메인 화면 세션/claude/vigilant-hopper-402c8c — 의상 다시 만들기·기능별 배경·가입 화면 별이** (`scripts/mascot/build_fox.py` 의상·소품, `public/mascot/*` 의상 시트 재렌더, `src/config/mascot-assets.ts`, 배경 `src/components/backdrops/**`(홈 점집 입구·타로 성소+제단·오늘 새벽 언덕길·사주 한옥 서재·별자리 천문대), `lib/scene.ts`·`Screen.tsx`·`AppFrame` 장면 연결, `AuthFlow.tsx` 별이 동작·이름표 '???')
 - **캐릭터 이름 짓기·홈 메뉴 좌우 슬라이드 (main 반영, 2026-10-25 사용자 결정)**: 브랜치 `claude/vigilant-hopper-402c8c`
   - 마이그레이션 `20261025160000_mascot_name.sql` (`profiles.mascot_name` 1~8자, NULL = 아직 안 지음) — **운영 Supabase 적용 완료 2026-10-25** (사용자가 SQL Editor에서 실행). 적용 전에 배포돼도 `getProfile`이 칸 없음(42703)을 이름 없이 읽어 앱은 동작하지만, 이름 저장은 실패한다
   - 이름 짓기: 새 가입자는 가입 마무리에서 '???'가 별 친구로 정체를 드러낸 뒤 이름을 묻는다(`AuthFlow` finale: reveal → name → named → ask). 기존 사용자는 홈에서 한 번 묻는다(`NamingOverlay`, 질문은 위쪽 말풍선). '그대로'도 기본 이름으로 저장해 다시 묻지 않음. 프로필 설정에서 바꾸기(`MascotNameSheet`). 공용 입력 `MascotNameForm`, 규칙 `lib/mascot-name.ts`(글자·숫자·띄어쓰기·꾸밈 기호 일부)
