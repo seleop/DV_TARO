@@ -8,7 +8,7 @@ import type { SceneKind } from "@/lib/scene";
  *  - inside: 천막 안 아늑한 점집 (사주·타로)
  *  - garden: 별빛 정원 천막 (별자리·로그인)
  */
-export function SceneArt({ kind, className = "" }: { kind: Exclude<SceneKind, "plain" | "path">; className?: string }) {
+export function SceneArt({ kind, className = "" }: { kind: Exclude<SceneKind, "plain" | "path" | "sanctum">; className?: string }) {
   return (
     <svg viewBox="0 0 375 520" preserveAspectRatio="xMidYMax slice" className={`pointer-events-none ${className}`} aria-hidden>
       {kind === "entrance" ? <Entrance /> : kind === "inside" ? <Inside /> : <Garden />}

@@ -1,89 +1,7 @@
-/** 홈 밤하늘 SVG 배경에 쓰는 그림 부품 (달·타로 카드·촛불·풍등·유등·휘장·나무·풀) */
-import { rng, v } from "./common";
+/** 홈 성소 SVG 배경에 쓰는 그림 부품 (타로 카드·촛불·휘장) */
+import { cos, rng, sin, v } from "./common";
 
 const GOLD = "#f4d38a";
-
-/* ───────── 달 ───────── */
-
-/** id 는 "<장면 id>-<이름>" 형식 (장면의 빛 번짐 필터를 찾는 데 쓴다) */
-export function CrescentMoon({ id, x, y, r, glow = true }: { id: string; x: number; y: number; r: number; glow?: boolean }) {
-  return (
-    <g>
-      <defs>
-        <radialGradient id={`${id}-cm`} cx=".35" cy=".35">
-          <stop offset="0" stopColor="#fffaf0" />
-          <stop offset="1" stopColor="#f3dfae" />
-        </radialGradient>
-        <mask id={`${id}-cmask`}>
-          <circle cx={x} cy={y} r={r} fill="#fff" />
-          <circle cx={x + r * 0.42} cy={y - r * 0.3} r={r * 0.9} fill="#000" />
-        </mask>
-      </defs>
-      {glow && (
-        <g className="hb-pulse" style={v({ "--d": "7s" })}>
-          <circle cx={x} cy={y} r={r * 3.2} fill="#fff1c9" opacity=".06" />
-          <circle cx={x} cy={y} r={r * 1.9} fill="#fff1c9" opacity=".1" />
-        </g>
-      )}
-      <g mask={`url(#${id}-cmask)`} filter={`url(#${id.split("-")[0]}-glow)`}>
-        <circle cx={x} cy={y} r={r} fill={`url(#${id}-cm)`} />
-        <circle cx={x - r * 0.45} cy={y + r * 0.2} r={r * 0.14} fill="#e3cd98" opacity=".6" />
-        <circle cx={x - r * 0.25} cy={y + r * 0.55} r={r * 0.1} fill="#e3cd98" opacity=".5" />
-      </g>
-    </g>
-  );
-}
-
-export function FullMoon({ id, x, y, r }: { id: string; x: number; y: number; r: number }) {
-  return (
-    <g>
-      <defs>
-        <radialGradient id={`${id}-fm`} cx=".4" cy=".38" r=".7">
-          <stop offset="0" stopColor="#fffdf6" />
-          <stop offset=".7" stopColor="#f6ead0" />
-          <stop offset="1" stopColor="#d9c8a0" />
-        </radialGradient>
-        <clipPath id={`${id}-fmc`}>
-          <circle cx={x} cy={y} r={r} />
-        </clipPath>
-        <filter id={`${id}-maria`} x="0" y="0" width="100%" height="100%">
-          <feTurbulence type="fractalNoise" baseFrequency=".045" numOctaves="4" seed="8" />
-          <feColorMatrix type="matrix" values="0 0 0 0 .62  0 0 0 0 .56  0 0 0 0 .45  2.4 0 0 0 -1.25" />
-        </filter>
-        <radialGradient id={`${id}-halo`}>
-          <stop offset=".55" stopColor="#cfe0ff" stopOpacity="0" />
-          <stop offset=".62" stopColor="#cfe0ff" stopOpacity=".16" />
-          <stop offset=".7" stopColor="#ffd9f0" stopOpacity=".1" />
-          <stop offset=".78" stopColor="#cfe0ff" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      {/* 달무리 */}
-      <circle cx={x} cy={y} r={r * 3.4} fill={`url(#${id}-halo)`} className="hb-pulse" style={v({ "--d": "9s" })} />
-      <circle cx={x} cy={y} r={r * 2.2} fill="#fff6dc" opacity=".08" />
-      <circle cx={x} cy={y} r={r * 1.45} fill="#fff6dc" opacity=".14" />
-      <g filter={`url(#${id.split("-")[0]}-glow)`}>
-        <circle cx={x} cy={y} r={r} fill={`url(#${id}-fm)`} />
-      </g>
-      <g clipPath={`url(#${id}-fmc)`}>
-        <rect x={x - r} y={y - r} width={r * 2} height={r * 2} filter={`url(#${id}-maria)`} opacity=".7" />
-        {[
-          [-0.35, -0.2, 0.16],
-          [0.3, 0.25, 0.12],
-          [0.1, -0.45, 0.08],
-          [-0.15, 0.5, 0.1],
-          [0.5, -0.1, 0.07],
-        ].map(([dx, dy, s], i) => (
-          <g key={i}>
-            <circle cx={x + dx * r} cy={y + dy * r} r={s * r} fill="#cdb98a" opacity=".45" />
-            <circle cx={x + dx * r - s * r * 0.2} cy={y + dy * r - s * r * 0.2} r={s * r * 0.8} fill="none" stroke="#fffaf0" strokeWidth=".6" opacity=".5" />
-          </g>
-        ))}
-        {/* 오른쪽 아래 그늘 */}
-        <circle cx={x + r * 0.5} cy={y + r * 0.45} r={r * 1.1} fill="#a89070" opacity=".14" />
-      </g>
-    </g>
-  );
-}
 
 /* ───────── 타로 카드 (금테·모서리 장식·숫자·그림) ───────── */
 
@@ -148,7 +66,7 @@ function CardSymbol({ art, cx, cy, s }: { art: CardArt; cx: number; cy: number; 
         {Array.from({ length: 16 }, (_, i) => {
           const a = (i / 16) * Math.PI * 2;
           const r2 = (i % 2 ? 13 : 17) * s;
-          return <path key={i} d={`M${cx + Math.cos(a - 0.12) * 8 * s} ${cy + Math.sin(a - 0.12) * 8 * s}L${cx + Math.cos(a) * r2} ${cy + Math.sin(a) * r2}L${cx + Math.cos(a + 0.12) * 8 * s} ${cy + Math.sin(a + 0.12) * 8 * s}Z`} fill={c} />;
+          return <path key={i} d={`M${cx + cos(a - 0.12) * 8 * s} ${cy + sin(a - 0.12) * 8 * s}L${cx + cos(a) * r2} ${cy + sin(a) * r2}L${cx + cos(a + 0.12) * 8 * s} ${cy + sin(a + 0.12) * 8 * s}Z`} fill={c} />;
         })}
         <circle cx={cx} cy={cy} r={7.5 * s} fill={c} />
         <circle cx={cx - 2.4 * s} cy={cy - 1 * s} r={0.9 * s} fill="#8a5a20" />
@@ -173,7 +91,7 @@ function CardSymbol({ art, cx, cy, s }: { art: CardArt; cx: number; cy: number; 
           d={Array.from({ length: 16 }, (_, i) => {
             const a = (i / 16) * Math.PI * 2 - Math.PI / 2;
             const r = (i % 2 ? 3.6 : i % 4 ? 9 : 16) * s;
-            return `${i ? "L" : "M"}${cx + Math.cos(a) * r} ${cy + Math.sin(a) * r}`;
+            return `${i ? "L" : "M"}${cx + cos(a) * r} ${cy + sin(a) * r}`;
           }).join("") + "Z"}
           fill={c}
         />
@@ -196,11 +114,11 @@ function CardSymbol({ art, cx, cy, s }: { art: CardArt; cx: number; cy: number; 
         <circle cx={cx} cy={cy} r={3.5 * s} fill={c} />
         {Array.from({ length: 8 }, (_, i) => {
           const a = (i / 8) * Math.PI * 2;
-          return <line key={i} x1={cx + Math.cos(a) * 3.5 * s} y1={cy + Math.sin(a) * 3.5 * s} x2={cx + Math.cos(a) * 14 * s} y2={cy + Math.sin(a) * 14 * s} strokeWidth={0.8 * s} />;
+          return <line key={i} x1={cx + cos(a) * 3.5 * s} y1={cy + sin(a) * 3.5 * s} x2={cx + cos(a) * 14 * s} y2={cy + sin(a) * 14 * s} strokeWidth={0.8 * s} />;
         })}
         {Array.from({ length: 4 }, (_, i) => {
           const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
-          return <circle key={i} cx={cx + Math.cos(a) * 17.5 * s} cy={cy + Math.sin(a) * 17.5 * s} r={1.4 * s} fill={c} />;
+          return <circle key={i} cx={cx + cos(a) * 17.5 * s} cy={cy + sin(a) * 17.5 * s} r={1.4 * s} fill={c} />;
         })}
       </g>
     );
@@ -218,7 +136,7 @@ function CardSymbol({ art, cx, cy, s }: { art: CardArt; cx: number; cy: number; 
       <circle cx={cx} cy={cy} r={2 * s} fill="#25146c" stroke="none" />
       {Array.from({ length: 7 }, (_, i) => {
         const a = Math.PI + (i / 6) * Math.PI;
-        return <line key={i} x1={cx + Math.cos(a) * 15 * s} y1={cy + Math.sin(a) * 12 * s} x2={cx + Math.cos(a) * 19 * s} y2={cy + Math.sin(a) * 16 * s} strokeWidth={0.7 * s} />;
+        return <line key={i} x1={cx + cos(a) * 15 * s} y1={cy + sin(a) * 12 * s} x2={cx + cos(a) * 19 * s} y2={cy + sin(a) * 16 * s} strokeWidth={0.7 * s} />;
       })}
     </g>
   );
@@ -251,49 +169,6 @@ export function Candle({ id, x, y, h = 26, w = 8, delay = 0 }: { id: string; x: 
         <path d={`M${x} ${y - h - 13}C${x + 3.6} ${y - h - 7} ${x + 3} ${y - h - 2} ${x} ${y - h - 1.5}C${x - 3} ${y - h - 2} ${x - 3.6} ${y - h - 7} ${x} ${y - h - 13}Z`} fill={`url(#${id}-fl)`} />
       </g>
       <ellipse cx={x} cy={y} rx={w * 0.9} ry={1.6} fill="#000" opacity=".3" />
-    </g>
-  );
-}
-
-/* ───────── 풍등 (하늘로 떠오르는 등) ───────── */
-
-export function SkyLantern({ id, x, y, s = 1, delay = 0, d = 30 }: { id: string; x: number; y: number; s?: number; delay?: number; d?: number }) {
-  return (
-    <g className="hb-rise" style={v({ "--d": `${d}s`, animationDelay: `${delay}s` })}>
-      <g className="hb-sway" style={v({ "--d": "5s" })}>
-        <defs>
-          <linearGradient id={`${id}-pl`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#ffb35a" />
-            <stop offset=".7" stopColor="#ffe08a" />
-            <stop offset="1" stopColor="#fff6c8" />
-          </linearGradient>
-        </defs>
-        <ellipse cx={x} cy={y + 2 * s} rx={14 * s} ry={16 * s} fill="#ffb35a" opacity=".22" />
-        <path d={`M${x - 6 * s} ${y - 9 * s}L${x + 6 * s} ${y - 9 * s}L${x + 8 * s} ${y + 9 * s}L${x - 8 * s} ${y + 9 * s}Z`} fill={`url(#${id}-pl)`} />
-        <path d={`M${x - 3 * s} ${y - 9 * s}L${x - 4 * s} ${y + 9 * s}M${x + 3 * s} ${y - 9 * s}L${x + 4 * s} ${y + 9 * s}`} stroke="#e0883a" strokeWidth={0.5 * s} opacity=".6" />
-        <ellipse cx={x} cy={y + 9 * s} rx={8 * s} ry={1.6 * s} fill="#fff" opacity=".8" />
-      </g>
-    </g>
-  );
-}
-
-/* ───────── 연꽃 유등 (물 위에 떠 있는 등) ───────── */
-
-export function LotusLantern({ x, y, s = 1, delay = 0 }: { x: number; y: number; s?: number; delay?: number }) {
-  return (
-    <g className="hb-float" style={v({ "--d": "5s", animationDelay: `${delay}s` })}>
-      <ellipse cx={x} cy={y + 2 * s} rx={16 * s} ry={4 * s} fill="#ffcf6a" opacity=".25" />
-      {/* 물에 비친 빛 */}
-      <rect x={x - 3 * s} y={y + 4 * s} width={6 * s} height={22 * s} fill="#ffcf6a" opacity=".22" className="hb-shimmer" style={v({ "--d": "2.4s", animationDelay: `${delay}s` })} />
-      {[-1, 1].map((k) => (
-        <path key={k} d={`M${x} ${y}Q${x + k * 13 * s} ${y - 2 * s} ${x + k * 12 * s} ${y - 9 * s}Q${x + k * 6 * s} ${y - 5 * s} ${x} ${y}Z`} fill="#ff9ac8" />
-      ))}
-      {[-1, 1].map((k) => (
-        <path key={k} d={`M${x} ${y}Q${x + k * 8 * s} ${y - 4 * s} ${x + k * 5 * s} ${y - 13 * s}Q${x + k * 2 * s} ${y - 7 * s} ${x} ${y}Z`} fill="#ffc2dc" />
-      ))}
-      <path d={`M${x} ${y}Q${x - 3 * s} ${y - 9 * s} ${x} ${y - 15 * s}Q${x + 3 * s} ${y - 9 * s} ${x} ${y}Z`} fill="#ffe0ec" />
-      <circle cx={x} cy={y - 8 * s} r={3 * s} fill="#fff3a8" className="hb-pulse" style={v({ "--d": "1.8s", animationDelay: `${delay}s` })} />
-      <ellipse cx={x} cy={y + 0.5 * s} rx={12 * s} ry={2.2 * s} fill="#4a9a6a" />
     </g>
   );
 }
@@ -344,62 +219,3 @@ export function Drape({ id, side, color = "#5a1a5e", dark = "#2a0a32" }: { id: s
   );
 }
 
-/* ───────── 실루엣: 소나무·갈대·풀 ───────── */
-
-export function Pine({ x, y, s = 1, color = "#0b0a26" }: { x: number; y: number; s?: number; color?: string }) {
-  const clumps: Array<[number, number, number]> = [
-    [-22, -62, 16],
-    [14, -78, 18],
-    [-6, -98, 14],
-    [26, -54, 12],
-    [-34, -46, 10],
-  ];
-  return (
-    <g fill={color} className="hb-sway" style={v({ "--d": "11s" })}>
-      <path d={`M${x} ${y}C${x - 4 * s} ${y - 30 * s} ${x + 10 * s} ${y - 50 * s} ${x + 2 * s} ${y - 96 * s}L${x + 6 * s} ${y - 96 * s}C${x + 16 * s} ${y - 52 * s} ${x + 4 * s} ${y - 28 * s} ${x + 8 * s} ${y}Z`} />
-      <path d={`M${x + 3 * s} ${y - 60 * s}Q${x - 14 * s} ${y - 64 * s} ${x - 26 * s} ${y - 60 * s}M${x + 4 * s} ${y - 78 * s}Q${x + 14 * s} ${y - 82 * s} ${x + 22 * s} ${y - 78 * s}`} stroke={color} strokeWidth={2.4 * s} fill="none" />
-      {clumps.map(([dx, dy, r], i) => (
-        <g key={i}>
-          <ellipse cx={x + dx * s} cy={y + dy * s} rx={r * 1.6 * s} ry={r * 0.55 * s} />
-          {Array.from({ length: 9 }, (_, k) => (
-            <line key={k} x1={x + (dx - r * 1.5 + (k * r * 3) / 8) * s} y1={y + (dy - r * 0.3) * s} x2={x + (dx - r * 1.4 + (k * r * 3) / 8) * s} y2={y + (dy - r * 0.9) * s} stroke={color} strokeWidth={1.1 * s} />
-          ))}
-        </g>
-      ))}
-    </g>
-  );
-}
-
-export function Reeds({ x, y, n = 7, s = 1, color = "#0a0c2a", seed = 1 }: { x: number; y: number; n?: number; s?: number; color?: string; seed?: number }) {
-  const r = rng(seed);
-  return (
-    <g>
-      {Array.from({ length: n }, (_, i) => {
-        const bx = x + (i - n / 2) * 5 * s + r() * 3;
-        const h = (34 + r() * 30) * s;
-        const bend = (r() - 0.5) * 16 * s;
-        return (
-          <g key={i} className="hb-sway" style={v({ "--d": `${5 + r() * 4}s`, animationDelay: `${-r() * 5}s` })}>
-            <path d={`M${bx} ${y}Q${bx + bend * 0.3} ${y - h * 0.6} ${bx + bend} ${y - h}`} stroke={color} strokeWidth={1.4 * s} fill="none" />
-            {i % 2 === 0 && <ellipse cx={bx + bend} cy={y - h - 5 * s} rx={2 * s} ry={6 * s} fill={color} transform={`rotate(${bend} ${bx + bend} ${y - h})`} />}
-          </g>
-        );
-      })}
-    </g>
-  );
-}
-
-export function Grass({ y, color, seed, n = 40, h = 10 }: { y: number; color: string; seed: number; n?: number; h?: number }) {
-  const r = rng(seed);
-  return (
-    <path
-      d={Array.from({ length: n }, () => {
-        const gx = r() * 375;
-        const gh = h * (0.5 + r());
-        const lean = (r() - 0.5) * 6;
-        return `M${gx - 1.4} ${y}Q${gx + lean * 0.4} ${y - gh * 0.6} ${gx + lean} ${y - gh}Q${gx + lean * 0.2} ${y - gh * 0.5} ${gx + 1.4} ${y}Z`;
-      }).join("")}
-      fill={color}
-    />
-  );
-}

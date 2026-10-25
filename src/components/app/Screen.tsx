@@ -6,6 +6,7 @@ import { SCENE_INK, sceneForPath } from "@/lib/scene";
 import { CharacterStage } from "../Character";
 import { SceneArt } from "./SceneArt";
 import { StarlitPath } from "./StarlitPath";
+import { SanctumBackdrop } from "../home/backdrops/Sanctum";
 
 /**
  * 스크롤 없는 화면 틀: 머리(header) · 본문(남는 높이만 사용) · 하단 버튼(footer).
@@ -16,7 +17,7 @@ import { StarlitPath } from "./StarlitPath";
  *  - 장면: 경로별 일러스트(SceneArt) 위에 header·scene 을 그린다. 남는 높이를 모두 쓰고, 별이는 바닥에 맞춘다
  *  - 시트: 크림색 둥근 판. children·footer 를 담고, 장면 아래를 살짝 덮어 둘이 이어져 보이게 한다
  *  - 오늘의 운세(path)는 움직이는 별빛 오솔길: sceneWalking=true면 별이 걸음에 맞춰 배경이 흐른다
- *  - backdrop 을 주면 경로별 일러스트 대신 그것을 그린다. night=true면 밤 장면처럼 밝은 글씨 + 어두운 유리 시트(뒤는 어두운 남보라)
+ *  - 홈(sanctum)은 타로 점술사의 성소: 별의 문 한가운데 수정구 (밤 장면이라 오늘의 운세처럼 어두운 유리 시트)
  */
 export function Screen({
   header,
@@ -25,8 +26,6 @@ export function Screen({
   scene,
   scroll = false,
   sceneWalking = false,
-  backdrop,
-  night = false,
   className = "",
 }: {
   header?: ReactNode;
@@ -37,23 +36,18 @@ export function Screen({
   scroll?: boolean;
   /** 장면 배경이 걷는 중처럼 흐른다 (움직이는 장면에서만, 지금은 오늘의 운세 별빛 오솔길) */
   sceneWalking?: boolean;
-  /** 장면 배경을 직접 준다 (지금은 홈 밤하늘 시안). 장면 영역을 꽉 채우게 그린다 */
-  backdrop?: ReactNode;
-  /** 밤 장면: 밝은 글씨 + 어두운 보랏빛 유리 시트 (오늘의 운세와 같은 모양) */
-  night?: boolean;
   className?: string;
 }) {
   const kind = sceneForPath(usePathname());
   if (scene !== undefined && kind !== "plain") {
-    const dark = night || kind === "path";
+    // 밤 장면(오늘의 운세 별빛 오솔길·홈 성소)은 어두운 보랏빛 유리 시트
+    const dark = kind === "path" || kind === "sanctum";
     return (
-      <div className="relative flex min-h-0 flex-1 flex-col">
-        {/* 밤 장면: 유리 시트 뒤(아래 안전 영역 포함)가 비쳐도 어둡게 */}
-        {night && <div aria-hidden className="absolute -inset-x-5 bottom-[calc(-1*env(safe-area-inset-bottom))] h-1/2 bg-[#120e34]" />}
-        <div className={`relative -mx-5 -mt-[env(safe-area-inset-top)] flex min-h-0 flex-1 flex-col px-5 pt-[env(safe-area-inset-top)] ${night ? "scene-dark" : SCENE_INK[kind]}`}>
-          {backdrop ? (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className={`relative -mx-5 -mt-[env(safe-area-inset-top)] flex min-h-0 flex-1 flex-col px-5 pt-[env(safe-area-inset-top)] ${SCENE_INK[kind]}`}>
+          {kind === "sanctum" ? (
             <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-              {backdrop}
+              <SanctumBackdrop />
             </div>
           ) : kind === "path" ? (
             <StarlitPath walking={sceneWalking} className="absolute inset-0 h-full w-full" />
@@ -67,7 +61,7 @@ export function Screen({
         </div>
         <div
           className={`relative -mx-5 -mt-6 flex shrink-0 flex-col rounded-t-[28px] px-5 pt-4 ${
-            // 밤 장면(오늘의 운세 별빛 오솔길)은 어두운 보랏빛 유리 시트, 그 밖은 크림색 시트
+            // 밤 장면은 어두운 보랏빛 유리 시트, 그 밖은 크림색 시트
             dark ? "glass-night glass-sheet" : "bg-[var(--bg)] shadow-[0_-12px_24px_-16px_rgba(110,60,40,0.45)]"
           } ${className}`}
         >

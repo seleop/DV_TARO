@@ -1,5 +1,5 @@
 /**
- * 홈 밤하늘 SVG 배경 공용 부품 (2026-10-25 사용자 결정: 디테일한 SVG, 단조롭지 않게, 성능은 신경 쓰지 말 것).
+ * 홈 성소 SVG 배경 공용 부품 (2026-10-25 사용자 결정: 디테일한 SVG, 단조롭지 않게, 성능은 신경 쓰지 말 것).
  *  - 장면 좌표계: 375×520, 아래 기준으로 잘라 맞춤(xMidYMax slice). 작은 화면은 위쪽 ~110이 잘리고, 큰 화면은 좌우가 조금 잘린다
  *  - 말풍선은 위쪽(약 y 40~110), 별이는 가운데 아래(약 y 300~480)에 서므로 주인공 그림은 y 120~330 띠에 둔다
  *  - 성운은 feTurbulence 잡음으로 만든 구름, 빛나는 것은 가우스 흐림 빛 번짐
@@ -211,7 +211,7 @@ export function Glint({ x, y, r = 1.6, color = "#fff", delay = 0, d = 4 }: { x: 
 
 /** 별똥별 (몇 초마다 비스듬히 지나간다) */
 export function ShootingStar({ id, x, y, dx = 170, dy = 70, delay = 0, d = 9, len = 60 }: { id: string; x: number; y: number; dx?: number; dy?: number; delay?: number; d?: number; len?: number }) {
-  const ang = (Math.atan2(dy, dx) * 180) / Math.PI;
+  const ang = Math.round((Math.atan2(dy, dx) * 180) / Math.PI * 100) / 100;
   return (
     <g transform={`translate(${x} ${y})`}>
       <defs>
@@ -252,20 +252,13 @@ export function Fireflies({ seed, n, x, y, color = "#fff3a8", size = 1.4 }: { se
   );
 }
 
-/** 낮게 깔려 흐르는 안개 띠 */
-export function Mist({ id, y, color = "#b9a6ff", opacity = 0.35, d = 34 }: { id: string; y: number; color?: string; opacity?: number; d?: number }) {
-  return (
-    <g className="hb-drift" style={v({ "--d": `${d}s` })} opacity={opacity} filter={`url(#${id}-haze)`}>
-      <ellipse cx="60" cy={y} rx="120" ry="16" fill={color} />
-      <ellipse cx="230" cy={y + 6} rx="140" ry="14" fill={color} />
-      <ellipse cx="380" cy={y - 4} rx="110" ry="15" fill={color} />
-    </g>
-  );
-}
+/**
+ * 삼각함수 값은 서버(Node)와 브라우저가 마지막 자리까지 같지 않아 하이드레이션 경고가 나므로 반올림해서 쓴다
+ * (덧셈·곱셈은 어디서나 같으므로 cos·sin 결과만 맞추면 된다)
+ */
+export const cos = (a: number) => Math.round(Math.cos(a) * 1e6) / 1e6;
+export const sin = (a: number) => Math.round(Math.sin(a) * 1e6) / 1e6;
 
 /** 극좌표 점 */
-export const polar = (cx: number, cy: number, r: number, deg: number): [number, number] => [cx + r * Math.cos(((deg - 90) * Math.PI) / 180), cy + r * Math.sin(((deg - 90) * Math.PI) / 180)];
+export const polar = (cx: number, cy: number, r: number, deg: number): [number, number] => [cx + r * cos(((deg - 90) * Math.PI) / 180), cy + r * sin(((deg - 90) * Math.PI) / 180)];
 
-export const BRANCHES = "子丑寅卯辰巳午未申酉戌亥".split("");
-export const STEMS = "甲乙丙丁戊己庚辛壬癸".split("");
-export const HANJA_FONT = '"Noto Serif KR", "Nanum Myeongjo", "Apple SD Gothic Neo", "Malgun Gothic", serif';
