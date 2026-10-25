@@ -20,8 +20,8 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
-- **캐릭터 이름 짓기·홈 메뉴 좌우 슬라이드 (main 미반영, 2026-10-25 사용자 결정)**: 브랜치 `claude/vigilant-hopper-402c8c`
-  - **운영 Supabase에 마이그레이션 `20261025160000_mascot_name.sql` 적용 필요** (`profiles.mascot_name` 1~8자, NULL = 아직 안 지음). 적용 전에 배포돼도 `getProfile`이 칸 없음(42703)을 이름 없이 읽어 앱은 동작하지만, 이름 저장은 실패한다
+- **캐릭터 이름 짓기·홈 메뉴 좌우 슬라이드 (main 반영, 2026-10-25 사용자 결정)**: 브랜치 `claude/vigilant-hopper-402c8c`
+  - 마이그레이션 `20261025160000_mascot_name.sql` (`profiles.mascot_name` 1~8자, NULL = 아직 안 지음) — **운영 Supabase 적용 완료 2026-10-25** (사용자가 SQL Editor에서 실행). 적용 전에 배포돼도 `getProfile`이 칸 없음(42703)을 이름 없이 읽어 앱은 동작하지만, 이름 저장은 실패한다
   - 이름 짓기: 새 가입자는 가입 마무리에서 '???'가 별 친구로 정체를 드러낸 뒤 이름을 묻는다(`AuthFlow` finale: reveal → name → named → ask). 기존 사용자는 홈에서 한 번 묻는다(`NamingOverlay`, 질문은 위쪽 말풍선). '그대로'도 기본 이름으로 저장해 다시 묻지 않음. 프로필 설정에서 바꾸기(`MascotNameSheet`). 공용 입력 `MascotNameForm`, 규칙 `lib/mascot-name.ts`(글자·숫자·띄어쓰기·꾸밈 기호 일부)
   - 이름 쓰기: `(app)/layout`의 `MascotNameProvider` → `useMascotName()` (타로·출생 정보·사주 풀이·오늘의 운세·홈 문구, 마스코트 쓰다듬기 안내). 로그인 전 화면은 기본 이름
   - 홈 메뉴: 카드 네 장(오늘의 운세·사주·타로·별자리)을 좌우로 넘김(`HomeMenu`, 옆 카드 누르면 넘기기·점·화살표 키). 넘기면 마스코트가 그 메뉴 의상으로 갈아입고(0.3초 뒤, 의상 그림 미리 받기) 말풍선이 메뉴 이야기(`lib/home-menu.ts`). `CharacterStage`에 `quietIntro`(등장 인사 말풍선 생략) 추가
