@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { Children, useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
-import { SCENE_INK, isBackdropKind, sceneForPath } from "@/lib/scene";
+import { SCENE_INK, isBackdropKind, sceneForPath, type BackdropKind } from "@/lib/scene";
 import { CharacterStage } from "../Character";
 import { SceneArt } from "./SceneArt";
 import { SceneBackdrop } from "../backdrops";
@@ -25,6 +25,7 @@ export function Screen({
   scene,
   scroll = false,
   sceneWalking = false,
+  backdrop,
   className = "",
 }: {
   header?: ReactNode;
@@ -35,9 +36,12 @@ export function Screen({
   scroll?: boolean;
   /** 장면 배경이 걷는 중처럼 흐른다 (움직이는 장면에서만, 지금은 오늘의 운세 별빛 오솔길) */
   sceneWalking?: boolean;
+  /** 장면 배경을 직접 고른다 (홈: 고른 메뉴 카드의 배경). 없으면 경로로 정한다 */
+  backdrop?: BackdropKind;
   className?: string;
 }) {
-  const kind = sceneForPath(usePathname());
+  const path = sceneForPath(usePathname());
+  const kind = backdrop && path !== "plain" ? backdrop : path;
   if (scene !== undefined && kind !== "plain") {
     // 기능별 밤 장면은 어두운 보랏빛 유리 시트
     const dark = isBackdropKind(kind);

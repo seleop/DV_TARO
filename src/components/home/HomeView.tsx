@@ -20,7 +20,7 @@ const THANKS_MS = 4200;
 
 /**
  * 홈 화면: 장면(마스코트·말풍선) + 시트(좌우로 넘기는 메뉴)를 한 상태로 묶는다.
- *  - 메뉴를 넘기면 마스코트가 그 메뉴 의상으로 갈아입고 말풍선이 메뉴 이야기를 한다
+ *  - 메뉴를 넘기면 마스코트가 그 메뉴 의상으로 갈아입고, 배경도 그 기능의 배경으로 바뀌고, 말풍선이 메뉴 이야기를 한다
  *  - 마스코트 이름을 아직 짓지 않은 사용자에게는 한 번 이름을 묻는다(NamingOverlay)
  */
 export function HomeView({ displayName, hasPrimary, viewedToday }: { displayName: string; hasPrimary: boolean; viewedToday: boolean }) {
@@ -29,14 +29,19 @@ export function HomeView({ displayName, hasPrimary, viewedToday }: { displayName
   const [index, setIndex] = useState(0);
   const [swiped, setSwiped] = useState(false);
   const [pose, setPose] = useState(HOME_MENUS[0].pose);
+  const [backdrop, setBackdrop] = useState(HOME_MENUS[0].backdrop);
   const [asking, setAsking] = useState(false);
   const [thanks, setThanks] = useState<string | null>(null);
   const menu = HOME_MENUS[index];
 
   useEffect(() => {
-    const t = setTimeout(() => setPose(thanks ? "happy" : menu.pose), POSE_DELAY_MS);
+    // 마스코트 의상과 배경은 함께, 카드가 멈춘 뒤 잠깐 있다가 바꾼다 (넘기는 중에 깜빡이지 않게)
+    const t = setTimeout(() => {
+      setPose(thanks ? "happy" : menu.pose);
+      setBackdrop(menu.backdrop);
+    }, POSE_DELAY_MS);
     return () => clearTimeout(t);
-  }, [menu.pose, thanks]);
+  }, [menu.pose, menu.backdrop, thanks]);
 
   useEffect(() => {
     if (named) return;
@@ -63,7 +68,7 @@ export function HomeView({ displayName, hasPrimary, viewedToday }: { displayName
 
   return (
     <>
-      <Screen scene={<HomeGreeting name={displayName} pose={pose} menu={swiped ? menu : null} viewedToday={viewedToday} special={asking && !named ? ASK_NAME_LINE : thanks} />}>
+      <Screen backdrop={backdrop} scene={<HomeGreeting name={displayName} pose={pose} menu={swiped ? menu : null} viewedToday={viewedToday} special={asking && !named ? ASK_NAME_LINE : thanks} />}>
         <HomeMenu
           index={index}
           onIndexChange={(i) => {

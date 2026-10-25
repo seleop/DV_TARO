@@ -20,7 +20,7 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
-- **진행 중: 메인 화면 세션/claude/vigilant-hopper-402c8c — 홈 메뉴 카드마다 배경 바꾸기** (`src/components/home/**`, `lib/home-menu.ts`, `Screen.tsx`에 배경 지정 항목 추가, `lib/scene.ts` 홈 장면, 점집 입구 `Porch` 정리, `globals.css`에 전환 애니메이션 추가만)
+- **홈 메뉴 카드마다 배경 (main 미반영, 2026-10-25 사용자 결정: 처음부터 카드 배경)**: 홈 배경 = 고른 카드의 기능 배경(오늘=새벽 언덕길·사주=한옥 서재·타로=성소·별자리=천문대), 마스코트 의상과 함께 카드가 멈춘 뒤 0.3초에 0.6초 겹쳐 바뀜(`SceneBackdrop` 층 전환, `Screen`의 `backdrop`). 점집 입구(`Porch`)는 삭제
 - **의상 다시 만들기·기능별 밤 장면 배경·가입 화면 별이 (main 반영, 2026-10-25 사용자 결정)**: 브랜치 `claude/vigilant-hopper-402c8c`
   - 배경(디테일 SVG, `src/components/backdrops/`, 장면 종류 `lib/scene.ts`): 홈=점집 입구(`Porch`) · 타로=성소, 수정구를 제단 위로(`Sanctum`) · 오늘의 운세=새벽빛 언덕길, 걸음에 맞춰 흐름(`DawnPath`, 예전 `StarlitPath` 대체) · 사주 목록=달빛 한옥 서재(`Study`) · 별자리=산꼭대기 천문대(`Observatory`). 모두 밤 장면(밝은 글씨 + 어두운 유리 시트). `Screen`이 `SceneBackdrop`으로 그림
   - 주의: 깜빡임 클래스(hb-candle·hb-tw·hb-pulse)는 opacity 를 애니메이션하므로, 은은한 빛 덮개는 투명도를 감싼 `<g opacity>`에 둔다
