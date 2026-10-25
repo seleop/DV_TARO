@@ -54,6 +54,7 @@ const STYLE = `
     0%,100% { transform: scale(1,1); opacity: .95 } 12% { transform: scale(.92,1.08) } 25% { transform: scale(1.06,.94); opacity: .8 }
     41% { transform: scale(.96,1.1); opacity: 1 } 63% { transform: scale(1.04,.92) } 80% { transform: scale(.94,1.06); opacity: .85 }
   }
+  @keyframes hb-candle { 0%,100% { opacity: .9 } 18% { opacity: .72 } 34% { opacity: 1 } 52% { opacity: .8 } 71% { opacity: .96 } 86% { opacity: .76 } }
   @keyframes hb-shimmer { 0%,100% { opacity: .2; transform: scaleX(.7) } 50% { opacity: .9; transform: scaleX(1.15) } }
   @keyframes hb-rise { 0% { transform: translateY(0); opacity: 0 } 8% { opacity: 1 } 85% { opacity: .9 } 100% { transform: translateY(-420px); opacity: 0 } }
   @keyframes hb-ff { 0%,100% { transform: translate(0,0); opacity: .2 } 30% { opacity: 1 } 50% { transform: translate(6px,-10px); opacity: .7 } 75% { transform: translate(-4px,-4px); opacity: 1 } }
@@ -66,12 +67,13 @@ const STYLE = `
   .hb-sway { animation: hb-sway var(--d, 7s) ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
   .hb-drift { animation: hb-drift var(--d, 30s) ease-in-out infinite alternate; }
   .hb-flicker { animation: hb-flicker var(--d, 1.3s) ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+  .hb-candle { animation: hb-candle var(--d, 1.6s) ease-in-out infinite; }
   .hb-shimmer { animation: hb-shimmer var(--d, 3s) ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
   .hb-rise { animation: hb-rise var(--d, 26s) linear infinite; }
   .hb-ff { animation: hb-ff var(--d, 5s) ease-in-out infinite; }
   .hb-shoot { animation: hb-shoot var(--d, 9s) ease-out infinite; opacity: 0; }
   @media (prefers-reduced-motion: reduce) {
-    .hb-tw, .hb-pulse, .hb-spin, .hb-spin-r, .hb-float, .hb-sway, .hb-drift, .hb-flicker, .hb-shimmer, .hb-rise, .hb-ff { animation: none; }
+    .hb-tw, .hb-pulse, .hb-spin, .hb-spin-r, .hb-float, .hb-sway, .hb-drift, .hb-flicker, .hb-candle, .hb-shimmer, .hb-rise, .hb-ff { animation: none; }
     .hb-shoot { display: none; }
   }
 `;

@@ -74,7 +74,7 @@ export function HomeGreeting({ name }: { name: string }) {
 
       {/* 별이를 누르면 별이 말풍선과 겹치지 않게 홈 말풍선을 잠깐 숨긴다 */}
       <div
-        className="flex min-h-0 w-full flex-1 flex-col"
+        className="flex min-h-0 w-full flex-1 flex-col justify-end"
         onClickCapture={() => {
           setHiddenUntilTap(true);
           clearTimeout(hideTimer.current);
@@ -84,7 +84,8 @@ export function HomeGreeting({ name }: { name: string }) {
           }, TAP_HIDE_MS);
         }}
       >
-        <FitCharacter min={90} max={300} className="w-full items-end" />
+        {/* 별이는 뒤의 수정구가 보이게 작게: 최대 230, 낮은 화면일수록 더 작게 (2026-10-25 사용자 요청) */}
+        <FitCharacter min={90} max={230} className="max-h-[calc(100dvh-428px)] w-full items-end" />
       </div>
       <span className="sr-only" aria-live="polite">
         {visible ? line : ""}

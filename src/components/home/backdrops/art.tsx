@@ -159,14 +159,30 @@ export function Candle({ id, x, y, h = 26, w = 8, delay = 0 }: { id: string; x: 
           <stop offset=".75" stopColor="#ffab3a" />
           <stop offset="1" stopColor="#ff6a2a" stopOpacity="0" />
         </radialGradient>
+        {/* 불꽃에서 가장자리로 부드럽게 사라지는 빛 (테두리 없는 둥근 번짐) */}
+        <radialGradient id={`${id}-halo`}>
+          <stop offset="0" stopColor="#fff1b8" stopOpacity=".75" />
+          <stop offset=".16" stopColor="#ffd98a" stopOpacity=".42" />
+          <stop offset=".42" stopColor="#ffb35a" stopOpacity=".16" />
+          <stop offset="1" stopColor="#ff9a4a" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id={`${id}-pool`}>
+          <stop offset="0" stopColor="#ffcf7a" stopOpacity=".42" />
+          <stop offset="1" stopColor="#ffcf7a" stopOpacity="0" />
+        </radialGradient>
       </defs>
-      <ellipse cx={x} cy={y - h - 6} rx={w * 2.6} ry={w * 3} fill="#ffcf6a" opacity=".18" className="hb-pulse" style={v({ "--d": "2.6s", animationDelay: `${delay}s` })} />
+      {/* 바닥에 비친 빛 */}
+      <ellipse cx={x} cy={y + 1} rx={w * 3.4} ry={w * 0.9} fill={`url(#${id}-pool)`} className="hb-candle" style={v({ "--d": `${1.7 + (delay % 0.5)}s`, animationDelay: `${delay}s` })} />
+      {/* 불꽃 둘레 빛: 크기는 그대로, 밝기만 촛불처럼 불규칙하게 일렁인다 */}
+      <circle cx={x} cy={y - h - 7} r={w * 4.4} fill={`url(#${id}-halo)`} className="hb-candle" style={v({ "--d": `${1.5 + (delay % 0.7)}s`, animationDelay: `${-delay}s` })} />
       <rect x={x - w / 2} y={y - h} width={w} height={h} rx={1.5} fill={`url(#${id}-wax)`} />
+      {/* 불빛을 받은 초 윗부분 */}
+      <rect x={x - w / 2} y={y - h} width={w} height={Math.min(h, 7)} rx={1.5} fill="#ffd98a" opacity=".35" />
       <path d={`M${x - w / 2} ${y - h + 2}q${w * 0.2} ${4} 0 ${7}`} stroke="#fff6e6" strokeWidth="1.4" fill="none" />
       <ellipse cx={x} cy={y - h} rx={w / 2} ry={1.2} fill="#f3e6d4" />
       <line x1={x} y1={y - h} x2={x} y2={y - h - 2.5} stroke="#3a2a20" strokeWidth=".8" />
       <g className="hb-flicker" style={v({ "--d": `${1.1 + (delay % 0.6)}s`, animationDelay: `${delay}s` })}>
-        <path d={`M${x} ${y - h - 13}C${x + 3.6} ${y - h - 7} ${x + 3} ${y - h - 2} ${x} ${y - h - 1.5}C${x - 3} ${y - h - 2} ${x - 3.6} ${y - h - 7} ${x} ${y - h - 13}Z`} fill={`url(#${id}-fl)`} />
+        <path d={`M${x} ${y - h - 13}C${x + 3.6} ${y - h - 7} ${x + 3} ${y - h - 2} ${x} ${y - h - 1.5}C${x - 3} ${y - h - 2} ${x - 3.6} ${y - h - 7} ${x} ${y - h - 13}Z`} fill={`url(#${id}-fl)`} filter={`url(#${id.split("-")[0]}-glow)`} />
       </g>
       <ellipse cx={x} cy={y} rx={w * 0.9} ry={1.6} fill="#000" opacity=".3" />
     </g>
