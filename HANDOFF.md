@@ -21,6 +21,13 @@
 
 ## 현재 상태 (2026-10-23)
 - 진행 중: 사주 퍼널 세션/`claude/agitated-goldwasser-447da7` — 마스코트 대화형 결과('별이의 해설석'): 사주·오늘의 운세·타로 결과 API에 대사·추천 질문 추가(`src/lib/ai/*`, `src/lib/dialogue.ts`, `src/lib/tarot/*`, `src/app/api/saju/**`, `src/app/api/tarot/**`), 이후 사주 결과 화면(`src/app/(app)/saju/**`, `src/components/saju/**`). 마스코트 렌더러·에셋·배경·`Screen.tsx`·홈은 건드리지 않음
+  - **대화형 결과 API 완료 (main 미반영, 화면은 아직 기존 그대로)**: 사주·오늘의 운세·타로 응답 `content.dialogue`에 별이 대사·추천 질문(답까지 미리 생성 → 눌러도 추가 AI 호출 없음). 공용 규칙 `src/lib/dialogue.ts`, 스키마 `schemas.ts`의 `*DialogueSchema`, 프롬프트 `DIALOGUE_RULES`(버전 saju·daily·tarot 2026-10-25.1)
+    - 사주 `dialogue.beats[]`: `say`·`focus`(장: 원국→타고난 나→일과 재물→사람→흐름, `sajuChapters`)·`pillar`(원국 판에서 가리킬 기둥)·`cue` / 오늘의 운세: `opening`·`branches.love|work|luck`(갈림길)·`step`(오늘의 한 걸음) + 응답 `tomorrow`(내일 일진·십신·미리 쓴 예고 문구, AI 없음) / 타로: `opening`·`cards[{position, beats}]`·`overall`
+    - 공통 `suggestions[3]`(deeper·action·topic, 질문+답)·`closing`. 동작 신호 `cue` → 실제 동작은 `motionForCue`(새 동작 talk·point·listen·anticipate·sit이 없으면 지금 동작으로 대체)
+    - 근거 검사: 사주·운세 대사도 입력에 없는 간지 차단, 타로 대사는 위치 순서 일치·뽑히지 않은 카드 언급 차단(`findForeignCards`)
+    - 예전에 저장된 해석(대사 없음)·모의 응답은 해석 내용으로 대사를 만들어 붙임(`*DialogueFallback`). 오늘의 운세 캐시 키에 프롬프트 버전이 들어 있어 배포 당일 이미 본 운세는 한 번 새로 생성됨
+    - 타로 직접 고르기: `POST /api/tarot`에 `picks`(펼친 78장 중 고른 자리, 위치 순서대로) — 서버가 덱을 새로 섞고 그 자리 카드를 줌(분포는 그냥 뽑기와 같음). 화면은 아직 고르기 UI 없음
+    - 별이 새 동작(talk·point·listen·anticipate·sit)은 별도 세션 제안함(캐릭터 영역)
 - **의상 다시 만들기·기능별 밤 장면 배경·가입 화면 별이 (main 반영, 2026-10-25 사용자 결정)**: 브랜치 `claude/vigilant-hopper-402c8c`
   - 배경(디테일 SVG, `src/components/backdrops/`, 장면 종류 `lib/scene.ts`): 홈=점집 입구(`Porch`) · 타로=성소, 수정구를 제단 위로(`Sanctum`) · 오늘의 운세=새벽빛 언덕길, 걸음에 맞춰 흐름(`DawnPath`, 예전 `StarlitPath` 대체) · 사주 목록=달빛 한옥 서재(`Study`) · 별자리=산꼭대기 천문대(`Observatory`). 모두 밤 장면(밝은 글씨 + 어두운 유리 시트). `Screen`이 `SceneBackdrop`으로 그림
   - 주의: 깜빡임 클래스(hb-candle·hb-tw·hb-pulse)는 opacity 를 애니메이션하므로, 은은한 빛 덮개는 투명도를 감싼 `<g opacity>`에 둔다

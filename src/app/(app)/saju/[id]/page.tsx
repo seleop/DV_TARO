@@ -14,7 +14,7 @@ export default async function SajuPage({ params }: PageProps<"/saju/[id]">) {
   return (
     <SajuResult
       view={sajuView(calc)}
-      initialReading={await latestSajuReading(user.id, id)}
+      initialReading={await latestSajuReading(user.id, calc)}
       aiProvider={getConfig().AI_PROVIDER}
       isPrimary={user.primaryCalculationId === id}
       displayName={user.displayName}

@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { findUngroundedGanji, generateDailyReading, generateHoroscope, generateSajuReading, generateTarotReading } from "@/lib/ai/interpret";
+import { dailyReadingCacheKey, findForeignCards, findUngroundedGanji, generateDailyReading, generateHoroscope, generateSajuReading, generateTarotReading, latestSajuReading } from "@/lib/ai/interpret";
 import { MockProvider, setAiProviderForTests, type GenerateRequest } from "@/lib/ai/provider";
-import { SajuReadingSchema } from "@/lib/ai/schemas";
+import { DailyDialogueSchema, SajuDialogueSchema, SajuReadingSchema, TarotDialogueSchema } from "@/lib/ai/schemas";
 import { estimateCostUsd } from "@/lib/ai/cost";
-import { buildSajuPayload } from "@/lib/ai/prompts";
+import { buildSajuPayload, PROMPT_VERSIONS } from "@/lib/ai/prompts";
 import { LimitError } from "@/lib/limits";
-import { getCalculation, saveCalculation } from "@/lib/repo/records";
+import { getCalculation, saveCalculation, saveReading } from "@/lib/repo/records";
 import { logUsage } from "@/lib/repo/usage";
 import { parseBirthInput } from "@/lib/saju/input";
 import { calculateSaju } from "@/lib/saju/service";
@@ -13,7 +13,7 @@ import { lunarJavascriptEngine } from "@/lib/saju/engines/lunar-javascript";
 import { manseryeokEngine } from "@/lib/saju/engines/manseryeok";
 import type { SajuEngine } from "@/lib/saju/engines/types";
 import { signFor } from "@/lib/horoscope/zodiac";
-import { DECK, drawCards } from "@/lib/tarot/deck";
+import { DECK, drawCards, validPicks } from "@/lib/tarot/deck";
 import { freshEnv, makeUser, rawPg } from "./helpers/db";
 
 const LOCAL = [manseryeokEngine, lunarJavascriptEngine] as SajuEngine[];
@@ -60,7 +60,7 @@ describe("AI 해석 생성 (모의 공급자)", () => {
     expect(r.content.yearlyOutlook.yearGanji).toBe("병오");
     const rows = await usageRows();
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ kind: "ai", ok: true, error_code: null, prompt_version: "saju-2026-10-23.1" });
+    expect(rows[0]).toMatchObject({ kind: "ai", ok: true, error_code: null, prompt_version: PROMPT_VERSIONS.saju });
     expect(rows[0].user_anon).not.toBe(u.id);
   });
 
@@ -214,5 +214,137 @@ describe("타로·별자리 데이터", () => {
   it("경계일에는 안내 문구", () => {
     expect(signFor(3, 21).cuspNote).not.toBeNull();
     expect(signFor(4, 5).cuspNote).toBeNull();
+  });
+});
+
+describe("대화형 결과 (별이 대사·추천 질문)", () => {
+  beforeEach(async () => freshEnv({ LIMIT_AI_PER_USER_PER_MINUTE: "20", LIMIT_AI_PER_USER_PER_DAY: "50", BUDGET_MONTHLY_USD: "20" }));
+
+  it("사주 해석은 장 순서 대사·원국 가리키기·추천 질문 3개를 함께 돌려준다", async () => {
+    const u = await makeUser();
+    const calc = await storedCalc(u.id);
+    const r = await generateSajuReading(u.id, calc, { focus: [], targetYear: 2026 });
+    const d = r.content.dialogue!;
+    expect(SajuDialogueSchema.safeParse(d).success).toBe(true);
+    expect(d.beats[0]).toMatchObject({ focus: "pillars", pillar: "day", cue: "point" });
+    expect(d.beats[0].say).toContain("계유(癸酉)");
+    expect(d.suggestions.map((s) => s.kind)).toEqual(["deeper", "action", "topic"]);
+  });
+
+  it("사주 대사에 입력에 없는 간지가 나오면 저장하지 않는다 (AI_UNGROUNDED)", async () => {
+    setAiProviderForTests(
+      new MockProvider((req: GenerateRequest<unknown>) => {
+        const d = req.mock() as { dialogue: { beats: Array<{ say: string }> } };
+        d.dialogue.beats[1].say = "갑자(甲子) 대운이 오면 크게 바뀌어.";
+        return d;
+      }),
+    );
+    const u = await makeUser();
+    const calc = await storedCalc(u.id);
+    await expect(generateSajuReading(u.id, calc, { focus: [], targetYear: 2026 })).rejects.toMatchObject({ code: "AI_UNGROUNDED" });
+  });
+
+  it("예전에 저장된 사주 해석(대사 없음)은 읽을 때 해석 내용으로 대사를 만든다", async () => {
+    const u = await makeUser();
+    const calc = await storedCalc(u.id);
+    const fresh = await generateSajuReading(u.id, calc, { focus: [], targetYear: 2026 });
+    const old = { ...fresh.content, dialogue: undefined };
+    await saveReading(u.id, { kind: "saju", calculationId: calc.id, cacheKey: null, provider: "mock", model: "mock", promptVersion: "saju-2026-10-23.1", content: old });
+    const latest = await latestSajuReading(u.id, calc);
+    expect(latest!.promptVersion).toBe("saju-2026-10-23.1");
+    expect(SajuDialogueSchema.safeParse(latest!.content.dialogue).success).toBe(true);
+  });
+
+  it("오늘의 운세는 갈래별 대사·오늘의 한 걸음·내일 예고를 돌려주고, 캐시된 예전 결과에도 대사를 붙인다", async () => {
+    const u = await makeUser();
+    const calc = await storedCalc(u.id);
+    const now = new Date(Date.UTC(2024, 0, 1, 3));
+    const a = await generateDailyReading(u.id, calc, { regenerate: false, now });
+    expect(DailyDialogueSchema.safeParse(a.reading.content.dialogue).success).toBe(true);
+    expect(a.reading.content.dialogue!.branches.love.length).toBeGreaterThan(0);
+    // 2024-01-02 일진 을축, 일간 계 기준 을 = 식신
+    expect(a.tomorrow).toMatchObject({ date: "2024-01-02", day: "을축", tenGod: "식신" });
+    expect(a.tomorrow!.teaser).toContain("식신");
+
+    await (await rawPg()).query("delete from public.fortune_readings");
+    await saveReading(u.id, {
+      kind: "daily",
+      calculationId: calc.id,
+      cacheKey: dailyReadingCacheKey(calc.id, "2024-01-01"),
+      provider: "mock",
+      model: "mock",
+      promptVersion: "old",
+      content: { ...a.reading.content, dialogue: undefined },
+    });
+    const b = await generateDailyReading(u.id, calc, { regenerate: false, now });
+    expect(b.cached).toBe(true);
+    expect(DailyDialogueSchema.safeParse(b.reading.content.dialogue).success).toBe(true);
+  });
+
+  it("타로는 카드마다 대사를 주고, 위치가 다르거나 뽑히지 않은 카드를 말하면 거부한다", async () => {
+    const u = await makeUser();
+    const r = await generateTarotReading(u.id, "이번 프로젝트 어떻게 하면 잘 될까?", "three");
+    const d = r.content.dialogue!;
+    expect(TarotDialogueSchema.safeParse(d).success).toBe(true);
+    expect(d.cards.map((c) => c.position)).toEqual(["과거", "현재", "앞으로의 흐름"]);
+    expect(d.cards[0].beats[0].cue).toBe("reveal");
+
+    const fixed = () => [{ id: "major-3", position: "오늘의 메시지", nameKo: "여황제", nameEn: "The Empress", reversed: false, keywords: ["풍요"] }];
+    await expect(generateTarotReading(u.id, "질문입니다", "one", fixed)).resolves.toBeTruthy();
+    setAiProviderForTests(
+      new MockProvider((req: GenerateRequest<unknown>) => {
+        const x = req.mock() as { dialogue: { overall: Array<{ say: string }> } };
+        x.dialogue.overall[0].say = "탑 카드처럼 갑자기 바뀔 수도 있어.";
+        return x;
+      }),
+    );
+    await expect(generateTarotReading(u.id, "질문입니다", "one", fixed)).rejects.toMatchObject({ code: "AI_UNGROUNDED" });
+
+    setAiProviderForTests(
+      new MockProvider((req: GenerateRequest<unknown>) => {
+        const x = req.mock() as { dialogue: { cards: Array<{ position: string }> } };
+        x.dialogue.cards[0].position = "미래";
+        return x;
+      }),
+    );
+    await expect(generateTarotReading(u.id, "질문입니다", "one", fixed)).rejects.toMatchObject({ code: "AI_UNGROUNDED" });
+  });
+
+  it("뽑히지 않은 카드 찾기: '여황제 카드'를 '황제'로, 별이·달빛 같은 일상어를 카드로 오탐하지 않는다", () => {
+    const drawn = [{ id: "major-3" }]; // 여황제
+    expect(findForeignCards({ t: "'여황제' 카드가 풍요를 말해. 별이가 달빛 아래서 웃었어." }, drawn)).toEqual([]);
+    expect(findForeignCards({ t: "황제 카드도 함께 떠올려 봐" }, drawn)).toEqual(["황제"]);
+    expect(findForeignCards({ t: "like The Tower" }, drawn)).toEqual(["탑"]);
+  });
+
+  it("타로 직접 고르기: 고른 자리의 카드를 주고, 잘못 고르면 막는다", () => {
+    let n = 0;
+    const seq = () => n++ % 2;
+    const cards = drawCards("three", seq, [0, 10, 77]);
+    expect(cards.map((c) => c.position)).toEqual(["과거", "현재", "앞으로의 흐름"]);
+    expect(new Set(cards.map((c) => c.id)).size).toBe(3);
+    expect(validPicks("three", [1, 1, 2])).toBe(false);
+    expect(validPicks("three", [1, 2])).toBe(false);
+    expect(validPicks("one", [78])).toBe(false);
+    expect(validPicks("one", [77])).toBe(true);
+    expect(() => drawCards("one", seq, [1, 2])).toThrow(RangeError);
+  });
+
+  it("타로 직접 고르기: 같은 자리를 골라도 카드가 고르게 나온다 (섞기는 고른 자리와 무관)", () => {
+    const hits = new Map<string, number>();
+    // 결정적 난수 (mulberry32)
+    let s = 12345;
+    const rand = (max: number) => {
+      s = (s + 0x6d2b79f5) | 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return Math.floor((((t ^ (t >>> 14)) >>> 0) / 4294967296) * max);
+    };
+    for (let i = 0; i < 7800; i++) {
+      const [c] = drawCards("one", rand, [5]);
+      hits.set(c.id, (hits.get(c.id) ?? 0) + 1);
+    }
+    expect(hits.size).toBe(78);
+    expect(Math.max(...hits.values())).toBeLessThan(200); // 기댓값 100
   });
 });

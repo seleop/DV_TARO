@@ -9,7 +9,8 @@ import { logUsage } from "../repo/usage";
 import { BRANCHES, BRANCH_HANJA, STEMS, STEM_HANJA, type Stem } from "../saju/ganji";
 import { verifiedDateGanji, type SajuComputation } from "../saju/service";
 import { signById, signFor, type ZodiacSign } from "../horoscope/zodiac";
-import { drawCards, SPREADS, type DrawnCard, type SpreadId } from "../tarot/deck";
+import { DECK, drawCards, SPREADS, type DrawnCard, type SpreadId } from "../tarot/deck";
+import { dailyDialogueFallback, sajuDialogueFallback, tarotDialogueFallback, tomorrowTeaser } from "../dialogue";
 import { estimateCostUsd, worstCaseCostUsd } from "./cost";
 import {
   buildDailyPayload,
@@ -127,6 +128,16 @@ const FOCUS_OPTIONS = ["성격", "직업", "재물", "연애", "인간관계", "
 export type Focus = (typeof FOCUS_OPTIONS)[number];
 export { FOCUS_OPTIONS };
 
+/** 별이 대사에 쓰는 확정 사실 (예전 해석·모의 응답의 대사 만들기용) */
+function sajuFacts(c: SajuComputation) {
+  return { day: c.canonical.pillars.day, dayMaster: c.canonical.dayMaster, elements: c.canonical.elements };
+}
+
+/** 대사가 없는 해석(예전에 저장된 것)에는 해석 내용으로 만든 대사를 붙인다 */
+function withSajuDialogue(r: SajuReading, c: SajuComputation): SajuReading {
+  return r.dialogue ? r : { ...r, dialogue: sajuDialogueFallback(r, sajuFacts(c)) };
+}
+
 function mockSaju(c: SajuComputation, targetYear: number, yearGanji: string | null): SajuReading {
   const dm = c.canonical.dayMaster;
   const el = c.canonical.elements;
@@ -175,7 +186,7 @@ export async function generateSajuReading(
     apiSchema: ApiSajuReadingSchema,
     strictSchema: SajuReadingSchema,
     maxTokens: 16000,
-    mock: () => mockSaju(c, opts.targetYear, yearGanji),
+    mock: () => withSajuDialogue(mockSaju(c, opts.targetYear, yearGanji), c),
     grounding: (d) => {
       const bad = findUngroundedGanji(d, allowed);
       if (d.yearlyOutlook.yearGanji && d.yearlyOutlook.yearGanji !== yearGanji) bad.push(`yearGanji:${d.yearlyOutlook.yearGanji}`);
@@ -183,12 +194,14 @@ export async function generateSajuReading(
       return bad;
     },
   });
-  const id = await saveReading(userId, { kind: "saju", calculationId: calc.id, cacheKey: null, ...r });
-  return { id, kind: "saju", calculationId: calc.id, provider: r.provider, model: r.model, promptVersion: r.promptVersion, content: r.content, createdAt: Date.now() };
+  const content = withSajuDialogue(r.content, c);
+  const id = await saveReading(userId, { kind: "saju", calculationId: calc.id, cacheKey: null, ...r, content });
+  return { id, kind: "saju", calculationId: calc.id, provider: r.provider, model: r.model, promptVersion: r.promptVersion, content, createdAt: Date.now() };
 }
 
-export function latestSajuReading(userId: string, calcId: string) {
-  return getLatestReadingForCalculation<SajuReading>(userId, calcId, "saju");
+export async function latestSajuReading(userId: string, calc: StoredCalculation) {
+  const r = await getLatestReadingForCalculation<SajuReading>(userId, calc.id, "saju");
+  return r ? { ...r, content: withSajuDialogue(r.content, calc.result) } : null;
 }
 
 // ── 오늘의 운세 ──
@@ -204,10 +217,11 @@ export async function generateDailyReading(userId: string, calc: StoredCalculati
   const today = await verifiedDateGanji(opts.now ?? new Date());
   if (!today) throw new AiError("AI_UNGROUNDED", "오늘의 일진을 검증하지 못했습니다.");
   const tenGod = getTenGod(dm.stem as Stem, today.day[0] as Stem) as string;
+  const tomorrow = await tomorrowPreview(dm.stem as Stem, opts.now ?? new Date());
   const cacheKey = dailyReadingCacheKey(calc.id, today.date);
   if (!opts.regenerate) {
     const hit = await findReadingByCacheKey<DailyReading>(userId, cacheKey);
-    if (hit) return { reading: hit, today: { ...today, tenGod }, cached: true };
+    if (hit) return { reading: { ...hit, content: withDailyDialogue(hit.content) }, today: { ...today, tenGod }, tomorrow, cached: true };
   }
   const allowed = allowedGanji(c, [today.day, today.month, today.year]);
   const r = await runAi<DailyReading>({
@@ -217,8 +231,8 @@ export async function generateDailyReading(userId: string, calc: StoredCalculati
     user: buildDailyPayload(c, { date: today.date, day: today.day, tenGod }),
     apiSchema: ApiDailyReadingSchema,
     strictSchema: DailyReadingSchema,
-    maxTokens: 6000,
-    mock: () => ({
+    maxTokens: 8000,
+    mock: () => withDailyDialogue({
       headline: `[모의] ${tenGod}의 날`,
       highlights: [
         { emoji: "🌱", text: `오늘 일진 ${today.day}의 기운이 들어와요.` },
@@ -237,12 +251,26 @@ export async function generateDailyReading(userId: string, calc: StoredCalculati
     }),
     grounding: (d) => findUngroundedGanji(d, allowed),
   });
-  const id = await saveReading(userId, { kind: "daily", calculationId: calc.id, cacheKey, ...r });
+  const content = withDailyDialogue(r.content);
+  const id = await saveReading(userId, { kind: "daily", calculationId: calc.id, cacheKey, ...r, content });
   return {
-    reading: { id, kind: "daily" as const, calculationId: calc.id, provider: r.provider, model: r.model, promptVersion: r.promptVersion, content: r.content, createdAt: Date.now() },
+    reading: { id, kind: "daily" as const, calculationId: calc.id, provider: r.provider, model: r.model, promptVersion: r.promptVersion, content, createdAt: Date.now() },
     today: { ...today, tenGod },
+    tomorrow,
     cached: false,
   };
+}
+
+function withDailyDialogue(r: DailyReading): DailyReading {
+  return r.dialogue ? r : { ...r, dialogue: dailyDialogueFallback(r) };
+}
+
+/** 내일 예고: 내일 일진·십신은 계산으로 미리 알 수 있어 AI 없이 미리 써 둔 문구로 보여 준다. 검증 실패 시 null */
+async function tomorrowPreview(dayStem: Stem, now: Date) {
+  const t = await verifiedDateGanji(new Date(now.getTime() + 24 * 3600_000));
+  if (!t) return null;
+  const tenGod = getTenGod(dayStem, t.day[0] as Stem) as string;
+  return { date: t.date, day: t.day, tenGod, teaser: tomorrowTeaser(tenGod) };
 }
 
 // ── 타로 ──
@@ -256,21 +284,49 @@ export async function generateTarotReading(userId: string, question: string, spr
     user: buildTarotPayload(question, sp.label, cards),
     apiSchema: ApiTarotReadingSchema,
     strictSchema: TarotReadingSchema,
-    maxTokens: 8000,
-    mock: () => ({
-      overall: "[모의 응답] 뽑힌 카드의 키워드를 바탕으로 한 종합 해석 예시입니다.",
-      cards: cards.map((c) => ({ position: c.position, cardName: c.nameKo, interpretation: `${c.reversed ? "역방향" : "정방향"} — ${c.keywords.join(", ")}의 의미를 담은 예시 해석입니다.` })),
-      advice: "카드의 키워드를 오늘 하루의 질문으로 삼아 보세요.",
-      disclaimer: "타로는 오락과 자기 성찰을 위한 참고 정보입니다.",
-    }),
+    maxTokens: 10000,
+    mock: () => withTarotDialogue(
+      {
+        overall: "[모의 응답] 뽑힌 카드의 키워드를 바탕으로 한 종합 해석 예시입니다.",
+        cards: cards.map((c) => ({ position: c.position, cardName: c.nameKo, interpretation: `${c.reversed ? "역방향" : "정방향"} — ${c.keywords.join(", ")}의 의미를 담은 예시 해석입니다.` })),
+        advice: "카드의 키워드를 오늘 하루의 질문으로 삼아 보세요.",
+        disclaimer: "타로는 오락과 자기 성찰을 위한 참고 정보입니다.",
+      },
+      cards,
+    ),
     grounding: (d) => {
       const names = new Set(cards.map((c) => c.nameKo));
-      return d.cards.filter((x) => !names.has(x.cardName)).map((x) => `card:${x.cardName}`);
+      const bad = d.cards.filter((x) => !names.has(x.cardName)).map((x) => `card:${x.cardName}`);
+      if (d.dialogue) {
+        // 대사의 카드 순서·위치는 뽑힌 카드 그대로, 뽑히지 않은 카드는 언급하지 않는다
+        const positions = d.dialogue.cards.map((x) => x.position).join("|");
+        if (positions !== cards.map((c) => c.position).join("|")) bad.push(`dialogue-positions:${positions}`);
+        bad.push(...findForeignCards(d.dialogue, cards).map((n) => `dialogue-card:${n}`));
+      }
+      return bad;
     },
   });
-  const content = { ...r.content, drawn: cards, spread, question };
+  const content = { ...withTarotDialogue(r.content, cards), drawn: cards, spread, question };
   const id = await saveReading(userId, { kind: "tarot", calculationId: null, cacheKey: null, provider: r.provider, model: r.model, promptVersion: r.promptVersion, content });
   return { id, content, provider: r.provider, model: r.model };
+}
+
+function withTarotDialogue(r: TarotReading, cards: DrawnCard[]): TarotReading {
+  return r.dialogue ? r : { ...r, dialogue: tarotDialogueFallback(r, cards) };
+}
+
+/**
+ * 대사에 뽑히지 않은 카드가 나오는지 찾는다. 한 글자 카드 이름(별·달·힘·탑)은 일상어와 겹치므로
+ * 한국어 이름은 "○○ 카드" 꼴로 쓴 것만(앞이 다른 글자면 제외: '여황제 카드'는 '황제'가 아님), 영어 이름은 그대로 찾는다.
+ */
+export function findForeignCards(output: unknown, drawn: ReadonlyArray<{ id: string }>): string[] {
+  const text = JSON.stringify(output);
+  const lower = text.toLowerCase();
+  const drawnIds = new Set(drawn.map((c) => c.id));
+  // 따옴표는 JSON 문자열 안이라 \" 로 들어 있을 수 있다
+  const quote = `(?:\\\\?["'‘’])?`;
+  const named = (ko: string) => new RegExp(`(?:^|[^가-힣])${quote}${ko.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}${quote}\\s?카드`).test(text);
+  return DECK.filter((c) => !drawnIds.has(c.id) && (named(c.nameKo) || lower.includes(c.nameEn.toLowerCase()))).map((c) => c.nameKo);
 }
 
 // ── 별자리 운세 ──

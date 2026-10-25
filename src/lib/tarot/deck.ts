@@ -92,13 +92,41 @@ export interface DrawnCard {
   keywords: string[];
 }
 
-/** 서버 측 암호학적 난수로 중복 없이 카드를 뽑는다. */
-export function drawCards(spread: SpreadId, rand: (max: number) => number = randomInt): DrawnCard[] {
+/**
+ * 서버 측 암호학적 난수로 중복 없이 카드를 뽑는다.
+ * picks(사용자가 펼친 카드 중 고른 자리, 0~77, 위치 순서대로)를 주면 덱을 새로 섞은 뒤 그 자리의 카드를 준다.
+ * 섞는 순서는 고른 자리와 무관한 균등 난수라, 결과 분포는 그냥 뽑을 때와 같다 (사용자는 뒷면만 보고 고른다).
+ */
+export function drawCards(spread: SpreadId, rand: (max: number) => number = randomInt, picks?: readonly number[]): DrawnCard[] {
   const positions = SPREADS[spread].positions;
-  const pool = [...DECK];
-  return positions.map((position) => {
-    const card = pool.splice(rand(pool.length), 1)[0];
+  const toDrawn = (card: TarotCard, position: string): DrawnCard => {
     const reversed = rand(2) === 1;
     return { id: card.id, position, nameKo: card.nameKo, nameEn: card.nameEn, reversed, keywords: reversed ? card.reversed : card.upright };
-  });
+  };
+  if (picks) {
+    if (!validPicks(spread, picks)) throw new RangeError("picks");
+    const deck = shuffle(DECK, rand);
+    return positions.map((position, i) => toDrawn(deck[picks[i]], position));
+  }
+  const pool = [...DECK];
+  return positions.map((position) => toDrawn(pool.splice(rand(pool.length), 1)[0], position));
+}
+
+/** 고른 자리가 스프레드 장수만큼, 덱 범위 안에서, 겹치지 않는지 */
+export function validPicks(spread: SpreadId, picks: readonly number[]) {
+  return (
+    picks.length === SPREADS[spread].positions.length &&
+    new Set(picks).size === picks.length &&
+    picks.every((p) => Number.isInteger(p) && p >= 0 && p < DECK.length)
+  );
+}
+
+/** Fisher–Yates 섞기 */
+function shuffle<T>(items: readonly T[], rand: (max: number) => number): T[] {
+  const a = [...items];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = rand(i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }

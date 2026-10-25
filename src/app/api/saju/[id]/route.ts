@@ -8,7 +8,7 @@ import { sajuView } from "@/lib/views";
 export const GET = handler({ auth: "user" }, async ({ user, params }) => {
   const calc = await getCalculation(user.id, params.id);
   if (!calc) throw new HttpError(404, "NOT_FOUND", "기록을 찾을 수 없습니다.");
-  return json({ calculation: sajuView(calc), reading: await latestSajuReading(user.id, calc.id), isPrimary: user.primaryCalculationId === calc.id });
+  return json({ calculation: sajuView(calc), reading: await latestSajuReading(user.id, calc), isPrimary: user.primaryCalculationId === calc.id });
 });
 
 const Patch = z.object({ primary: z.literal(true) }).strict();

@@ -139,6 +139,19 @@ describe("API 라우트", () => {
     expect((await r.json()).error.code).toBe("CALC_LIMIT_DAY");
   });
 
+  it("타로: 펼친 카드 중 고른 자리로 뽑고, 장수가 맞지 않거나 겹치면 400", async () => {
+    const u = await makeUser();
+    loginAs(u.id);
+    const ok = await tarotRoute.POST(req("POST", { question: "어떻게 하면 좋을까", spread: "three", picks: [3, 40, 77] }), ctx());
+    expect(ok.status).toBe(201);
+    const body = await ok.json();
+    expect(body.content.drawn).toHaveLength(3);
+    expect(body.content.dialogue.cards).toHaveLength(3);
+    expect((await tarotRoute.POST(req("POST", { question: "질문입니다", spread: "three", picks: [1, 2] }), ctx())).status).toBe(400);
+    expect((await tarotRoute.POST(req("POST", { question: "질문입니다", spread: "one", picks: [78] }), ctx())).status).toBe(400);
+    expect((await tarotRoute.POST(req("POST", { question: "질문입니다", spread: "three", picks: [5, 5, 6] }), ctx())).status).toBe(400);
+  });
+
   it("전체 기록 삭제 API", async () => {
     const u = await makeUser();
     loginAs(u.id);
