@@ -3,7 +3,7 @@ import { requirePageUser } from "@/lib/auth/session";
 import { listCalculations } from "@/lib/repo/records";
 import { HomeButton } from "@/components/app/HomeButton";
 import { FitCharacter, Pager, Screen } from "@/components/app/Screen";
-import { LinkButton, StatusBadge } from "@/components/ui";
+import { LinkButton } from "@/components/ui";
 
 /** 가족·친구 목록은 한 장에 이만큼씩 보여 주고 좌우로 넘긴다 (스크롤 없는 화면) */
 const PER_PAGE = 3;
@@ -21,7 +21,7 @@ export default async function SajuHub() {
         <div className="flex min-h-0 flex-1 flex-col items-center pt-[clamp(3.25rem,8dvh,4.75rem)] text-center">
           <HomeButton />
           <h1 className="shrink-0 text-[26px] font-extrabold text-ink">사주 풀이</h1>
-          <p className="mt-0.5 shrink-0 text-sm text-ink-2">여러 계산 엔진으로 교차검증한 원국을 AI가 풀어 드려요</p>
+          <p className="mt-0.5 shrink-0 text-sm text-ink-2">사주책을 펼쳐 한 장씩 풀어 드려요</p>
           <FitCharacter pose="saju" min={90} max={280} className="w-full items-end" />
         </div>
       }
@@ -39,9 +39,8 @@ export default async function SajuHub() {
           <span className="min-w-0 flex-1">
             <span className="text-xs text-accent">내 사주 · 프로필 설정에서 변경</span>
             <span className="mt-0.5 block truncate text-[17px] font-semibold">{primary.label ?? user.displayName}</span>
-            <span className="text-sm text-ink-2">{primary.dayPillar ? `${primary.dayPillar} 일주` : "일주 미확정"}</span>
+            <span className="text-sm text-ink-2">{primary.dayPillar ? `${primary.dayPillar} 일주` : "일주 미정"}</span>
           </span>
-          <StatusBadge status={primary.status} />
         </Link>
       ) : (
         <div className="glass flex shrink-0 flex-col items-center rounded-[24px] p-4 text-center">
@@ -65,11 +64,10 @@ export default async function SajuHub() {
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-medium">{r.label ?? "이름 없음"}</span>
                         <span className="text-xs text-ink-2">
-                          {r.dayPillar ? `${r.dayPillar} 일주` : "일주 미확정"}
+                          {r.dayPillar ? `${r.dayPillar} 일주` : "일주 미정"}
                           {r.hasReading ? " · AI 해석 있음" : ""}
                         </span>
                       </span>
-                      <StatusBadge status={r.status} />
                     </Link>
                   </li>
                 ))}

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { BRAND } from "@/config/brand";
+import { MASCOT_POSTERS } from "@/config/mascot-assets";
 import { useMascotName } from "@/components/MascotName";
 import type { SajuReading } from "@/lib/ai/schemas";
 import { api, errorText } from "@/lib/client";
@@ -67,6 +68,7 @@ export function SajuStory({
   const shareRef = useRef<HTMLDivElement>(null);
   /** 같은 칸·질문을 다시 눌러도 새 대사로 보이게 붙이는 번호 */
   const seq = useRef(0);
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
 
   const c = view.canonical;
   const name = view.label ?? displayName;
@@ -227,20 +229,23 @@ export function SajuStory({
   } else {
     stage = (
       <div className="flex h-full flex-col gap-2">
-        {r.dialogue!.suggestions.map((s, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => ask(i)}
-            className={`rounded-2xl px-4 py-2.5 text-left text-[14px] font-semibold transition active:scale-[0.98] ${asked === i ? "bg-white/20 ring-2 ring-[#c9b3ff]" : "bg-tile"}`}
-          >
-            <span aria-hidden className="mr-1.5 text-[#c9b3ff]">
-              ✦
-            </span>
-            {s.question}
-          </button>
-        ))}
-        <div className="mt-auto flex justify-center gap-2 text-[13px]">
+        {/* 질문이 길면(최대 40자) 두 줄이 되므로, 목록은 이 칸 안에서만 스크롤해 아래 버튼을 가리지 않게 */}
+        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain p-0.5">
+          {r.dialogue!.suggestions.map((s, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => ask(i)}
+              className={`rounded-2xl px-4 py-2.5 text-left text-[14px] font-semibold transition active:scale-[0.98] ${asked === i ? "bg-white/20 ring-2 ring-[#c9b3ff]" : "bg-tile"}`}
+            >
+              <span aria-hidden className="mr-1.5 text-[#c9b3ff]">
+                ✦
+              </span>
+              {s.question}
+            </button>
+          ))}
+        </div>
+        <div className="flex shrink-0 justify-center gap-2 text-[13px]">
           <button type="button" onClick={prev} aria-label="이전 이야기" className="rounded-full bg-tile px-3 py-1.5 font-semibold">
             ‹
           </button>
@@ -261,9 +266,26 @@ export function SajuStory({
     );
   }
 
+  /** 좌우로 밀어 이야기 넘기기 (가로로 충분히, 세로보다 크게 움직였을 때만. 세로 스크롤은 그대로) */
+  function onSwipeEnd(e: React.PointerEvent) {
+    const s = swipeStart.current;
+    swipeStart.current = null;
+    if (!s || !r || menu) return;
+    const dx = e.clientX - s.x;
+    const dy = e.clientY - s.y;
+    if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx < 0 && !atEnd) next();
+    else if (dx > 0 && !atStart) prev();
+  }
+
   const title = ch?.title ?? "사주 원국";
   return (
-    <>
+    <div
+      className="flex min-h-0 flex-1 touch-pan-y flex-col"
+      onPointerDown={(e) => (swipeStart.current = { x: e.clientX, y: e.clientY })}
+      onPointerUp={onSwipeEnd}
+      onPointerCancel={() => (swipeStart.current = null)}
+    >
       <Screen
         header={
           <TopBar
@@ -282,7 +304,8 @@ export function SajuStory({
               <h1 className="rounded-full bg-black/40 px-3.5 py-1 text-[14px] font-bold text-white backdrop-blur-sm">{title}</h1>
               {(reading?.provider ?? aiProvider) === "mock" && <p className="rounded-full bg-black/30 px-2 text-[10px] text-white/80">모의 응답 · 실제 AI 해석이 아니에요</p>}
             </div>
-            <div className="shrink-0 pt-3">
+            {/* 추천 질문의 답은 최대 400자라, 말풍선이 별이를 밀어내지 않게 높이를 묶고 넘치면 말풍선 안에서만 스크롤 */}
+            <div className="max-h-[min(34dvh,200px)] shrink-0 overflow-y-auto overscroll-contain pt-3">
               <SpeechBubble id={line.key} label={mascot} text={line.text} accent={line.key.startsWith("s-")} />
             </div>
             <FitSize min={70} max={210} className="items-end">
@@ -364,9 +387,9 @@ export function SajuStory({
 
       {/* 공유 카드 (화면 밖에 그려 두고 이미지로 저장). 출생 정보는 넣지 않는다 */}
       <div aria-hidden className="pointer-events-none fixed -left-[9999px] top-0">
-        <ShareCard ref={shareRef} view={view} name={name} summary={r?.summary ?? null} />
+        <ShareCard ref={shareRef} view={view} summary={r?.summary ?? null} />
       </div>
-    </>
+    </div>
   );
 }
 
@@ -448,13 +471,14 @@ function DaewoonCard({ daewoon, now }: { daewoon: { forward: boolean; pillars: s
   );
 }
 
-/** 공유용 결과 카드 (이미지로 저장). 일주·요약만, 생년월일·시각·출생지는 넣지 않는다 */
-function ShareCard({ ref, view, name, summary }: { ref: React.Ref<HTMLDivElement>; view: SajuView; name: string; summary: string | null }) {
+/** 공유용 결과 카드 (이미지로 저장). 일주·요약만 — 이름·생년월일·시각·출생지는 넣지 않는다 (docs/DATA_POLICY.md). 이미지 모서리가 남지 않게 네모 */
+function ShareCard({ ref, view, summary }: { ref: React.Ref<HTMLDivElement>; view: SajuView; summary: string | null }) {
   const c = view.canonical;
   return (
-    <div ref={ref} className="w-[360px] rounded-[28px] bg-[linear-gradient(160deg,#2a1f5c,#120d36)] p-6 text-center text-white">
+    <div ref={ref} className="w-[360px] bg-[linear-gradient(160deg,#2a1f5c,#120d36)] p-6 text-center text-white">
       <p className="text-[13px] text-white/70">{BRAND.appName} · 사주</p>
-      <p className="mt-3 text-[15px] text-white/80">{josa(name, "은/는")}</p>
+      {/* eslint-disable-next-line @next/next/no-img-element -- 이미지 저장용 카드라 next/image 최적화가 필요 없다 */}
+      <img src={MASCOT_POSTERS.saju} alt="" width={96} height={103} className="mx-auto mt-2 h-[103px] w-auto" />
       <p className="hanja mt-1 text-[44px] font-bold leading-none">{c.pillars.day?.hanja ?? "?"}</p>
       <p className="mt-1 text-[20px] font-bold">{c.pillars.day ? `${c.pillars.day.ganji} 일주` : "일주 미정"}</p>
       <p className="mt-1 text-[13px] text-white/70">

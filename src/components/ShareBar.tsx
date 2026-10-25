@@ -41,7 +41,10 @@ export function ShareBar({ targetRef, fileName, shareTitle, shareText }: { targe
         flash("이미지를 저장했어요");
       }
     } catch (e) {
-      if ((e as Error)?.name !== "AbortError") flash("이미지를 만들지 못했어요");
+      if ((e as Error)?.name !== "AbortError") {
+        console.warn("[ShareBar] 이미지 만들기 실패", e); // 기기별 원인 확인용 (사용자 정보 없음)
+        flash("이미지를 만들지 못했어요");
+      }
     } finally {
       setBusy(null);
     }

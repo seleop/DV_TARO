@@ -8,7 +8,7 @@ import { api, errorText, formatDate } from "@/lib/client";
 import { CharacterStage } from "./Character";
 import { HomeButton } from "./app/HomeButton";
 import { Pager } from "./app/Screen";
-import { Button, Card, ErrorBox, Field, H2, inputCls, StatusBadge } from "./ui";
+import { Button, Card, ErrorBox, Field, H2, inputCls } from "./ui";
 
 type Calc = { id: string; label: string | null; status: "MATCH" | "CONDITIONAL_MATCH" | "MISMATCH" | "UNVERIFIABLE"; createdAt: number; dayPillar: string | null; hasReading: boolean };
 type Other = { id: string; kind: string; createdAt: number; title: string; summary: string };
@@ -122,10 +122,9 @@ export function MeClient({
                           {c.id === user.primaryCalculationId && <span className="ml-1.5 rounded-full bg-accent/20 px-2 py-0.5 text-[10px] text-accent">내 사주</span>}
                         </span>
                         <span className="text-xs text-ink-2">
-                          {c.dayPillar ? `${c.dayPillar} 일주` : "일주 미확정"} · {formatDate(c.createdAt)}
+                          {c.dayPillar ? `${c.dayPillar} 일주` : "일주 미정"} · {formatDate(c.createdAt)}
                         </span>
                       </Link>
-                      <StatusBadge status={c.status} />
                       <button
                         className="min-h-11 px-1 text-xs text-bad/80"
                         disabled={busy === c.id}
