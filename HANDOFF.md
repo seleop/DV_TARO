@@ -20,7 +20,7 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
-- **의상 다시 만들기·기능별 밤 장면 배경·가입 화면 별이 (main 미반영, 2026-10-25 사용자 결정)**: 브랜치 `claude/vigilant-hopper-402c8c`
+- **의상 다시 만들기·기능별 밤 장면 배경·가입 화면 별이 (main 반영, 2026-10-25 사용자 결정)**: 브랜치 `claude/vigilant-hopper-402c8c`
   - 배경(디테일 SVG, `src/components/backdrops/`, 장면 종류 `lib/scene.ts`): 홈=점집 입구(`Porch`) · 타로=성소, 수정구를 제단 위로(`Sanctum`) · 오늘의 운세=새벽빛 언덕길, 걸음에 맞춰 흐름(`DawnPath`, 예전 `StarlitPath` 대체) · 사주 목록=달빛 한옥 서재(`Study`) · 별자리=산꼭대기 천문대(`Observatory`). 모두 밤 장면(밝은 글씨 + 어두운 유리 시트). `Screen`이 `SceneBackdrop`으로 그림
   - 주의: 깜빡임 클래스(hb-candle·hb-tw·hb-pulse)는 opacity 를 애니메이션하므로, 은은한 빛 덮개는 투명도를 감싼 `<g opacity>`에 둔다
   - 의상: `build_fox.py` `head_top()`으로 정수리·귀 끝을 재서 모자를 얹고(예전엔 머리 뼈 끝에 붙여 묻힘) 소품을 몸 가까이·빛 고리와 함께. 의상 세 벌 재렌더·시트 화질 82 (`docs/MASCOT.md` 16절)
