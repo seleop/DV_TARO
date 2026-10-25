@@ -13,6 +13,8 @@ export interface User {
   role: Role;
   status: "active" | "disabled";
   primaryCalculationId: string | null;
+  /** 사용자가 지어 준 마스코트 이름. null = 아직 짓지 않음 (화면에는 기본 이름) */
+  mascotName: string | null;
   createdAt: number;
 }
 
@@ -36,6 +38,7 @@ interface ProfileRow {
   role: Role;
   status: "active" | "disabled";
   primary_calculation_id: string | null;
+  mascot_name: string | null;
   created_at: Date;
 }
 
@@ -46,6 +49,7 @@ const toUser = (r: ProfileRow): User => ({
   role: r.role,
   status: r.status,
   primaryCalculationId: r.primary_calculation_id,
+  mascotName: r.mascot_name,
   createdAt: toMs(r.created_at),
 });
 
@@ -150,7 +154,7 @@ export async function signUp(
     await release();
     throw e;
   }
-  return { id: userId, email, displayName: input.displayName, role, status: "active", primaryCalculationId: null, createdAt: Date.now() };
+  return { id: userId, email, displayName: input.displayName, role, status: "active", primaryCalculationId: null, mascotName: null, createdAt: Date.now() };
 }
 
 /** ADMIN_EMAILS 에 있는데 아직 일반 사용자라면 관리자로 올린다 (로그인 시 호출). */
@@ -164,12 +168,17 @@ export async function updateDisplayName(userId: string, displayName: string) {
   await asService((q) => q.query("update public.profiles set display_name = $1 where id = $2", [displayName, userId]));
 }
 
+/** 마스코트 이름 짓기·바꾸기 (검사는 lib/mascot-name.ts 의 MascotNameSchema) */
+export async function updateMascotName(userId: string, mascotName: string) {
+  await asService((q) => q.query("update public.profiles set mascot_name = $1 where id = $2", [mascotName, userId]));
+}
+
 // ── 조회 ──
 export async function getProfile(userId: string): Promise<User | null> {
   if (!/^[0-9a-f-]{36}$/i.test(userId)) return null;
   const [row] = await asService((q) =>
     q.query<ProfileRow>(
-      `select p.id, u.email, p.display_name, p.role, p.status, p.primary_calculation_id, p.created_at
+      `select p.id, u.email, p.display_name, p.role, p.status, p.primary_calculation_id, p.mascot_name, p.created_at
        from public.profiles p join auth.users u on u.id = p.id where p.id = $1`,
       [userId],
     ),

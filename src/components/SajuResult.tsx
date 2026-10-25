@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { BRAND } from "@/config/brand";
+import { useMascotName } from "@/components/MascotName";
 import type { SajuReading } from "@/lib/ai/schemas";
 import { api, errorText, formatDate } from "@/lib/client";
 import { josa } from "@/lib/josa";
@@ -75,6 +76,7 @@ export function SajuResult({
   isPrimary: boolean;
   displayName: string;
 }) {
+  const mascot = useMascotName();
   const router = useRouter();
   const [reading, setReading] = useState<Reading>(initialReading);
   const [focus, setFocus] = useState<string[]>([]);
@@ -317,7 +319,7 @@ export function SajuResult({
         <div className="space-y-2">
           <ErrorBox message={error} />
           <Button size="lg" className="w-full" onClick={generate} loading={busy === "reading"} disabled={!canInterpret || !!busy}>
-            {busy === "reading" ? `${josa(BRAND.characterName, "이/가")} 풀이하는 중…` : reading ? "AI 해석 다시 받기" : "AI 해석 받기"}
+            {busy === "reading" ? `${josa(mascot, "이/가")} 풀이하는 중…` : reading ? "AI 해석 다시 받기" : "AI 해석 받기"}
           </Button>
         </div>
       </BottomActions>

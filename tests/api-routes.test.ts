@@ -190,6 +190,24 @@ describe("API 라우트", () => {
     expect((await r.json()).error.code).toBe("SIGNUP_CLOSED");
   });
 
+  it("마스코트 이름: 처음엔 없음(null), 짓기·바꾸기, 규칙에 어긋나면 400·DB 제약", async () => {
+    const u = await makeUser();
+    loginAs(u.id);
+    const me = async () => (await (await meRoute.GET(req("GET"), ctx())).json()).user;
+    expect((await me()).mascotName).toBeNull();
+    expect((await meRoute.PATCH(req("PATCH", { mascotName: "  루나  " }), ctx())).status).toBe(200);
+    expect((await me()).mascotName).toBe("루나");
+    expect((await meRoute.PATCH(req("PATCH", { mascotName: "반짝 별 ☆" }), ctx())).status).toBe(200);
+    expect((await me()).mascotName).toBe("반짝 별 ☆");
+    for (const bad of ["", "   ", "아주아주긴이름입니다", "<b>", "별{이}"]) {
+      expect((await meRoute.PATCH(req("PATCH", { mascotName: bad }), ctx())).status).toBe(400);
+    }
+    expect((await meRoute.PATCH(req("PATCH", {}), ctx())).status).toBe(400);
+    expect((await me()).mascotName).toBe("반짝 별 ☆");
+    // DB 도 8자를 넘는 이름은 막는다
+    await expect((await rawPg()).query("update public.profiles set mascot_name = $1 where id = $2", ["아홉글자짜리이름임", u.id])).rejects.toThrow();
+  });
+
   it("프로필 설정: 닉네임 변경, 출생 정보 저장 → 내 사주 지정, 변경 시 이전 내 사주 삭제", async () => {
     const u = await makeUser();
     loginAs(u.id);

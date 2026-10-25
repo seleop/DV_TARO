@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BRAND } from "@/config/brand";
+import { useMascotName } from "@/components/MascotName";
 import { HomeButton } from "@/components/app/HomeButton";
 import { FitCharacter, Pager, Screen } from "@/components/app/Screen";
 import { SafeForm } from "@/components/SafeForm";
@@ -54,6 +54,7 @@ function TarotCard({ card, flipped, delay }: { card: Drawn | null; flipped: bool
 }
 
 export default function TarotPage() {
+  const mascot = useMascotName();
   const [spread, setSpread] = useState<(typeof SPREADS)[number]["id"]>("three");
   const [question, setQuestion] = useState("");
   const [busy, setBusy] = useState(false);
@@ -156,7 +157,7 @@ ${c.overall}`} />}
           <div className="flex min-h-0 flex-1 flex-col items-center pt-[clamp(3.25rem,8dvh,4.75rem)] text-center">
             <HomeButton />
             <p className="shrink-0 text-[clamp(15px,2.4dvh,18px)] font-semibold leading-snug text-ink">
-              마음속 질문을 떠올리면 {josa(BRAND.characterName, "이/가")} 카드를 펼쳐 줄게요
+              마음속 질문을 떠올리면 {josa(mascot, "이/가")} 카드를 펼쳐 줄게요
             </p>
             <h1 className="text-gradient mt-1 shrink-0 text-[clamp(28px,4.6dvh,36px)] font-extrabold">타로</h1>
             {busy ? (

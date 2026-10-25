@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { BRAND } from "@/config/brand";
+import { useMascotName } from "@/components/MascotName";
 import { api, errorText } from "@/lib/client";
 import { josa } from "@/lib/josa";
 import { BIRTHPLACES } from "@/lib/saju/input";
@@ -60,6 +60,7 @@ export interface BirthInitial {
 const STEPS = ["생년월일", "시각·성별", "확인"] as const;
 
 export function BirthForm({ mode, initial, embedded }: { mode: "profile" | "other"; initial?: BirthInitial | null; embedded?: boolean }) {
+  const mascot = useMascotName();
   const router = useRouter();
   const makePrimary = mode === "profile";
   const [calendar, setCalendar] = useState<"solar" | "lunar">(initial?.calendar ?? "solar");
@@ -139,7 +140,7 @@ export function BirthForm({ mode, initial, embedded }: { mode: "profile" | "othe
             <p className="shrink-0 text-[clamp(16px,2.5dvh,19px)] font-semibold leading-snug">
               태어난 날을 알려 주면
               <br />
-              {josa(BRAND.characterName, "이/가")} 운세를 점쳐 줄게요
+              {josa(mascot, "이/가")} 운세를 점쳐 줄게요
             </p>
           </div>
         )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BRAND } from "@/config/brand";
+import { useMascotName } from "@/components/MascotName";
 import type { DailyReading } from "@/lib/ai/schemas";
 import { api, errorText } from "@/lib/client";
 import { josa } from "@/lib/josa";
@@ -24,6 +24,7 @@ const TABS = [
 ] as const;
 
 export function TodayClient({ calculationId, displayName, aiProvider }: { calculationId: string; displayName: string; aiProvider: string }) {
+  const mascot = useMascotName();
   const [data, setData] = useState<Result | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -82,7 +83,7 @@ export function TodayClient({ calculationId, displayName, aiProvider }: { calcul
     <div className="flex min-h-0 flex-1 flex-col items-center text-center" onClick={skipWalk}>
       {walking ? (
         <>
-          <p className="mt-1 shrink-0 text-[17px] font-semibold text-ink">{josa(BRAND.characterName, "이/가")} 점치는 중…</p>
+          <p className="mt-1 shrink-0 text-[17px] font-semibold text-ink">{josa(mascot, "이/가")} 점치는 중…</p>
           <p className="mt-0.5 shrink-0 text-sm text-ink-2">오늘의 일진을 따라 걷고 있어요</p>
           <FitCharacter pose="thinking" min={100} max={280} className="w-full items-end" />
         </>
