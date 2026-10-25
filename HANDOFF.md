@@ -20,6 +20,7 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
+- **진행 중: 메인 화면 세션/claude/vigilant-hopper-402c8c — 홈 배경을 밤하늘 일러스트로(시안 6개 비교 중)** (새 `src/components/home/HomeBackdrops.tsx`, `src/app/(app)/page.tsx`, `src/components/home/**`, `Screen.tsx`에 `backdrop`·`night` 선택 항목 추가만, 홈 확정 후 `lib/scene.ts`의 홈 색만)
 - **회원가입 3D 우주 최적화·품질 검증 완료(2026-10-25, 브랜치 `claude/youthful-shamir-aa9bf7`, main 미반영)**: 인증·저장 로직 변경 없음
   - 성능: 해상도 배율 = min(기기 배율, 단계 상한 lite 1.5·full 2, 그리는 픽셀 수 상한 lite 160만·full 300만), 메모리 4GB 이하 기기도 lite (`journey.ts` `cosmicBudget`). 해상도를 최저(0.75)로 낮춰도 30fps 미만이 두 번 이어지면 대체 모드(`lowerBudget`: 성운·구름·입자 절반, 혜성 1개)
   - 메모리 누수 수정: three.js `Sprite`는 모든 인스턴스가 모듈 전역 사각형 도형을 함께 쓰고 렌더러마다 그 도형에 dispose 리스너를 걸어, 화면을 오갈 때마다 이전 렌더러·WebGL 문맥·캔버스·분리된 화면 DOM이 남았음 → 캔버스가 사라질 때 공유 도형 dispose (`CosmicScene.tsx` `ReleaseSharedSprite`). 배포 빌드에서 로그인↔가입 30회 왕복 힙 10→23MB가 9→12MB(평탄), 분리된 SVG 0개
