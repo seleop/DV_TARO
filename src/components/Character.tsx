@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { BRAND } from "@/config/brand";
 import { StarRabbit } from "./character/StarRabbit";
+import { useMascotName } from "./MascotName";
 import { FortuneMascot } from "./FortuneMascot";
 import { MASCOT_SHEETS, type MascotState } from "@/config/mascot-assets";
 import { idleReactionFor, introFor, mascotStateFor, nextIdleReactionDelay, outfitFor, resolveSheet, tapReactionFor, type Outfit } from "@/lib/mascot";
@@ -49,8 +50,11 @@ export function CharacterStage({
   expression: fixedExpression,
   character = BRAND.character.renderer,
   zoom = BRAND.character.mascotZoom,
+  quietIntro = false,
   className = "",
 }: {
+  /** 등장 인사 말풍선을 띄우지 않는다 (화면이 따로 말풍선을 보여 줄 때, 지금은 홈). 등장 동작은 그대로 */
+  quietIntro?: boolean;
   /** 3D 마스코트 확대 배율 (기본값은 brand.ts). 무대 전체(레이아웃 크기 포함)를 키워 주변과 겹치지 않는다 */
   zoom?: number;
   /** 캐릭터 종류: 3D 마스코트 별이(기본) 또는 SVG 별토끼 */
@@ -65,6 +69,7 @@ export function CharacterStage({
   className?: string;
 }) {
   const size = character === "mascot3d" ? Math.round(baseSize * zoom) : baseSize;
+  const mascotName = useMascotName();
   const base = baseLook(pose, mood);
   const reduced = useReducedMotion();
   const [temp, setTemp] = useState<{ expression: Expression; token: number } | null>(null);
@@ -166,7 +171,7 @@ export function CharacterStage({
         if (!alive) return;
         const id = Date.now();
         setReaction({ state: intro, id });
-        if (interactive && (mood || pose === "default")) {
+        if (interactive && !quietIntro && (mood || pose === "default")) {
           const pool = linesFor(mood ?? pose);
           setBubble({ text: pool[Math.floor(Math.random() * pool.length)], id });
           later(() => setBubble((b) => (b?.id === id ? null : b)), BUBBLE_MS);
@@ -191,7 +196,7 @@ export function CharacterStage({
       alive = false;
       clearTimeout(t);
     };
-  }, [is3d, size, intro, interactive, mood, pose, outfit, later]);
+  }, [is3d, size, intro, interactive, quietIntro, mood, pose, outfit, later]);
 
   function onTap() {
     const now = Date.now();
@@ -247,9 +252,9 @@ export function CharacterStage({
       {!is3d && <div className="absolute inset-[12%] rounded-full bg-[radial-gradient(circle,rgba(177,140,255,0.45),transparent_70%)] blur-2xl animate-glow" />}
       {orbs && <Orbs size={size} />}
       {showBubble && (
-        <div key={bubble.id} className="char-bubble pointer-events-none absolute left-1/2 top-0 z-10 w-max max-w-[min(240px,80vw)] rounded-2xl bg-white px-3.5 py-2 text-center text-[14px] font-semibold leading-snug text-[#2a2440] shadow-[0_8px_24px_-6px_rgba(80,40,160,0.6)]">
+        <div key={bubble.id} className="char-bubble bubble-soft pointer-events-none absolute left-1/2 top-0 z-10 w-max max-w-[min(240px,80vw)] rounded-[18px] px-3.5 py-2 text-center text-[14px] font-semibold leading-snug">
           {bubble.text}
-          <span className="absolute -bottom-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 bg-white" aria-hidden />
+          <span className="absolute -bottom-[6.5px] left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-b border-r border-[rgba(124,92,201,0.18)] bg-[#f7f4fc]" aria-hidden />
         </div>
       )}
       {/* 그림자 필터는 움직이는 스프라이트에 걸면 매 프레임 다시 그려져 무거우므로 SVG 별토끼에만 */}
@@ -261,7 +266,7 @@ export function CharacterStage({
               <button
                 type="button"
                 onClick={onTap}
-                aria-label={`${BRAND.characterName} 쓰다듬기`}
+                aria-label={`${mascotName} 쓰다듬기`}
                 className="block h-full w-full cursor-pointer touch-manipulation select-none rounded-full outline-none [-webkit-touch-callout:none] focus-visible:ring-2 focus-visible:ring-accent/70"
               >
                 {figure}
