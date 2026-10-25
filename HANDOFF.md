@@ -20,7 +20,7 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
-- 진행 중: 사주 퍼널 세션/`claude/agitated-goldwasser-447da7` — 사주 결과 퍼널(`src/app/(app)/saju/**`, `SajuResult.tsx`→`src/components/saju/**`, `BirthForm.tsx`, `src/app/api/saju/**`, `saju-flow.ts`, 사주 해석 `src/lib/ai/*`). 마스코트·배경·`Screen.tsx`는 건드리지 않음
+- 진행 중: 사주 퍼널 세션/`claude/agitated-goldwasser-447da7` — 마스코트 대화형 결과('별이의 해설석'): 사주·오늘의 운세·타로 결과 API에 대사·추천 질문 추가(`src/lib/ai/*`, `src/lib/dialogue.ts`, `src/lib/tarot/*`, `src/app/api/saju/**`, `src/app/api/tarot/**`), 이후 사주 결과 화면(`src/app/(app)/saju/**`, `src/components/saju/**`). 마스코트 렌더러·에셋·배경·`Screen.tsx`·홈은 건드리지 않음
 - **의상 다시 만들기·기능별 밤 장면 배경·가입 화면 별이 (main 반영, 2026-10-25 사용자 결정)**: 브랜치 `claude/vigilant-hopper-402c8c`
   - 배경(디테일 SVG, `src/components/backdrops/`, 장면 종류 `lib/scene.ts`): 홈=점집 입구(`Porch`) · 타로=성소, 수정구를 제단 위로(`Sanctum`) · 오늘의 운세=새벽빛 언덕길, 걸음에 맞춰 흐름(`DawnPath`, 예전 `StarlitPath` 대체) · 사주 목록=달빛 한옥 서재(`Study`) · 별자리=산꼭대기 천문대(`Observatory`). 모두 밤 장면(밝은 글씨 + 어두운 유리 시트). `Screen`이 `SceneBackdrop`으로 그림
   - 주의: 깜빡임 클래스(hb-candle·hb-tw·hb-pulse)는 opacity 를 애니메이션하므로, 은은한 빛 덮개는 투명도를 감싼 `<g opacity>`에 둔다
