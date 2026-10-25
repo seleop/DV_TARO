@@ -49,7 +49,8 @@ export function HomeGreeting({ name }: { name: string }) {
     // 날짜·인사 제목은 없앴다(2026-10-24 사용자 결정). 위는 MY 버튼, 그 아래 말풍선, 나머지는 별이
     <div className="flex min-h-0 flex-1 flex-col items-center pt-[clamp(3.25rem,8dvh,4.5rem)] text-center">
       <h1 className="sr-only">{name}님의 홈</h1>
-      <MyButton />
+      {/* 밤하늘 배경(scene-dark)에서는 어두운 유리 버튼 */}
+      <MyButton className="[.scene-dark_&]:bg-white/12 [.scene-dark_&]:text-white [.scene-dark_&]:ring-1 [.scene-dark_&]:ring-white/25" />
 
       {/* 말풍선 자리는 늘 잡아 두어 문구가 떠도 별이 크기가 바뀌지 않게 한다 */}
       <div className="flex h-[3.6rem] w-full shrink-0 items-end justify-center">
