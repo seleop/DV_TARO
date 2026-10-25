@@ -9,6 +9,7 @@ import { DISPLAY_NAME_MAX, splitServerError, validateLogin, validateSignup, type
 import { josa } from "@/lib/josa";
 import { DEFAULT_MASCOT_NAME, thanksForName } from "@/lib/mascot-name";
 import { entryScreen, markReturningDevice, readReturningDevice, subscribeReturningDevice } from "@/lib/auth/returning-device";
+import type { MascotState } from "@/config/mascot-assets";
 import { FortuneMascot } from "../FortuneMascot";
 import { MascotNameForm } from "../MascotNameForm";
 import { SafeForm } from "../SafeForm";
@@ -103,7 +104,16 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
   const done = finale !== null;
   // 이름 짓기 전까지는 기본 이름 (이름표·말에 쓴다)
   const [mascot, setMascot] = useState(DEFAULT_MASCOT_NAME);
+  // 마스코트 동작: 장면마다 한 번 반응(축하·손 흔들기·끄덕) → 끝나면 숨쉬는 기본 자세로, 가만히 있으면 가끔 손 흔들기·끄덕
+  const [act, setAct] = useState<{ state: MascotState; id: number }>({ state: "idle", id: 0 });
+  const react = (state: MascotState) => setAct((a) => ({ state, id: a.id + 1 }));
   const leaving = typeof finale === "object" && finale !== null;
+  // 마스코트가 보이는 동안 가만히 있으면 6~9초마다 손 흔들기·끄덕 (이동 중에는 하지 않음)
+  useEffect(() => {
+    if (!done || leaving || act.state !== "idle") return;
+    const t = setTimeout(() => setAct((a) => ({ state: Math.random() < 0.5 ? "wave" : "nod", id: a.id + 1 })), 6000 + Math.random() * 3000);
+    return () => clearTimeout(t);
+  }, [done, leaving, act]);
   const [showPw, setShowPw] = useState(false);
   const [caps, setCaps] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
@@ -284,9 +294,11 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
       await api("/api/me/birth", { method: "PUT", body: { birth: birthPayload(birth) } });
       // 별자리 완성 → '???'가 정체를 드러낸다. 우주는 그대로 두고, 잠시 뒤 이름을 묻는다
       setFinale("reveal");
+      react("celebrate");
       setBusy(false);
       await new Promise((r) => setTimeout(r, reducedMotion() ? 1200 : REVEAL_MS));
       setFinale((f) => (f === "reveal" ? "name" : f));
+      react("wave");
     } catch (e) {
       setError(errorText(e));
       setBusy(false);
@@ -299,13 +311,16 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
     await api("/api/me", { method: "PATCH", body: { mascotName: name } });
     setMascot(name);
     setFinale("named");
+    react("celebrate");
     await new Promise((r) => setTimeout(r, reducedMotion() ? 1000 : NAMED_MS));
     setFinale((f) => (f === "named" ? "ask" : f));
+    react("nod");
   }
 
   /** 마지막 질문의 답: 별똥별이 은하 중심의 빛으로 들어가는 모습을 잠깐 보여 준 뒤 이동 */
   async function leave(to: "/today" | "/") {
     setFinale({ leaving: to });
+    react("happy");
     await new Promise((r) => setTimeout(r, reducedMotion() ? 300 : LEAVE_MS));
     router.replace(to);
     router.refresh();
@@ -420,7 +435,13 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
           aria-hidden={!done}
         >
           {/* 스프라이트 원본(384px) 크기로 그리고 배율로 줄인다 */}
-          <FortuneMascot state={done ? "celebrate" : "idle"} playId={finale === "named" ? 2 : done ? 1 : 0} size={384} preload={["celebrate"]} />
+          <FortuneMascot
+            state={act.state}
+            playId={act.id}
+            size={384}
+            preload={["celebrate", "wave", "nod"]}
+            onAnimationComplete={(st) => setAct((a) => (a.state === st ? { state: "idle", id: a.id } : a))}
+          />
         </div>
 
         {/* '???'의 말 (가입·출생 정보): 한 글자씩 튀어 오르며 나타나고, 말이 바뀌면 통 튀어나온다. 마지막에 이름표가 '별이'로 */}
@@ -429,7 +450,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
           <div className={`absolute bottom-[max(12%,2.25rem)] right-4 ${ease} ${done ? "left-[36%]" : "left-4"}`}>
             <SpeechBubble
               id={leaving ? `leave-${finale.leaving}` : finale ? `finale-${finale}` : `${mode}-${mode === "birth" ? bField : field}`}
-              label={finale === "reveal" || finale === "name" ? "별 친구" : done ? mascot : "???"}
+              label={finale === "reveal" || finale === "name" ? "???" : done ? mascot : "???"}
               text={question}
               accent={done}
             />
