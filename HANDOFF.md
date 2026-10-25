@@ -20,6 +20,7 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
+- **진행 중: 메인 화면 세션/claude/vigilant-hopper-402c8c — 캐릭터 이름 짓기·홈 메뉴 좌우 슬라이드·말풍선 흰색 통일·캐릭터 갤러리 삭제** (`profiles.mascot_name` 마이그레이션, `repo/users.ts`·`api/me`, 새 `src/components/MascotName.tsx`, `AuthFlow.tsx` 가입 마무리, `Character.tsx` 말풍선·이름, `ProfileClient.tsx`, 홈 `src/components/home/**`, `admin/character` 삭제, 이름 쓰는 화면 문구)
 - **홈 배경: 타로 점술사의 성소 (main 반영, 2026-10-25 사용자 결정)**: 브랜치 `claude/vigilant-hopper-402c8c`. 시안 3차례(SVG 단순 → three.js → 디테일 SVG 6개) 끝에 "타로의 성소 + 점술사의 수정구"를 섞음. 성운 하늘·별의 문 한가운데 금빛 받침 수정구(안에서 빛이 소용돌이), 흑백 기둥·휘장·매달린 별과 달, 양옆 타로 네 장, 마법진 무대 바닥·펼친 카드·촛불·향 연기 (`src/components/home/backdrops/Sanctum.tsx`, 부품 `common.tsx`·`art.tsx`, 성운은 feTurbulence)
   - 홈 장면 종류를 `sanctum`(밤)으로 등록(`lib/scene.ts`): 글자 밝게, 시트는 오늘의 운세와 같은 어두운 유리, 상태 표시줄 뒤·아래 안전 영역도 남보라. `Screen`이 경로로 배경을 정함(오늘의 운세 `StarlitPath`와 같은 방식). 예전 천막 입구(`entrance`)는 지금 쓰는 화면 없음
   - 삼각함수 값은 서버·브라우저가 마지막 자리까지 달라 하이드레이션 경고가 나므로 `common.tsx`의 `cos`·`sin`(반올림)을 쓴다
