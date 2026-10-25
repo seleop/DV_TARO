@@ -5,7 +5,7 @@
  * 마루 바닥 · 서안(펼친 사주책·붓·벼루) · 향로 연기 · 등불 먼지.
  * 좌표계·움직임 규칙은 ./common (장면 375×520, 아래 기준으로 잘라 맞춤).
  */
-import { Fireflies, Glint, Nebula, Scene, StarField, polar, rng, v } from "./common";
+import { Baked, Fireflies, Glint, Nebula, Scene, StarField, polar, rng, v } from "./common";
 import { FullMoon } from "./art";
 
 const ID = "st";
@@ -262,9 +262,13 @@ export function StudyBackdrop() {
         <ellipse cx="318" cy="448" rx="16" ry="4" fill="#3a2a1a" />
         <path d="M304 446 Q318 466 332 446 Z" fill="#a07a3a" />
         <path d="M306 446 H330" stroke={GOLD} strokeWidth="1.2" />
-        <g className="hb-drift" style={v({ "--d": "8s" })} filter={`url(#${ID}-soft)`} opacity=".45">
-          <path d="M318 442 C312 420 326 404 318 384 C310 364 324 350 318 330" stroke="#e8dccf" strokeWidth="4" fill="none" />
-          <path d="M320 440 C328 422 314 410 322 392 C330 374 316 362 324 344" stroke="#f4ece0" strokeWidth="2.4" fill="none" />
+        <g className="hb-drift" style={v({ "--d": "8s" })} opacity=".45">
+          <Baked id={`${ID}-smoke`} pad={18}>
+            <g filter={`url(#${ID}-soft)`}>
+              <path d="M318 442 C312 420 326 404 318 384 C310 364 324 350 318 330" stroke="#e8dccf" strokeWidth="4" fill="none" />
+              <path d="M320 440 C328 422 314 410 322 392 C330 374 316 362 324 344" stroke="#f4ece0" strokeWidth="2.4" fill="none" />
+            </g>
+          </Baked>
         </g>
       </g>
       {/* 바닥 방석 */}

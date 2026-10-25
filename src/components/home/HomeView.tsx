@@ -13,6 +13,8 @@ import { ASK_NAME_LINE, NamingOverlay } from "./NamingOverlay";
 
 /** 메뉴를 넘기는 중에 의상이 마구 바뀌지 않게, 멈춘 뒤 잠깐 있다가 갈아입는다 */
 const POSE_DELAY_MS = 320;
+/** 배경은 카드가 반쯤 넘어가 고른 카드가 바뀌면 거의 바로 바꾼다 (2026-10-25 사용자 요청: 더 빠르게) */
+const BACKDROP_DELAY_MS = 60;
 /** 이름을 아직 짓지 않았으면 마스코트가 인사한 뒤 묻는다 */
 const ASK_NAME_DELAY_MS = 1500;
 /** 이름을 지어 주면 잠깐 기뻐하며 고맙다고 말한다 */
@@ -35,13 +37,16 @@ export function HomeView({ displayName, hasPrimary, viewedToday }: { displayName
   const menu = HOME_MENUS[index];
 
   useEffect(() => {
-    // 마스코트 의상과 배경은 함께, 카드가 멈춘 뒤 잠깐 있다가 바꾼다 (넘기는 중에 깜빡이지 않게)
-    const t = setTimeout(() => {
-      setPose(thanks ? "happy" : menu.pose);
-      setBackdrop(menu.backdrop);
-    }, POSE_DELAY_MS);
+    // 마스코트 의상은 카드가 멈춘 뒤 잠깐 있다가 갈아입는다 (넘기는 중에 마구 바뀌지 않게)
+    const t = setTimeout(() => setPose(thanks ? "happy" : menu.pose), POSE_DELAY_MS);
     return () => clearTimeout(t);
-  }, [menu.pose, menu.backdrop, thanks]);
+  }, [menu.pose, thanks]);
+
+  useEffect(() => {
+    // 배경은 바로 (여러 장을 빠르게 넘길 때 지나가는 카드마다 바뀌지 않을 만큼만 기다린다)
+    const t = setTimeout(() => setBackdrop(menu.backdrop), BACKDROP_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [menu.backdrop]);
 
   useEffect(() => {
     if (named) return;
