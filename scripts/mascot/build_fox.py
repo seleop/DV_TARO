@@ -242,64 +242,116 @@ def attach_to_head(fox, obj):
     obj.matrix_world = mw
 
 
+def head_top(fox):
+    """정수리(귀 사이 가장 높은 곳)와 귀 끝 높이 (세계 좌표, 휴식 자세·정면 기준).
+    머리 뼈 끝(head_point)은 머리 속 깊은 곳이라 모자를 거기 붙이면 묻힌다 → 실제 몸 메시 표면에서 잰다."""
+    bpy.context.view_layer.update()
+    body = fox["body"]
+    ev = body.evaluated_get(bpy.context.evaluated_depsgraph_get())
+    me = ev.to_mesh()
+    pts = [body.matrix_world @ v.co for v in me.vertices]
+    ev.to_mesh_clear()
+    head = [p for p in pts if p.z > 1.0 and p.y < 0.2]  # 꼬리(뒤쪽 높은 곳) 제외
+    crown = max((p for p in head if abs(p.x) < 0.12), key=lambda p: p.z)
+    ear = max((p for p in head if 0.2 < abs(p.x) < 0.5), key=lambda p: p.z)
+    return crown.copy(), ear.z, abs(ear.x)
+
+
 def build_outfits(fox):
     M = B.mats()
+    M["bead"] = B.material("Bead", (0.95, 0.62, 0.32), 0.25, emit=0.35)
+    M["gat"] = B.material("GatSheer", (0.10, 0.09, 0.13), 0.25)
+    M["magic"] = B.material("Magic", (0.78, 0.66, 1.0), 0.3, emit=1.4)
     g = {}
-    hp = head_point(fox)
-    s = SCALE / 2.6
-    # 사주: 갓 (챙 + 대우)
+    crown, ear_z, ear_x = head_top(fox)
+    cx, cy = 0.0, crown.y
+
+    # 사주: 갓 — 넓은 챙이 두 귀 끝 위에 살짝 얹히고, 갓끈(구슬)이 얼굴 양옆으로 늘어진다
     gat = B.empty("Hat.saju", None)
-    gat.location = hp + Vector((0, 0.05, 0.34 * s))
-    B.cylinder("GatBrim", gat, (0, 0, 0), 0.62 * s, 0.022, M["gat"], bevel=0.004)
-    B.cylinder("GatCrown", gat, (0, 0, 0.13 * s), 0.21 * s, 0.26 * s, M["gat"], r2=0.18 * s, bevel=0.02)
-    B.torus("GatBand", gat, (0, 0, 0.03 * s), 0.21 * s, 0.013, M["gat"])
-    gat.rotation_euler = (math.radians(-6), 0, 0)
+    gat.location = Vector((cx, cy - 0.02, ear_z + 0.01))
+    B.cylinder("GatBrim", gat, (0, 0, 0), 0.6, 0.018, M["gat"], bevel=0.006)
+    B.cylinder("GatCrown", gat, (0, 0, 0.17), 0.2, 0.32, M["gat"], r2=0.185, bevel=0.03)
+    B.torus("GatBand", gat, (0, 0, 0.03), 0.205, 0.016, M["gat"])
+    B.torus("GatRim", gat, (0, 0, 0.0), 0.6, 0.008, M["gat"])
+    for side in (-1, 1):
+        pts = [(side * 0.42, -0.1, -0.01), (side * 0.5, -0.32, -0.32), (side * 0.4, -0.42, -0.62)]
+        B.tube(f"GatString{side}", gat, pts, 0.01, M["strap"])
+        for k, t in enumerate((0.25, 0.5, 0.75, 1.0)):
+            a = Vector(pts[0]).lerp(Vector(pts[1]), min(1, t * 2)) if t <= 0.5 else Vector(pts[1]).lerp(Vector(pts[2]), (t - 0.5) * 2)
+            B.ellipsoid(f"GatBead{side}{k}", gat, tuple(a), (0.032, 0.032, 0.032), M["bead"])
+    gat.rotation_euler = (math.radians(-5), 0, 0)
     attach_to_head(fox, gat)
-    # 타로: 마법사 모자
+
+    # 타로: 끝이 휘어진 큰 마법사 모자 (머리를 덮고 귀는 모자 속으로) + 금띠·별
     wiz = B.empty("Hat.tarot", None)
-    wiz.location = hp + Vector((0, 0.05, 0.36 * s))
-    B.cylinder("HatBrim", wiz, (0, 0, 0), 0.56 * s, 0.03, M["wizard_dark"], bevel=0.012)
-    B.cylinder("HatCone", wiz, (0, 0, 0.3 * s), 0.34 * s, 0.6 * s, M["wizard"], r2=0.03, bevel=0.01)
-    B.torus("HatBand", wiz, (0, 0, 0.06 * s), 0.31 * s, 0.025, M["gold"])
-    B.star("HatStar", wiz, (0, -0.24 * s, 0.32 * s), 0.07 * s, 0.015, M["gold"], rot=(math.radians(-25), 0, 0))
-    wiz.rotation_euler = (math.radians(-8), math.radians(12), 0)
+    wiz.location = Vector((cx + 0.02, cy, crown.z + 0.07))
+    B.cylinder("HatBrim", wiz, (0, 0, 0), 0.56, 0.035, M["wizard_dark"], bevel=0.014)
+    B.cylinder("HatCone", wiz, (0, 0, 0.3), 0.37, 0.58, M["wizard"], r2=0.13, bevel=0.012)
+    tip = B.empty("HatTip", wiz, (0.04, 0, 0.57), (0, math.radians(34), 0))
+    B.cylinder("HatTipCone", tip, (0, 0, 0.16), 0.13, 0.34, M["wizard"], r2=0.015, bevel=0.006)
+    B.ellipsoid("HatTipBall", tip, (0, 0, 0.34), (0.045, 0.045, 0.045), M["gold"])
+    B.torus("HatBand", wiz, (0, 0, 0.07), 0.355, 0.03, M["gold"])
+    B.star("HatStar", wiz, (0.02, -0.29, 0.3), 0.075, 0.016, M["gold"], rot=(math.radians(-72), 0, 0))
+    B.star("HatStar2", wiz, (-0.17, -0.22, 0.46), 0.045, 0.012, M["gold"], rot=(math.radians(-70), 0, math.radians(-30)))
+    B.star("HatStar3", wiz, (0.19, -0.2, 0.16), 0.04, 0.012, M["gold"], rot=(math.radians(-70), 0, math.radians(30)))
+    wiz.rotation_euler = (math.radians(-6), math.radians(9), 0)
     attach_to_head(fox, wiz)
-    # 별자리: 베레모 + 별 핀
+
+    # 별자리: 한쪽으로 기울여 쓴 큰 베레모 + 꼭지 + 별 핀
     ber = B.empty("Hat.star", None)
-    ber.location = hp + Vector((0.04, 0.06, 0.5 * s))
-    B.ellipsoid("Beret", ber, (0, 0, 0), (0.46 * s, 0.43 * s, 0.13 * s), M["navy"])
-    B.ellipsoid("BeretNub", ber, (0, 0, 0.12 * s), (0.05, 0.05, 0.04), M["navy"])
-    B.star("BeretPin", ber, (0.24 * s, -0.33 * s, -0.02), 0.07, 0.015, M["gold"], rot=(math.radians(-25), 0, math.radians(-25)))
-    ber.rotation_euler = (0, math.radians(-14), 0)
+    ber.location = Vector((cx + 0.07, cy, crown.z + 0.07))
+    B.ellipsoid("Beret", ber, (0, 0, 0), (0.54, 0.5, 0.15), M["navy"])
+    B.torus("BeretRim", ber, (0, 0, -0.07), 0.47, 0.03, M["navy"])
+    B.ellipsoid("BeretNub", ber, (0, 0, 0.15), (0.05, 0.05, 0.05), M["navy"])
+    B.star("BeretPin", ber, (0.27, -0.36, -0.02), 0.08, 0.016, M["gold"], rot=(math.radians(-70), 0, math.radians(-25)))
+    ber.rotation_euler = (math.radians(-4), math.radians(-16), 0)
     attach_to_head(fox, ber)
     g["saju"], g["tarot"], g["star"] = gat, wiz, ber
 
-    # 옆에 두는 소품 (월드 좌표, 동작마다 위치·회전을 정한다)
+    # 옆에 띄우는 소품 (월드 좌표, 동작마다 위치·회전을 정한다). 아래에 빛 고리·반짝이를 두어 '마법으로 떠 있는' 느낌
+    def magic_ring(name, parent, z):
+        ring = B.empty(name, parent, (0, 0, z), (math.radians(62), 0, 0))
+        B.torus("Ring", ring, (0, 0, 0), 0.22, 0.009, M["magic"])
+        B.torus("RingIn", ring, (0, 0, 0), 0.14, 0.006, M["magic"])
+        sparks = [B.star(f"Twinkle{i}", ring, (math.cos(a) * 0.26, math.sin(a) * 0.1, 0.06 + 0.05 * i), 0.035, 0.008, M["glow"]) for i, a in enumerate((0.6, 2.6, 4.4))]
+        return sparks
+
     book = B.empty("Prop.book", None)
     for side in (-1, 1):
         half = B.empty(f"BookHalf.{side}", book)
-        B.rounded_box("Cover", half, (side * 0.17, 0, 0), (0.34, 0.03, 0.46), M["book"], bevel=0.012)
-        B.rounded_box("Pages", half, (side * 0.16, -0.028, 0), (0.31, 0.03, 0.43), M["page"], bevel=0.006)
+        B.rounded_box("Cover", half, (side * 0.16, 0, 0), (0.32, 0.035, 0.44), M["book"], bevel=0.014)
+        B.rounded_box("Pages", half, (side * 0.15, -0.03, 0), (0.29, 0.03, 0.41), M["page"], bevel=0.006)
+        # 표지 금장식 (모서리 + 가운데 원)
+        B.rounded_box("CoverCorner", half, (side * 0.285, 0.02, 0.19), (0.06, 0.006, 0.06), M["gold"], bevel=0.004)
+        B.rounded_box("CoverCorner2", half, (side * 0.285, 0.02, -0.19), (0.06, 0.006, 0.06), M["gold"], bevel=0.004)
+        B.torus("CoverEmblem", half, (side * 0.16, 0.022, 0), 0.06, 0.009, M["gold"], rot=(math.pi / 2, 0, 0))
         fox[f"book{side}"] = half
+    B.cylinder("Spine", book, (0, 0.01, 0), 0.028, 0.44, M["book"])
     page = B.empty("Page", book, (0, -0.045, 0))
-    B.rounded_box("TurnPage", page, (0.155, 0, 0), (0.31, 0.006, 0.42), M["page"], bevel=0.003)
+    B.rounded_box("TurnPage", page, (0.145, 0, 0), (0.29, 0.006, 0.4), M["page"], bevel=0.003)
     fox["page"] = page
+    fox["book_sparks"] = magic_ring("BookMagic", book, -0.34)
+
     fan = B.empty("Prop.cards", None)
-    for i, ang in enumerate((-20, 0, 20)):
-        c = B.empty(f"FanCard{i}", fan, (0, -i * 0.01, 0), (0, math.radians(ang), 0))
+    for i, ang in enumerate((-22, 0, 22)):
+        c = B.empty(f"FanCard{i}", fan, (0, -i * 0.012, 0), (0, math.radians(ang), 0))
         B.rounded_box("TCard", c, (0, 0, 0.22), (0.26, 0.02, 0.4), M["card"], bevel=0.016)
         B.rounded_box("TEdge", c, (0, -0.013, 0.22), (0.21, 0.004, 0.33), M["gold"], bevel=0.003)
-        B.star("TStar", c, (0, -0.02, 0.22), 0.06, 0.012, M["glow"])
+        B.rounded_box("TFace", c, (0, -0.017, 0.22), (0.18, 0.004, 0.3), M["card"], bevel=0.003)
+        B.star("TStar", c, (0, -0.022, 0.22), 0.06, 0.012, M["glow"])
         if i == 1:
             fox["fan_mid"] = c
+    fox["fan_sparks"] = magic_ring("FanMagic", fan, -0.08)
+
     scope = B.empty("Prop.scope", None)
     tri = B.empty("Tripod", scope)
     for k in range(3):
         a = math.radians(90 + 120 * k)
-        B.tube(f"Leg{k}", tri, [(0, 0, 0), (math.cos(a) * 0.32, math.sin(a) * 0.32, -1.0)], 0.022, M["strap"])
+        B.tube(f"Leg{k}", tri, [(0, 0, 0), (math.cos(a) * 0.3, math.sin(a) * 0.3, -0.98)], 0.022, M["brass"])
     head = B.empty("ScopeHead", scope)
     fox["scope_head"] = head
     B.cylinder("Tube1", head, (0, -0.18, 0), 0.085, 0.5, M["navy"], rot=(math.pi / 2, 0, 0), bevel=0.012)
+    B.torus("TubeBand", head, (0, -0.3, 0), 0.088, 0.012, M["brass"], rot=(math.pi / 2, 0, 0))
     B.cylinder("Tube2", head, (0, -0.52, 0), 0.11, 0.22, M["brass"], rot=(math.pi / 2, 0, 0), bevel=0.012)
     B.cylinder("Eyepiece", head, (0, 0.12, 0), 0.05, 0.12, M["brass"], rot=(math.pi / 2, 0, 0), bevel=0.008)
     B.cylinder("ScopeLens", head, (0, -0.635, 0), 0.1, 0.012, M["lens"], rot=(math.pi / 2, 0, 0))
@@ -403,10 +455,15 @@ def place_extras(fox, c, t, state="", phase=0.0):
             s.scale = (q, q, q)
     o = fox["outfit"]
     p1, p2 = c["p1"], c["p2"]
+    # 소품 아래 반짝이: 반복 주기에 맞춰 깜빡여 이음새가 없다
+    for i, sp in enumerate(fox.get("book_sparks", []) + fox.get("fan_sparks", [])):
+        q = 0.55 + 0.45 * math.sin(2 * math.pi * (2 * phase + i / 3))
+        sp.scale = (q, q, q)
     if o == "saju":
+        # 평소: 덮인 책이 어깨 옆에 비스듬히 떠 있다 → 읽기: 얼굴 앞쪽으로 와서 펼쳐진다
         book = fox["props"]["saju"]
-        book.location = Vector((-1.25, -0.7, 0.75 + 0.35 * p1 + 0.04 * bob))
-        book.rotation_euler = (math.radians(-12), 0, math.radians(18 - 18 * p1))
+        book.location = Vector((-1.2 + 0.05 * p1, -0.85, 0.72 + 0.28 * p1 + 0.04 * bob))
+        book.rotation_euler = (math.radians(-14), 0, math.radians(22 + 10 * p1))
         opened = math.radians(80 - 65 * p1)
         fox["book-1"].rotation_euler = (0, 0, opened)
         fox["book1"].rotation_euler = (0, 0, -opened)
@@ -414,12 +471,12 @@ def place_extras(fox, c, t, state="", phase=0.0):
         fox["page"].scale = (1, 1, 1) if p1 > 0.3 else (0, 0, 0)
     elif o == "tarot":
         fan = fox["props"]["tarot"]
-        fan.location = Vector((-1.2, -0.75, 0.55 + 0.05 * bob))
-        fan.rotation_euler = (math.radians(-8), math.radians(-8), 0)
+        fan.location = Vector((-1.18, -0.82, 0.5 + 0.05 * bob))
+        fan.rotation_euler = (math.radians(-10), math.radians(-6), math.radians(24))
         fox["fan_mid"].location = (0, -0.01, 0.4 * p1)
     elif o == "star":
         scope = fox["props"]["star"]
-        scope.location = Vector((-1.25, -0.35, 1.0))
+        scope.location = Vector((-1.08, -0.4, 1.0))
         fox["scope_head"].rotation_euler = (math.radians(-28 - 12 * p1), 0, math.radians(-20))
         for i, s in enumerate(fox["sky"]):
             q = max(0.0, min(1.0, p2 * 3 - i)) * (0.8 + 0.2 * math.sin(i * 2.1 + p2 * 9))
