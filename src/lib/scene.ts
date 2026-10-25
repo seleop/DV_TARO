@@ -25,8 +25,8 @@ export function sceneForPath(path: string): SceneKind {
   // 홈은 HomeView 가 고른 카드의 배경을 Screen 에 넘긴다. 여기서는 첫 카드(오늘의 운세) 배경
   if (path === "/" || path.startsWith("/today")) return "dawn";
   if (path.startsWith("/tarot")) return "sanctum";
-  // 사주는 목록 화면만 (사주 결과·새로 입력은 긴 글·입력 화면이라 크림색 바탕)
-  if (path === "/saju") return "study";
+  // 사주: 목록과 대화형 결과(별이가 서재에서 풀이, 2026-10-26). 새로 입력은 입력 화면이라 크림색 바탕
+  if (path === "/saju" || (path.startsWith("/saju/") && path !== "/saju/new")) return "study";
   if (path.startsWith("/horoscope")) return "observatory";
   if (path.startsWith("/login") || path.startsWith("/signup")) return "garden";
   return "plain";

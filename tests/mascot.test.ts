@@ -95,6 +95,7 @@ describe("화면별 장면", () => {
     expect(sceneForPath("/today")).toBe("dawn");
     expect(sceneForPath("/saju")).toBe("study");
     expect(sceneForPath("/saju/new")).toBe("plain");
+    expect(sceneForPath("/saju/0b7c3d2e-1111-4222-8333-444455556666")).toBe("study"); // 대화형 사주 결과
     expect(sceneForPath("/tarot")).toBe("sanctum");
     expect(sceneForPath("/horoscope")).toBe("observatory");
     expect(sceneForPath("/login")).toBe("garden");
