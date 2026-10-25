@@ -1,5 +1,5 @@
 /**
- * 홈 성소 SVG 배경 공용 부품 (2026-10-25 사용자 결정: 디테일한 SVG, 단조롭지 않게, 성능은 신경 쓰지 말 것).
+ * 밤 장면 SVG 배경 공용 부품 (2026-10-25 사용자 결정: 디테일한 SVG, 단조롭지 않게, 성능은 신경 쓰지 말 것).
  *  - 장면 좌표계: 375×520, 아래 기준으로 잘라 맞춤(xMidYMax slice). 작은 화면은 위쪽 ~110이 잘리고, 큰 화면은 좌우가 조금 잘린다
  *  - 말풍선은 위쪽(약 y 40~110), 별이는 가운데 아래(약 y 300~480)에 서므로 주인공 그림은 y 120~330 띠에 둔다
  *  - 성운은 feTurbulence 잡음으로 만든 구름, 빛나는 것은 가우스 흐림 빛 번짐
@@ -250,6 +250,17 @@ export function Fireflies({ seed, n, x, y, color = "#fff3a8", size = 1.4 }: { se
           </g>
         );
       })}
+    </g>
+  );
+}
+
+/** 낮게 깔려 흐르는 안개 띠 */
+export function Mist({ id, y, color = "#b9a6ff", opacity = 0.35, d = 34 }: { id: string; y: number; color?: string; opacity?: number; d?: number }) {
+  return (
+    <g className="hb-drift" style={v({ "--d": `${d}s` })} opacity={opacity} filter={`url(#${id}-haze)`}>
+      <ellipse cx="60" cy={y} rx="120" ry="16" fill={color} />
+      <ellipse cx="230" cy={y + 6} rx="140" ry="14" fill={color} />
+      <ellipse cx="380" cy={y - 4} rx="110" ry="15" fill={color} />
     </g>
   );
 }

@@ -1,44 +1,67 @@
 /**
- * 화면(경로)별 장면 배경 (별이네 점집, 2026-10-24 사용자 결정).
- *  - sanctum 타로 점술사의 성소(밤): 홈 (2026-10-25 사용자 결정: 배경 시안 2+6)
- *  - entrance 해질녘 천막 입구: 지금은 쓰는 화면 없음 (홈의 예전 배경)
- *  - path 별빛 오솔길: 오늘의 운세 (2026-10-24 사용자 결정, 운세 보는 중에는 별이 걸음에 맞춰 배경이 흐름)
- *  - inside 천막 안 아늑한 점집: 사주·타로
- *  - garden 별빛 정원 천막: 별자리·로그인/가입(별자리 연출과 맞춤)
- *  - plain 크림색 바탕: 그 밖의 화면 (MY·프로필·관리자 등)
+ * 화면(경로)별 장면 배경.
+ * 기능별 밤 장면 (2026-10-25 사용자 결정, 디테일 SVG · src/components/backdrops):
+ *  - porch 별이네 밤하늘 점집 입구: 홈
+ *  - sanctum 타로 점술사의 성소(제단 위 수정구): 타로
+ *  - dawn 새벽빛 언덕길: 오늘의 운세 (운세 보는 중에는 마스코트 걸음에 맞춰 배경이 흐름)
+ *  - study 달빛 한옥 서재: 사주 목록
+ *  - observatory 산꼭대기 별빛 천문대: 별자리
+ * 그 밖:
+ *  - garden 별빛 정원 천막: 로그인/가입 (화면은 자체 우주 배경을 쓰고, 여기서는 바탕색만)
+ *  - entrance·inside: 예전 천막 일러스트 (지금 쓰는 화면 없음)
+ *  - plain 크림색 바탕: MY·프로필·관리자·사주 결과·새로 입력 등
  */
-export type SceneKind = "sanctum" | "entrance" | "path" | "inside" | "garden" | "plain";
+export type BackdropKind = "porch" | "sanctum" | "dawn" | "study" | "observatory";
+export type SceneKind = BackdropKind | "entrance" | "inside" | "garden" | "plain";
+
+const BACKDROPS: ReadonlySet<SceneKind> = new Set<BackdropKind>(["porch", "sanctum", "dawn", "study", "observatory"]);
+
+/** 기능별 밤 장면인지 (밝은 글씨 + 어두운 유리 시트) */
+export function isBackdropKind(kind: SceneKind): kind is BackdropKind {
+  return BACKDROPS.has(kind);
+}
 
 export function sceneForPath(path: string): SceneKind {
-  if (path.startsWith("/today")) return "path";
-  if (path === "/") return "sanctum";
+  if (path === "/") return "porch";
+  if (path.startsWith("/today")) return "dawn";
+  if (path.startsWith("/tarot")) return "sanctum";
   // 사주는 목록 화면만 (사주 결과·새로 입력은 긴 글·입력 화면이라 크림색 바탕)
-  if (path === "/saju" || path.startsWith("/tarot")) return "inside";
-  if (path.startsWith("/horoscope") || path.startsWith("/login") || path.startsWith("/signup")) return "garden";
+  if (path === "/saju") return "study";
+  if (path.startsWith("/horoscope")) return "observatory";
+  if (path.startsWith("/login") || path.startsWith("/signup")) return "garden";
   return "plain";
 }
 
 /** 장면 위 글자색 클래스 (globals.css 의 .scene-light / .scene-dark) */
 export const SCENE_INK: Record<SceneKind, string> = {
+  porch: "scene-dark",
   sanctum: "scene-dark",
+  dawn: "scene-dark",
+  study: "scene-dark",
+  observatory: "scene-dark",
   entrance: "scene-light",
-  path: "scene-dark",
   inside: "scene-dark",
   garden: "scene-dark",
   plain: "",
 };
 
-/** 화면 아래쪽(시트 뒤)을 채우는 색: 밤 장면은 유리 시트 뒤가 비치므로 어두운 남보라, 그 밖은 크림색(var(--bg)) */
+/** 화면 아래쪽(시트 뒤)을 채우는 색: 밤 장면은 유리 시트 뒤가 비치므로 어두운 색, 그 밖은 크림색(var(--bg)) */
 export const SCENE_BOTTOM: Partial<Record<SceneKind, string>> = {
+  porch: "#120b30",
   sanctum: "#120e34",
-  path: "#120e34",
+  dawn: "#2a1640",
+  study: "#1e1012",
+  observatory: "#100e2c",
 };
 
 /** 화면 맨 위(상태 표시줄 뒤)를 채우는 색 = 장면 하늘의 맨 위 색 */
 export const SCENE_TOP: Record<SceneKind, string> = {
+  porch: "#060826",
   sanctum: "#0a0424",
+  dawn: "#151a5a",
+  study: "#20120e",
+  observatory: "#030622",
   entrance: "#ffc6a6",
-  path: "#141244",
   inside: "#f08a6b",
   garden: "#2f2c74",
   plain: "#fff7ec",

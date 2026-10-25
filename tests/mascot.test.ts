@@ -91,12 +91,12 @@ describe("마스코트 에셋", () => {
 describe("화면별 장면", () => {
   it("경로에 맞는 장면을 고른다", async () => {
     const { sceneForPath } = await import("@/lib/scene");
-    expect(sceneForPath("/")).toBe("sanctum");
-    expect(sceneForPath("/today")).toBe("path");
-    expect(sceneForPath("/saju")).toBe("inside");
+    expect(sceneForPath("/")).toBe("porch");
+    expect(sceneForPath("/today")).toBe("dawn");
+    expect(sceneForPath("/saju")).toBe("study");
     expect(sceneForPath("/saju/new")).toBe("plain");
-    expect(sceneForPath("/tarot")).toBe("inside");
-    expect(sceneForPath("/horoscope")).toBe("garden");
+    expect(sceneForPath("/tarot")).toBe("sanctum");
+    expect(sceneForPath("/horoscope")).toBe("observatory");
     expect(sceneForPath("/login")).toBe("garden");
     expect(sceneForPath("/me")).toBe("plain");
   });

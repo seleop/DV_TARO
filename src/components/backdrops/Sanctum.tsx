@@ -1,6 +1,6 @@
 /**
- * 홈 배경: 타로 점술사의 성소 (2026-10-25 사용자 결정: 시안 2 "타로의 성소" + 시안 6 "점술사의 수정구"를 섞음).
- * 성운 하늘 · 별의 문(빛 소용돌이와 별 고리) 한가운데 금빛 받침의 수정구 · 흑백 기둥 · 휘장 · 매달린 별과 달 ·
+ * 타로 배경: 타로 점술사의 성소 (2026-10-25 사용자 결정: 시안 2 "타로의 성소" + 시안 6 "점술사의 수정구"를 섞어 홈에 쓰다가 타로 화면으로 옮김).
+ * 성운 하늘 · 별의 문(빛 소용돌이와 별 고리) 한가운데 제단 위 수정구 · 흑백 기둥 · 휘장 · 매달린 별과 달 ·
  * 수정구 양옆에 떠 있는 타로 네 장 · 마법진 무대 바닥과 펼친 카드 · 촛불 · 향 연기 · 금빛 먼지.
  * 주인공(수정구)은 말풍선 아래·별이 머리 위에 둔다. 좌표계·움직임 규칙은 ./common.
  */
@@ -139,6 +139,9 @@ export function SanctumBackdrop() {
       <Drape id={`${ID}-dl`} side="left" />
       <Drape id={`${ID}-dr`} side="right" />
 
+      {/* 제단: 바닥의 계단 받침 → 조각 기둥 → 돌판 위에 별무늬 천을 드리우고 그 위에 수정구 (2026-10-25 사용자 결정) */}
+      <Altar />
+
       {/* 수정구 */}
       <circle cx={BX} cy={BY} r={BR * 1.9} fill={`url(#${ID}-aura)`} className="hb-pulse" style={v({ "--d": "6s" })} />
       <circle cx={BX} cy={BY} r={BR} fill={`url(#${ID}-ball)`} />
@@ -182,19 +185,11 @@ export function SanctumBackdrop() {
       <circle cx={BX - BR * 0.42} cy={BY - BR * 0.5} r="4" fill="#fff" opacity=".85" />
       <circle cx={BX} cy={BY} r={BR} fill="none" stroke="#e8dcff" strokeWidth="1.4" opacity=".7" />
       <Glint x={BX + BR * 0.45} y={BY + BR * 0.38} r={1.2} d={3} />
-      {/* 금빛 받침 */}
-      <g>
-        <ellipse cx={BX} cy={BY + BR - 4} rx={33} ry={7.5} fill={`url(#${ID}-gold)`} />
-        {[-1, 0, 1].map((k) => (
-          <path key={k} d={`M${BX + k * 22} ${BY + BR - 6}Q${BX + k * 37} ${BY + BR + 13} ${BX + k * 17} ${BY + BR + 28}`} stroke={`url(#${ID}-gold)`} strokeWidth="4.6" fill="none" strokeLinecap="round" />
-        ))}
-        <path d={`M${BX - 28} ${BY + BR + 28}H${BX + 28}L${BX + 37} ${BY + BR + 43}H${BX - 37}Z`} fill={`url(#${ID}-gold)`} />
-        <rect x={BX - 41} y={BY + BR + 43} width="82" height="6.5" rx="2" fill="#6a4018" />
-        {[-22, 0, 22].map((dx) => (
-          <circle key={dx} cx={BX + dx} cy={BY + BR + 35.5} r="3" fill={dx ? "#ff7aa8" : "#7ad8ff"} />
-        ))}
-      </g>
-      <ellipse cx={BX} cy={BY + BR + 52} rx={66} ry={7} fill="#ffcf7a" opacity=".2" filter={`url(#${ID}-soft)`} />
+      {/* 수정구를 받친 금빛 고리 (앞쪽 반) + 보석 */}
+      <path d={`M${BX - 34} ${BY + BR - 6}Q${BX} ${BY + BR + 10} ${BX + 34} ${BY + BR - 6}`} stroke={`url(#${ID}-gold)`} strokeWidth="6" fill="none" strokeLinecap="round" />
+      {[-18, 0, 18].map((dx) => (
+        <circle key={dx} cx={BX + dx} cy={BY + BR + (dx ? 0 : 2)} r="2.6" fill={dx ? "#ff7aa8" : "#7ad8ff"} stroke="#ffe6a8" strokeWidth=".6" />
+      ))}
 
       {/* 수정구 양옆에 떠 있는 타로 네 장 */}
       <TarotCard id={`${ID}-c1`} x={34} y={212} w={44} rot={-16} art="moon" numeral="XVIII" title="달" delay={0} />
@@ -264,6 +259,80 @@ function Hanging({ x, len, kind, delay }: { x: number; len: number; kind: "star"
           <path d={`M${x + 2} ${len}a8 8 0 1 0 5 14a6.4 6.4 0 1 1 -5 -14Z`} fill="#fff1c9" />
         )}
       </g>
+    </g>
+  );
+}
+
+/** 수정구 제단: 계단 받침 · 고리 장식이 있는 기둥 · 둥근 돌판 · 금술 달린 별무늬 천 */
+function Altar() {
+  const top = BY + BR + 4; // 돌판 윗면 (수정구 바닥 바로 아래)
+  return (
+    <g>
+      <defs>
+        <linearGradient id={`${ID}-stone`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#1e1544" />
+          <stop offset=".35" stopColor="#4a3a84" />
+          <stop offset=".55" stopColor="#3a2c6c" />
+          <stop offset="1" stopColor="#170f38" />
+        </linearGradient>
+        <linearGradient id={`${ID}-cloth`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#6a2a8a" />
+          <stop offset="1" stopColor="#3a1258" />
+        </linearGradient>
+      </defs>
+      {/* 바닥 받침 두 단 */}
+      <ellipse cx={BX} cy={446} rx={70} ry={11} fill="#120a2e" opacity=".6" />
+      <path d={`M${BX - 62} 444 L${BX - 56} 430 H${BX + 56} L${BX + 62} 444 Z`} fill={`url(#${ID}-stone)`} />
+      <path d={`M${BX - 50} 431 L${BX - 44} 418 H${BX + 44} L${BX + 50} 431 Z`} fill={`url(#${ID}-stone)`} />
+      <path d={`M${BX - 56} 430 H${BX + 56} M${BX - 44} 418 H${BX + 44}`} stroke={GOLD} strokeWidth="1" opacity=".7" />
+      {/* 기둥: 아래로 갈수록 넓어지고 고리 장식 두 줄 */}
+      <path d={`M${BX - 20} ${top + 8} L${BX - 30} 418 H${BX + 30} L${BX + 20} ${top + 8} Z`} fill={`url(#${ID}-stone)`} />
+      {[0.32, 0.72].map((t, i) => {
+        const y = top + 8 + (418 - top - 8) * t;
+        const w = 20 + 10 * t + 3;
+        return (
+          <g key={i}>
+            <rect x={BX - w} y={y - 3} width={w * 2} height={6} rx={3} fill={`url(#${ID}-gold)`} />
+            <circle cx={BX} cy={y} r="2.2" fill="#7ad8ff" />
+          </g>
+        );
+      })}
+      {/* 기둥 세로 홈 */}
+      {[-10, 0, 10].map((dx) => (
+        <line key={dx} x1={BX + dx * 0.8} y1={top + 14} x2={BX + dx * 1.2} y2={414} stroke="#0c0826" strokeWidth="1.4" opacity=".45" />
+      ))}
+      {/* 둥근 돌판 */}
+      <ellipse cx={BX} cy={top + 6} rx={54} ry={10} fill="#1a1240" />
+      <ellipse cx={BX} cy={top + 2} rx={54} ry={10} fill={`url(#${ID}-stone)`} stroke={GOLD} strokeWidth="1.1" />
+      {/* 별무늬 천: 돌판을 덮고 앞으로 드리워진다 (끝에 금술) */}
+      <path
+        d={`M${BX - 50} ${top} Q${BX} ${top + 12} ${BX + 50} ${top} L${BX + 46} ${top + 30} L${BX + 30} ${top + 44} L${BX + 12} ${top + 34} L${BX} ${top + 48} L${BX - 12} ${top + 34} L${BX - 30} ${top + 44} L${BX - 46} ${top + 30} Z`}
+        fill={`url(#${ID}-cloth)`}
+      />
+      <path d={`M${BX - 46} ${top + 30} L${BX - 30} ${top + 44} L${BX - 12} ${top + 34} L${BX} ${top + 48} L${BX + 12} ${top + 34} L${BX + 30} ${top + 44} L${BX + 46} ${top + 30}`} stroke={GOLD} strokeWidth="1.4" fill="none" />
+      {(
+        [
+          [BX - 30, top + 44],
+          [BX, top + 48],
+          [BX + 30, top + 44],
+        ] as const
+      ).map(([x, y], i) => (
+        <g key={i} className="hb-sway" style={v({ "--d": `${4 + i}s` })}>
+          <circle cx={x} cy={y + 2} r="2.4" fill={GOLD} />
+          <path d={`M${x - 2} ${y + 4} L${x - 3} ${y + 12} M${x} ${y + 4} V${y + 13} M${x + 2} ${y + 4} L${x + 3} ${y + 12}`} stroke={GOLD} strokeWidth=".8" />
+        </g>
+      ))}
+      {[
+        [BX - 26, top + 16],
+        [BX + 22, top + 20],
+        [BX - 4, top + 26],
+        [BX + 36, top + 12],
+        [BX - 38, top + 10],
+      ].map(([x, y], i) => (
+        <path key={i} d={`M${x} ${y - 3}L${x + 0.9} ${y - 0.9}L${x + 3} ${y}L${x + 0.9} ${y + 0.9}L${x} ${y + 3}L${x - 0.9} ${y + 0.9}L${x - 3} ${y}L${x - 0.9} ${y - 0.9}Z`} fill={GOLD} opacity=".85" />
+      ))}
+      {/* 제단 위에 비친 수정구 빛 */}
+      <ellipse cx={BX} cy={top + 4} rx={40} ry={6} fill="#d9b8ff" opacity=".35" filter={`url(#${ID}-soft)`} />
     </g>
   );
 }

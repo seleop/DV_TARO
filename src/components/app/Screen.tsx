@@ -2,11 +2,10 @@
 
 import { usePathname } from "next/navigation";
 import { Children, useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
-import { SCENE_INK, sceneForPath } from "@/lib/scene";
+import { SCENE_INK, isBackdropKind, sceneForPath } from "@/lib/scene";
 import { CharacterStage } from "../Character";
 import { SceneArt } from "./SceneArt";
-import { StarlitPath } from "./StarlitPath";
-import { SanctumBackdrop } from "../home/backdrops/Sanctum";
+import { SceneBackdrop } from "../backdrops";
 
 /**
  * 스크롤 없는 화면 틀: 머리(header) · 본문(남는 높이만 사용) · 하단 버튼(footer).
@@ -16,8 +15,8 @@ import { SanctumBackdrop } from "../home/backdrops/Sanctum";
  * scene 을 주면 "장면 + 시트" 화면이 된다 (레퍼런스: 위는 캐릭터가 서 있는 일러스트, 아래는 조작 시트).
  *  - 장면: 경로별 일러스트(SceneArt) 위에 header·scene 을 그린다. 남는 높이를 모두 쓰고, 별이는 바닥에 맞춘다
  *  - 시트: 크림색 둥근 판. children·footer 를 담고, 장면 아래를 살짝 덮어 둘이 이어져 보이게 한다
- *  - 오늘의 운세(path)는 움직이는 별빛 오솔길: sceneWalking=true면 별이 걸음에 맞춰 배경이 흐른다
- *  - 홈(sanctum)은 타로 점술사의 성소: 별의 문 한가운데 수정구 (밤 장면이라 오늘의 운세처럼 어두운 유리 시트)
+ *  - 기능별 밤 장면(홈·타로·오늘의 운세·사주·별자리, src/components/backdrops)은 밝은 글씨 + 어두운 유리 시트.
+ *    오늘의 운세(dawn)는 sceneWalking=true면 마스코트 걸음에 맞춰 배경이 흐른다
  */
 export function Screen({
   header,
@@ -40,17 +39,15 @@ export function Screen({
 }) {
   const kind = sceneForPath(usePathname());
   if (scene !== undefined && kind !== "plain") {
-    // 밤 장면(오늘의 운세 별빛 오솔길·홈 성소)은 어두운 보랏빛 유리 시트
-    const dark = kind === "path" || kind === "sanctum";
+    // 기능별 밤 장면은 어두운 보랏빛 유리 시트
+    const dark = isBackdropKind(kind);
     return (
       <div className="flex min-h-0 flex-1 flex-col">
         <div className={`relative -mx-5 -mt-[env(safe-area-inset-top)] flex min-h-0 flex-1 flex-col px-5 pt-[env(safe-area-inset-top)] ${SCENE_INK[kind]}`}>
-          {kind === "sanctum" ? (
+          {isBackdropKind(kind) ? (
             <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-              <SanctumBackdrop />
+              <SceneBackdrop kind={kind} walking={sceneWalking} />
             </div>
-          ) : kind === "path" ? (
-            <StarlitPath walking={sceneWalking} className="absolute inset-0 h-full w-full" />
           ) : (
             <SceneArt kind={kind} className="absolute inset-0 h-full w-full" />
           )}

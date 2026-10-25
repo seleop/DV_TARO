@@ -1,7 +1,89 @@
-/** 홈 성소 SVG 배경에 쓰는 그림 부품 (타로 카드·촛불·휘장) */
+/** 밤 장면 SVG 배경에 쓰는 그림 부품 (달·타로 카드·촛불·휘장) */
 import { cos, rng, sin, v } from "./common";
 
 const GOLD = "#f4d38a";
+
+/* ───────── 달 ───────── */
+
+/** id 는 "<장면 id>-<이름>" 형식 (장면의 빛 번짐 필터를 찾는 데 쓴다) */
+export function CrescentMoon({ id, x, y, r, glow = true }: { id: string; x: number; y: number; r: number; glow?: boolean }) {
+  return (
+    <g>
+      <defs>
+        <radialGradient id={`${id}-cm`} cx=".35" cy=".35">
+          <stop offset="0" stopColor="#fffaf0" />
+          <stop offset="1" stopColor="#f3dfae" />
+        </radialGradient>
+        <mask id={`${id}-cmask`}>
+          <circle cx={x} cy={y} r={r} fill="#fff" />
+          <circle cx={x + r * 0.42} cy={y - r * 0.3} r={r * 0.9} fill="#000" />
+        </mask>
+      </defs>
+      {glow && (
+        <g className="hb-pulse" style={v({ "--d": "7s" })}>
+          <circle cx={x} cy={y} r={r * 3.2} fill="#fff1c9" opacity=".06" />
+          <circle cx={x} cy={y} r={r * 1.9} fill="#fff1c9" opacity=".1" />
+        </g>
+      )}
+      <g mask={`url(#${id}-cmask)`} filter={`url(#${id.split("-")[0]}-glow)`}>
+        <circle cx={x} cy={y} r={r} fill={`url(#${id}-cm)`} />
+        <circle cx={x - r * 0.45} cy={y + r * 0.2} r={r * 0.14} fill="#e3cd98" opacity=".6" />
+        <circle cx={x - r * 0.25} cy={y + r * 0.55} r={r * 0.1} fill="#e3cd98" opacity=".5" />
+      </g>
+    </g>
+  );
+}
+
+export function FullMoon({ id, x, y, r }: { id: string; x: number; y: number; r: number }) {
+  return (
+    <g>
+      <defs>
+        <radialGradient id={`${id}-fm`} cx=".4" cy=".38" r=".7">
+          <stop offset="0" stopColor="#fffdf6" />
+          <stop offset=".7" stopColor="#f6ead0" />
+          <stop offset="1" stopColor="#d9c8a0" />
+        </radialGradient>
+        <clipPath id={`${id}-fmc`}>
+          <circle cx={x} cy={y} r={r} />
+        </clipPath>
+        <filter id={`${id}-maria`} x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency=".045" numOctaves="4" seed="8" />
+          <feColorMatrix type="matrix" values="0 0 0 0 .62  0 0 0 0 .56  0 0 0 0 .45  2.4 0 0 0 -1.25" />
+        </filter>
+        <radialGradient id={`${id}-halo`}>
+          <stop offset=".55" stopColor="#cfe0ff" stopOpacity="0" />
+          <stop offset=".62" stopColor="#cfe0ff" stopOpacity=".16" />
+          <stop offset=".7" stopColor="#ffd9f0" stopOpacity=".1" />
+          <stop offset=".78" stopColor="#cfe0ff" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      {/* 달무리 */}
+      <circle cx={x} cy={y} r={r * 3.4} fill={`url(#${id}-halo)`} className="hb-pulse" style={v({ "--d": "9s" })} />
+      <circle cx={x} cy={y} r={r * 2.2} fill="#fff6dc" opacity=".08" />
+      <circle cx={x} cy={y} r={r * 1.45} fill="#fff6dc" opacity=".14" />
+      <g filter={`url(#${id.split("-")[0]}-glow)`}>
+        <circle cx={x} cy={y} r={r} fill={`url(#${id}-fm)`} />
+      </g>
+      <g clipPath={`url(#${id}-fmc)`}>
+        <rect x={x - r} y={y - r} width={r * 2} height={r * 2} filter={`url(#${id}-maria)`} opacity=".7" />
+        {[
+          [-0.35, -0.2, 0.16],
+          [0.3, 0.25, 0.12],
+          [0.1, -0.45, 0.08],
+          [-0.15, 0.5, 0.1],
+          [0.5, -0.1, 0.07],
+        ].map(([dx, dy, s], i) => (
+          <g key={i}>
+            <circle cx={x + dx * r} cy={y + dy * r} r={s * r} fill="#cdb98a" opacity=".45" />
+            <circle cx={x + dx * r - s * r * 0.2} cy={y + dy * r - s * r * 0.2} r={s * r * 0.8} fill="none" stroke="#fffaf0" strokeWidth=".6" opacity=".5" />
+          </g>
+        ))}
+        {/* 오른쪽 아래 그늘 */}
+        <circle cx={x + r * 0.5} cy={y + r * 0.45} r={r * 1.1} fill="#a89070" opacity=".14" />
+      </g>
+    </g>
+  );
+}
 
 /* ───────── 타로 카드 (금테·모서리 장식·숫자·그림) ───────── */
 
