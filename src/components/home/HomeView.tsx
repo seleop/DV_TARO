@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Screen } from "@/components/app/Screen";
 import { useMascotNamed } from "@/components/MascotName";
 import { MASCOT_SHEETS } from "@/config/mascot-assets";
+import type { HomeDay } from "@/lib/home-day";
 import { HOME_MENUS } from "@/lib/home-menu";
 import { thanksForName } from "@/lib/mascot-name";
 import { HomeGreeting } from "./HomeGreeting";
@@ -25,7 +26,7 @@ const THANKS_MS = 4200;
  *  - 메뉴를 넘기면 마스코트가 그 메뉴 의상으로 갈아입고, 배경도 그 기능의 배경으로 바뀌고, 말풍선이 메뉴 이야기를 한다
  *  - 마스코트 이름을 아직 짓지 않은 사용자에게는 한 번 이름을 묻는다(NamingOverlay)
  */
-export function HomeView({ displayName, hasPrimary, viewedToday }: { displayName: string; hasPrimary: boolean; viewedToday: boolean }) {
+export function HomeView({ displayName, hasPrimary, viewedToday, days }: { displayName: string; hasPrimary: boolean; viewedToday: boolean; days: HomeDay[] }) {
   const router = useRouter();
   const named = useMascotNamed();
   const [index, setIndex] = useState(0);
@@ -73,7 +74,7 @@ export function HomeView({ displayName, hasPrimary, viewedToday }: { displayName
 
   return (
     <>
-      <Screen backdrop={backdrop} scene={<HomeGreeting name={displayName} pose={pose} menu={swiped ? menu : null} viewedToday={viewedToday} special={asking && !named ? ASK_NAME_LINE : thanks} />}>
+      <Screen backdrop={backdrop} scene={<HomeGreeting name={displayName} days={days} pose={pose} menu={swiped ? menu : null} viewedToday={viewedToday} special={asking && !named ? ASK_NAME_LINE : thanks} />}>
         <HomeMenu
           index={index}
           onIndexChange={(i) => {
