@@ -20,7 +20,12 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
-- **진행 중: 메인 화면 세션/claude/vigilant-hopper-402c8c — 의상 다시 만들기·기능별 배경·가입 화면 별이** (`scripts/mascot/build_fox.py` 의상·소품, `public/mascot/*` 의상 시트 재렌더, `src/config/mascot-assets.ts`, 배경 `src/components/backdrops/**`(홈 점집 입구·타로 성소+제단·오늘 새벽 언덕길·사주 한옥 서재·별자리 천문대), `lib/scene.ts`·`Screen.tsx`·`AppFrame` 장면 연결, `AuthFlow.tsx` 별이 동작·이름표 '???')
+- **의상 다시 만들기·기능별 밤 장면 배경·가입 화면 별이 (main 미반영, 2026-10-25 사용자 결정)**: 브랜치 `claude/vigilant-hopper-402c8c`
+  - 배경(디테일 SVG, `src/components/backdrops/`, 장면 종류 `lib/scene.ts`): 홈=점집 입구(`Porch`) · 타로=성소, 수정구를 제단 위로(`Sanctum`) · 오늘의 운세=새벽빛 언덕길, 걸음에 맞춰 흐름(`DawnPath`, 예전 `StarlitPath` 대체) · 사주 목록=달빛 한옥 서재(`Study`) · 별자리=산꼭대기 천문대(`Observatory`). 모두 밤 장면(밝은 글씨 + 어두운 유리 시트). `Screen`이 `SceneBackdrop`으로 그림
+  - 주의: 깜빡임 클래스(hb-candle·hb-tw·hb-pulse)는 opacity 를 애니메이션하므로, 은은한 빛 덮개는 투명도를 감싼 `<g opacity>`에 둔다
+  - 의상: `build_fox.py` `head_top()`으로 정수리·귀 끝을 재서 모자를 얹고(예전엔 머리 뼈 끝에 붙여 묻힘) 소품을 몸 가까이·빛 고리와 함께. 의상 세 벌 재렌더·시트 화질 82 (`docs/MASCOT.md` 16절)
+  - 가입 화면: 처음 나타날 때 이름표 '???', 장면마다 동작(축하·손 흔들기·끄덕·기뻐 뛰기) 뒤 기본 자세, 가만히 있으면 6~9초마다 반응
+  - 확인: 375×812·360×600 화면, 가입 마무리 동작. 실기기 성능(배경 필터·움직임 다수)은 아직
 - **캐릭터 이름 짓기·홈 메뉴 좌우 슬라이드 (main 반영, 2026-10-25 사용자 결정)**: 브랜치 `claude/vigilant-hopper-402c8c`
   - 마이그레이션 `20261025160000_mascot_name.sql` (`profiles.mascot_name` 1~8자, NULL = 아직 안 지음) — **운영 Supabase 적용 완료 2026-10-25** (사용자가 SQL Editor에서 실행). 적용 전에 배포돼도 `getProfile`이 칸 없음(42703)을 이름 없이 읽어 앱은 동작하지만, 이름 저장은 실패한다
   - 이름 짓기: 새 가입자는 가입 마무리에서 '???'가 별 친구로 정체를 드러낸 뒤 이름을 묻는다(`AuthFlow` finale: reveal → name → named → ask). 기존 사용자는 홈에서 한 번 묻는다(`NamingOverlay`, 질문은 위쪽 말풍선). '그대로'도 기본 이름으로 저장해 다시 묻지 않음. 프로필 설정에서 바꾸기(`MascotNameSheet`). 공용 입력 `MascotNameForm`, 규칙 `lib/mascot-name.ts`(글자·숫자·띄어쓰기·꾸밈 기호 일부)
