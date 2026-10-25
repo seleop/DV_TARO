@@ -3,10 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { api, errorText } from "@/lib/client";
+import { calledAs } from "@/lib/mascot-name";
 import { BirthForm, type BirthInitial } from "./BirthForm";
+import { useMascotName } from "./MascotName";
+import { MascotNameSheet } from "./MascotNameSheet";
 import { Button, Card, ErrorBox, inputCls, TopBar } from "./ui";
 
-/** 프로필 설정: 닉네임 + 내 출생 정보(사주·오늘의 운세·별자리 기준) */
+/** 프로필 설정: 닉네임 · 캐릭터 이름 + 내 출생 정보(사주·오늘의 운세·별자리 기준) */
 export function ProfileClient({
   displayName,
   email,
@@ -24,6 +27,8 @@ export function ProfileClient({
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const mascot = useMascotName();
+  const [naming, setNaming] = useState(false);
 
   async function saveName() {
     setBusy(true);
@@ -40,8 +45,16 @@ export function ProfileClient({
     }
   }
 
+  async function saveMascot(next: string) {
+    await api("/api/me", { method: "PATCH", body: { mascotName: next } });
+    setNaming(false);
+    setError(null);
+    setMsg(`이제 ${calledAs(next)} 불러요.`);
+    router.refresh();
+  }
+
   return (
-    // 스크롤 없이: 머리 + (안내 또는 닉네임 한 줄) + 출생 정보 단계 입력(남는 높이, 하단 버튼 포함)
+    // 스크롤 없이: 머리 + (안내 또는 닉네임·캐릭터 이름) + 출생 정보 단계 입력(남는 높이, 하단 버튼 포함)
     <div className="flex min-h-0 flex-1 flex-col">
       <TopBar title={notice === "welcome" ? "시작하기" : "프로필 설정"} back={notice ? null : "/me"} />
       {notice && (
@@ -68,6 +81,15 @@ export function ProfileClient({
             저장
           </Button>
         </div>
+        {/* 캐릭터 이름: 한 줄로 보여 주고, 바꾸기는 아래에서 올라오는 시트에서 (화면 높이를 아끼려고) */}
+        <div className="mt-3 flex items-center gap-2 border-t border-line pt-3">
+          <span className="min-w-0 flex-1 text-[15px] font-semibold">
+            캐릭터 이름 <span className="ml-1 font-bold text-accent">{mascot}</span>
+          </span>
+          <Button variant="ghost" size="sm" onClick={() => setNaming(true)}>
+            이름 바꾸기
+          </Button>
+        </div>
         {(error || msg) && (
           <div className="mt-2">
             <ErrorBox message={error} />
@@ -81,6 +103,7 @@ export function ProfileClient({
         내 출생 정보 <span className="text-xs font-normal text-ink-2">사주·오늘의 운세·별자리 기준</span>
       </h2>
       <BirthForm mode="profile" initial={initial} embedded />
+      {naming && <MascotNameSheet current={mascot} onSave={saveMascot} onClose={() => setNaming(false)} />}
     </div>
   );
 }

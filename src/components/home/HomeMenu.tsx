@@ -102,9 +102,8 @@ export function HomeMenu({
               style={{ background: `linear-gradient(150deg, ${m.tint[0]}, ${m.tint[1]})` }}
             >
               {/* 장식: 큰 그림 무늬 · 잔별 · 위쪽 빛 테두리 */}
-              <span aria-hidden className="pointer-events-none absolute -right-2 bottom-2 rotate-[-12deg] text-[64px] leading-none opacity-[0.14] grayscale-[30%]">
-                {m.emoji}
-              </span>
+              <span aria-hidden className="pointer-events-none absolute -bottom-12 -right-10 h-36 w-36 rounded-full border border-white/15" />
+              <span aria-hidden className="pointer-events-none absolute -bottom-6 -right-4 h-20 w-20 rounded-full border border-white/10 bg-white/5" />
               <span aria-hidden className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent" />
               {[
                 [18, 22],

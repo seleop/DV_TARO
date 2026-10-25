@@ -113,11 +113,11 @@ export function MascotNameForm({
       </p>
       <div className={`mt-3 grid gap-3 ${keepLabel ? "grid-cols-2" : "grid-cols-1"}`}>
         {keepLabel && (
-          <Button type="button" size="lg" variant="ghost" loading={busy === "keep"} disabled={!!busy} onClick={() => void run("keep")} className="px-3 text-[16px]">
+          <Button type="button" size="lg" variant="ghost" loading={busy === "keep"} disabled={!!busy} onClick={() => void run("keep")} className="whitespace-nowrap px-3! text-[15px]!">
             {keepLabel}
           </Button>
         )}
-        <Button type="submit" size="lg" loading={busy === "save"} disabled={!!busy || !normalizeMascotName(value)} onMouseDown={(e) => e.preventDefault()} className="px-3 text-[16px]">
+        <Button type="submit" size="lg" loading={busy === "save"} disabled={!!busy || !normalizeMascotName(value)} onMouseDown={(e) => e.preventDefault()} className="whitespace-nowrap px-3! text-[15px]!">
           {saveLabel}
         </Button>
       </div>

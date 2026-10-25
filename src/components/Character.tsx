@@ -226,7 +226,7 @@ export function CharacterStage({
   const svgFigure = BRAND.character.images.neutral ? (
     <ImageCharacter expression={expression} gaze={gaze} />
   ) : (
-    <StarRabbit expression={expression} gaze={gaze} scene={pose} mood={mood} label={BRAND.character.alt} />
+    <StarRabbit expression={expression} gaze={gaze} scene={pose} mood={mood} label={`마스코트 ${mascotName}`} />
   );
   const figure = is3d ? (
     <FortuneMascot
@@ -235,7 +235,7 @@ export function CharacterStage({
       size={size}
       still={size < 120}
       preload={(interactive ? ["wave", "nod", "surprised", ...(intro ? [intro] : [])] : intro ? [intro] : []).map((st) => sheetFor(outfit, st))}
-      label={BRAND.character.alt}
+      label={`마스코트 ${mascotName}`}
       onAnimationComplete={(st) => setReaction((x) => (x && sheetFor(outfit, x.state) === st ? null : x))}
       fallback={svgFigure}
     />

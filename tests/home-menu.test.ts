@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { HOME_MENUS, menuLine } from "@/lib/home-menu";
 import { SCENES } from "@/lib/character";
-import { DEFAULT_MASCOT_NAME, displayMascotName, mascotNameError, normalizeMascotName } from "@/lib/mascot-name";
+import { DEFAULT_MASCOT_NAME, calledAs, displayMascotName, mascotNameError, normalizeMascotName, thanksForName } from "@/lib/mascot-name";
 
 describe("홈 메뉴 카드", () => {
   it("네 메뉴, 겹치지 않는 주소, 있는 장면(의상)만", () => {
@@ -34,6 +34,15 @@ describe("마스코트 이름 규칙", () => {
     expect(mascotNameError("  ")).toMatch(/적어/);
     expect(mascotNameError("아홉글자짜리이름임")).toMatch(/8자/);
     expect(mascotNameError("<별>")).toMatch(/쓸 수/);
+  });
+
+  it("부르는 말·고마움 말: 받침과 기본 이름에 맞춘다", () => {
+    expect(calledAs("콩알")).toBe("콩알이라고");
+    expect(calledAs("루나")).toBe("루나라고");
+    expect(calledAs("Luna")).toBe("Luna라고");
+    expect(thanksForName("루나", true)).toContain("루나! 마음에 쏙");
+    expect(thanksForName(DEFAULT_MASCOT_NAME, true)).toContain(`앞으로도 ${DEFAULT_MASCOT_NAME}라고`);
+    expect(thanksForName(DEFAULT_MASCOT_NAME, false)).toContain("계속");
   });
 
   it("아직 짓지 않았으면 기본 이름", () => {

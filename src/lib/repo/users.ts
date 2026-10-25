@@ -176,14 +176,23 @@ export async function updateMascotName(userId: string, mascotName: string) {
 // ── 조회 ──
 export async function getProfile(userId: string): Promise<User | null> {
   if (!/^[0-9a-f-]{36}$/i.test(userId)) return null;
-  const [row] = await asService((q) =>
-    q.query<ProfileRow>(
-      `select p.id, u.email, p.display_name, p.role, p.status, p.primary_calculation_id, p.mascot_name, p.created_at
-       from public.profiles p join auth.users u on u.id = p.id where p.id = $1`,
-      [userId],
-    ),
-  );
-  return row ? toUser(row) : null;
+  const select = (mascot: string) =>
+    asService((q) =>
+      q.query<ProfileRow>(
+        `select p.id, u.email, p.display_name, p.role, p.status, p.primary_calculation_id, ${mascot} as mascot_name, p.created_at
+         from public.profiles p join auth.users u on u.id = p.id where p.id = $1`,
+        [userId],
+      ),
+    );
+  let rows: ProfileRow[];
+  try {
+    rows = await select("p.mascot_name");
+  } catch (e) {
+    // 운영 DB에 마스코트 이름 마이그레이션(20261025160000)을 적용하기 전에 배포돼도 앱이 멈추지 않게: 칸이 없으면 이름 없이 읽는다
+    if ((e as { code?: string }).code !== "42703") throw e;
+    rows = await select("null::text");
+  }
+  return rows[0] ? toUser(rows[0]) : null;
 }
 
 /** 사용자 권한(RLS)으로 본인 프로필을 읽는다. RLS 정책 검증에도 쓴다. */

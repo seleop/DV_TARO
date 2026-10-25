@@ -20,7 +20,14 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
-- **진행 중: 메인 화면 세션/claude/vigilant-hopper-402c8c — 캐릭터 이름 짓기·홈 메뉴 좌우 슬라이드·말풍선 흰색 통일·캐릭터 갤러리 삭제** (`profiles.mascot_name` 마이그레이션, `repo/users.ts`·`api/me`, 새 `src/components/MascotName.tsx`, `AuthFlow.tsx` 가입 마무리, `Character.tsx` 말풍선·이름, `ProfileClient.tsx`, 홈 `src/components/home/**`, `admin/character` 삭제, 이름 쓰는 화면 문구)
+- **캐릭터 이름 짓기·홈 메뉴 좌우 슬라이드 (main 미반영, 2026-10-25 사용자 결정)**: 브랜치 `claude/vigilant-hopper-402c8c`
+  - **운영 Supabase에 마이그레이션 `20261025160000_mascot_name.sql` 적용 필요** (`profiles.mascot_name` 1~8자, NULL = 아직 안 지음). 적용 전에 배포돼도 `getProfile`이 칸 없음(42703)을 이름 없이 읽어 앱은 동작하지만, 이름 저장은 실패한다
+  - 이름 짓기: 새 가입자는 가입 마무리에서 '???'가 별 친구로 정체를 드러낸 뒤 이름을 묻는다(`AuthFlow` finale: reveal → name → named → ask). 기존 사용자는 홈에서 한 번 묻는다(`NamingOverlay`, 질문은 위쪽 말풍선). '그대로'도 기본 이름으로 저장해 다시 묻지 않음. 프로필 설정에서 바꾸기(`MascotNameSheet`). 공용 입력 `MascotNameForm`, 규칙 `lib/mascot-name.ts`(글자·숫자·띄어쓰기·꾸밈 기호 일부)
+  - 이름 쓰기: `(app)/layout`의 `MascotNameProvider` → `useMascotName()` (타로·출생 정보·사주 풀이·오늘의 운세·홈 문구, 마스코트 쓰다듬기 안내). 로그인 전 화면은 기본 이름
+  - 홈 메뉴: 카드 네 장(오늘의 운세·사주·타로·별자리)을 좌우로 넘김(`HomeMenu`, 옆 카드 누르면 넘기기·점·화살표 키). 넘기면 마스코트가 그 메뉴 의상으로 갈아입고(0.3초 뒤, 의상 그림 미리 받기) 말풍선이 메뉴 이야기(`lib/home-menu.ts`). `CharacterStage`에 `quietIntro`(등장 인사 말풍선 생략) 추가
+  - 말풍선: 홈·마스코트 반응 말풍선 모두 앱 공용 은은한 흰색(`bubble-soft`)으로 통일
+  - 관리자 캐릭터 갤러리(`/admin/character`, `CharacterLab`) 삭제 (사용자 요청)
+  - 확인: 320×568·360×600·375×812 넘침 없음, 가입→이름 짓기→홈, 홈 이름 묻기·그대로, 프로필 이름 바꾸기 로컬 확인. 실기기 키보드(iOS) 확인은 아직
 - **홈 배경: 타로 점술사의 성소 (main 반영, 2026-10-25 사용자 결정)**: 브랜치 `claude/vigilant-hopper-402c8c`. 시안 3차례(SVG 단순 → three.js → 디테일 SVG 6개) 끝에 "타로의 성소 + 점술사의 수정구"를 섞음. 성운 하늘·별의 문 한가운데 금빛 받침 수정구(안에서 빛이 소용돌이), 흑백 기둥·휘장·매달린 별과 달, 양옆 타로 네 장, 마법진 무대 바닥·펼친 카드·촛불·향 연기 (`src/components/home/backdrops/Sanctum.tsx`, 부품 `common.tsx`·`art.tsx`, 성운은 feTurbulence)
   - 홈 장면 종류를 `sanctum`(밤)으로 등록(`lib/scene.ts`): 글자 밝게, 시트는 오늘의 운세와 같은 어두운 유리, 상태 표시줄 뒤·아래 안전 영역도 남보라. `Screen`이 경로로 배경을 정함(오늘의 운세 `StarlitPath`와 같은 방식). 예전 천막 입구(`entrance`)는 지금 쓰는 화면 없음
   - 삼각함수 값은 서버·브라우저가 마지막 자리까지 달라 하이드레이션 경고가 나므로 `common.tsx`의 `cos`·`sin`(반올림)을 쓴다
@@ -129,7 +136,7 @@
   - 화질: 640px 렌더 → 좌우 여백 자르기 → 칸 318×512, WebP 90. 시트 260~710KB (`docs/MASCOT.md` 13절)
   - 동작 전환 시 이전 층은 불투명 유지·새 층만 페이드인 (끝날 때 흐려지던 문제 수정). 크기는 사용자 결정으로 그대로(`mascotZoom: 1`)
   - 오늘의 운세·별자리 AI 응답에 `mood`(great/good/calm/careful) 추가(이전 저장분 호환), 타로는 카드 방향으로 분위기 결정
-  - SVG 별토끼(장면별 소품)는 대체용으로 유지: `src/config/brand.ts` `renderer: "svg"`. 관리자 화면 → "캐릭터"에서 갤러리 확인
+  - SVG 별토끼(장면별 소품)는 대체용으로 유지: `src/config/brand.ts` `renderer: "svg"`. (관리자 캐릭터 갤러리는 2026-10-25 사용자 요청으로 삭제)
   - 남은 일: Android·iOS 실기기 재생 확인(의상·화질 포함), 이름 확정, 동작 줄이기 화면 확인
 
 ## 다음 단계

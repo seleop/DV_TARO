@@ -35,6 +35,19 @@ export const MascotNameSchema = z
     if (msg) ctx.addIssue({ code: "custom", message: msg });
   });
 
+/** "○○라고/○○이라고" (받침에 따라) */
+export function calledAs(name: string) {
+  const code = name.charCodeAt(name.length - 1) - 0xac00;
+  const batchim = code >= 0 && code <= 11171 && code % 28 !== 0;
+  return `${name}${batchim ? "이라고" : "라고"}`;
+}
+
+/** 이름을 지어 줬을 때 마스코트가 하는 말 (기본 이름 그대로면 그에 맞게). polite: 해요체, 아니면 반말 */
+export function thanksForName(name: string, polite: boolean) {
+  if (name === DEFAULT_MASCOT_NAME) return polite ? `좋아요! 앞으로도 ${calledAs(name)} 불러 주세요 ♡` : `좋아! 그럼 계속 ${calledAs(name)} 불러 줘.`;
+  return polite ? `${name}! 마음에 쏙 들어요. 고마워요 ♡` : `${name}! 마음에 쏙 들어.\n고마워, 소중히 할게!`;
+}
+
 /** 화면에 보일 이름 (아직 짓지 않았으면 기본 이름) */
 export function displayMascotName(name: string | null | undefined) {
   return name || DEFAULT_MASCOT_NAME;

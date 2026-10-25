@@ -6,8 +6,11 @@ import { BRAND } from "@/config/brand";
 import { PRIVACY_CONSENT } from "@/config/privacy";
 import { ApiError, api, errorText } from "@/lib/client";
 import { DISPLAY_NAME_MAX, splitServerError, validateLogin, validateSignup, type SignupField, type SignupValues } from "@/lib/auth/validate";
+import { josa } from "@/lib/josa";
+import { DEFAULT_MASCOT_NAME, thanksForName } from "@/lib/mascot-name";
 import { entryScreen, markReturningDevice, readReturningDevice, subscribeReturningDevice } from "@/lib/auth/returning-device";
 import { FortuneMascot } from "../FortuneMascot";
+import { MascotNameForm } from "../MascotNameForm";
 import { SafeForm } from "../SafeForm";
 import { Button, inputCls } from "../ui";
 import { AuthCosmos } from "./AuthCosmos";
@@ -55,15 +58,18 @@ const signupSteps = (invite: boolean): SignupField[] =>
   invite ? ["email", "password", "passwordConfirm", "displayName", "inviteCode", "agreePrivacy"] : ["email", "password", "passwordConfirm", "displayName", "agreePrivacy"];
 const CODE_FIELD: Partial<Record<string, SignupField>> = { EMAIL_TAKEN: "email", INVALID_EMAIL: "email", WEAK_PASSWORD: "password", INVALID_INVITE: "inviteCode", INVALID_CREDENTIALS: "password" };
 const EMPTY: SignupValues = { email: "", password: "", passwordConfirm: "", displayName: "", inviteCode: "", agreePrivacy: false };
-/** 마지막에 '???'가 별이로 정체를 드러낸 뒤 오늘의 운세를 볼지 묻기까지 */
+/** 마지막에 '???'가 별 친구로 정체를 드러낸 뒤 이름을 묻기까지 */
 const REVEAL_MS = 2800;
+/** 이름을 지어 주면 기뻐하며 고맙다고 한 뒤 오늘의 운세를 볼지 묻기까지 */
+const NAMED_MS = 2400;
 /** 답을 고른 뒤 별똥별이 은하 중심의 빛으로 들어가는 모습을 보여 주고 이동하기까지 */
 const LEAVE_MS = 1500;
 /**
- * 가입 마무리 (2026-10-24 사용자 결정): reveal(별이 정체 공개) → ask('오늘의 운세를 한 번 봐줄까?' 응/다음에)
- * → leaving(고른 곳으로: 응=오늘의 운세, 다음에=홈)
+ * 가입 마무리 (2026-10-24 사용자 결정): reveal(별 친구 정체 공개)
+ * → name(이름 짓기, 2026-10-25 사용자 결정: 마스코트가 처음 나타날 때) → named(고맙다는 말)
+ * → ask('오늘의 운세를 한 번 봐줄까?' 응/다음에) → leaving(고른 곳으로: 응=오늘의 운세, 다음에=홈)
  */
-type Finale = null | "reveal" | "ask" | { leaving: "/today" | "/" };
+type Finale = null | "reveal" | "name" | "named" | "ask" | { leaving: "/today" | "/" };
 const reducedMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const range = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 
@@ -75,7 +81,7 @@ const range = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i)
  * - 로그인: 우주 배경 그대로 이메일·비밀번호를 한 칸씩 (별이 없음)
  * - 회원가입 → 계정을 만든 뒤 같은 우주에서 출생 정보(양력/음력·연·월·일·윤달·시각·성별)로 이어진다.
  *   정체 모를 화자 '???'가 묻고, 단계마다 실존 별자리(전갈자리)의 별이 하나씩 이어진다.
- *   마지막에 별자리가 완성되면 '???'가 별이로 정체를 드러낸 뒤 오늘의 운세로 간다.
+ *   마지막에 별자리가 완성되면 '???'가 별 친구로 정체를 드러내고, 사용자가 이름을 지어 준 뒤 오늘의 운세로 간다.
  *   출생 정보를 넣기 전에 나갔다면 다시 로그인할 때 /start에서 출생 정보부터 이어 한다(initialMode="birth").
  * 화면은 실제로 보이는 영역 크기에 맞춰 스크롤 없이 쓴다. 입력칸은 한 개를 계속 써서 단계가 바뀌어도 키보드가 닫히지 않는다.
  */
@@ -92,9 +98,11 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
   const [bStep, setBStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  // 출생 정보까지 모두 저장해 별자리가 완성됨 → '???'가 별이로 정체를 드러내고 오늘의 운세를 볼지 묻는다
+  // 출생 정보까지 모두 저장해 별자리가 완성됨 → '???'가 정체를 드러내고, 이름을 지어 받은 뒤 오늘의 운세를 볼지 묻는다
   const [finale, setFinale] = useState<Finale>(null);
   const done = finale !== null;
+  // 이름 짓기 전까지는 기본 이름 (이름표·말에 쓴다)
+  const [mascot, setMascot] = useState(DEFAULT_MASCOT_NAME);
   const leaving = typeof finale === "object" && finale !== null;
   const [showPw, setShowPw] = useState(false);
   const [caps, setCaps] = useState(false);
@@ -274,16 +282,25 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
     setBusy(true);
     try {
       await api("/api/me/birth", { method: "PUT", body: { birth: birthPayload(birth) } });
-      // 별자리 완성 → '???'가 별이로 정체를 드러낸다. 우주는 그대로 두고, 잠시 뒤 오늘의 운세를 볼지 한 번 묻는다
+      // 별자리 완성 → '???'가 정체를 드러낸다. 우주는 그대로 두고, 잠시 뒤 이름을 묻는다
       setFinale("reveal");
       setBusy(false);
       await new Promise((r) => setTimeout(r, reducedMotion() ? 1200 : REVEAL_MS));
-      setFinale((f) => (f === "reveal" ? "ask" : f));
+      setFinale((f) => (f === "reveal" ? "name" : f));
     } catch (e) {
       setError(errorText(e));
       setBusy(false);
       submitting.current = false;
     }
+  }
+
+  /** 이름 짓기: 저장되면 이름표가 바뀌고 기뻐한 뒤 오늘의 운세를 볼지 묻는다 (실패하면 MascotNameForm 이 오류를 보여 준다) */
+  async function nameMascot(name: string) {
+    await api("/api/me", { method: "PATCH", body: { mascotName: name } });
+    setMascot(name);
+    setFinale("named");
+    await new Promise((r) => setTimeout(r, reducedMotion() ? 1000 : NAMED_MS));
+    setFinale((f) => (f === "named" ? "ask" : f));
   }
 
   /** 마지막 질문의 답: 별똥별이 은하 중심의 빛으로 들어가는 모습을 잠깐 보여 준 뒤 이동 */
@@ -329,8 +346,12 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
       : "알겠어! 보고 싶을 때 언제든 불러 줘."
     : finale === "ask"
       ? "방금 알려준 대로\n오늘의 운세를 한 번 봐줄까?"
+      : finale === "named"
+        ? thanksForName(mascot, false)
+      : finale === "name"
+        ? "아직 내 이름이 없어.\n나한테 이름을 지어 줄래?"
       : finale === "reveal"
-        ? "사실 나는 별이야!\n네 별자리가 완성됐어."
+        ? "사실 나는 네 별자리를 지켜 온 별 친구야!\n드디어 별자리가 완성됐어."
         : mode === "birth"
       ? bField === "calendar"
         ? `${initialMode === "birth" ? "다시 왔구나!" : "가입 완료!"}\n${BIRTH_PROMPT.calendar}`
@@ -399,7 +420,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
           aria-hidden={!done}
         >
           {/* 스프라이트 원본(384px) 크기로 그리고 배율로 줄인다 */}
-          <FortuneMascot state={done ? "celebrate" : "idle"} playId={done ? 1 : 0} size={384} preload={["celebrate"]} />
+          <FortuneMascot state={done ? "celebrate" : "idle"} playId={finale === "named" ? 2 : done ? 1 : 0} size={384} preload={["celebrate"]} />
         </div>
 
         {/* '???'의 말 (가입·출생 정보): 한 글자씩 튀어 오르며 나타나고, 말이 바뀌면 통 튀어나온다. 마지막에 이름표가 '별이'로 */}
@@ -408,7 +429,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
           <div className={`absolute bottom-[max(12%,2.25rem)] right-4 ${ease} ${done ? "left-[36%]" : "left-4"}`}>
             <SpeechBubble
               id={leaving ? `leave-${finale.leaving}` : finale ? `finale-${finale}` : `${mode}-${mode === "birth" ? bField : field}`}
-              label={done ? "별이" : "???"}
+              label={finale === "reveal" || finale === "name" ? "별 친구" : done ? mascot : "???"}
               text={question}
               accent={done}
             />
@@ -463,7 +484,7 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
       <div className="glass-night relative -mt-6 shrink-0 px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6">
         <div
           aria-hidden
-          className={`glass-sheet absolute inset-0 rounded-t-[28px] ${ease} ${intro || (done && finale !== "ask") ? "translate-y-full opacity-0" : "translate-y-0 opacity-100"}`}
+          className={`glass-sheet absolute inset-0 rounded-t-[28px] ${ease} ${intro || (done && finale !== "ask" && finale !== "name") ? "translate-y-full opacity-0" : "translate-y-0 opacity-100"}`}
         />
         {intro ? (
           <div className="relative text-center">
@@ -490,6 +511,17 @@ export function AuthFlow({ initialMode, next, signupMode }: { initialMode: Mode;
             <p className="mt-4 min-h-5 text-center text-xs text-ink-2/80" role="status">
               {error ?? "비밀번호를 잊었다면 운영자에게 문의해 주세요."}
             </p>
+          </div>
+        ) : finale === "name" ? (
+          // 이름 짓기: 처음 나타난 마스코트에게 이름을 지어 준다 (그대로 두면 기본 이름으로 저장해 홈에서 다시 묻지 않는다)
+          <div className="relative">
+            <MascotNameForm
+              saveLabel="이걸로 할래"
+              keepLabel={`${josa(DEFAULT_MASCOT_NAME, "이/가")} 좋아`}
+              hint="8자까지 · 나중에 프로필 설정에서 바꿀 수 있어"
+              onSave={nameMascot}
+              onKeep={() => nameMascot(DEFAULT_MASCOT_NAME)}
+            />
           </div>
         ) : finale === "ask" ? (
           // 마지막 질문: 오늘의 운세를 볼지 한 번 묻는다

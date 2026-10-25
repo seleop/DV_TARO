@@ -6,6 +6,7 @@ import { Screen } from "@/components/app/Screen";
 import { useMascotNamed } from "@/components/MascotName";
 import { MASCOT_SHEETS } from "@/config/mascot-assets";
 import { HOME_MENUS } from "@/lib/home-menu";
+import { thanksForName } from "@/lib/mascot-name";
 import { HomeGreeting } from "./HomeGreeting";
 import { HomeMenu } from "./HomeMenu";
 import { ASK_NAME_LINE, NamingOverlay } from "./NamingOverlay";
@@ -77,7 +78,7 @@ export function HomeView({ displayName, hasPrimary, viewedToday }: { displayName
         <NamingOverlay
           onDone={(name) => {
             setAsking(false);
-            setThanks(`${name}! 마음에 쏙 들어요. 고마워요 ♡`);
+            setThanks(thanksForName(name, true));
             // 모든 화면이 새 이름을 쓰도록 서버에서 다시 받는다
             router.refresh();
           }}

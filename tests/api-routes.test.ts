@@ -208,6 +208,15 @@ describe("API 라우트", () => {
     await expect((await rawPg()).query("update public.profiles set mascot_name = $1 where id = $2", ["아홉글자짜리이름임", u.id])).rejects.toThrow();
   });
 
+  it("운영 DB에 마스코트 이름 칸이 아직 없어도 로그인 사용자 정보는 읽힌다 (마이그레이션 전 배포 대비)", async () => {
+    const u = await makeUser();
+    loginAs(u.id);
+    await (await rawPg()).query("alter table public.profiles drop column mascot_name");
+    const r = await meRoute.GET(req("GET"), ctx());
+    expect(r.status).toBe(200);
+    expect((await r.json()).user).toMatchObject({ id: u.id, mascotName: null });
+  });
+
   it("프로필 설정: 닉네임 변경, 출생 정보 저장 → 내 사주 지정, 변경 시 이전 내 사주 삭제", async () => {
     const u = await makeUser();
     loginAs(u.id);

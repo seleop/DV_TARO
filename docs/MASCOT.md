@@ -177,7 +177,7 @@ FFMPEG_PATH=<ffmpeg.exe 경로> node scripts/mascot/encode.mjs
 
 - 렌더 640px → 모든 동작·의상 프레임의 캐릭터 영역(알파) 합집합으로 여백을 잘라 낸 뒤 칸 높이 512px로 축소(lanczos), WebP 품질 90.
 - 같은 영역으로 자르므로 동작·의상을 바꿔도 위치가 어긋나지 않는다. 시트 한 변은 4096px 이하(모바일 사파리 안전 범위).
-- 화면 크기는 `CharacterStage` 의 `size`(상자) × `zoom`(그림 배율, `brand.ts` 의 `mascotZoom`). 갤러리 "크기 시안"에서 A~D 비교.
+- 화면 크기는 `CharacterStage` 의 `size`(상자) × `zoom`(그림 배율, `brand.ts` 의 `mascotZoom`). (크기 시안을 보던 관리자 캐릭터 갤러리는 2026-10-25 삭제)
 
 ## 14. 2.5D 스타일·천막 배경 (2026-10-24)
 
