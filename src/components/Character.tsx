@@ -6,7 +6,7 @@ import { StarRabbit } from "./character/StarRabbit";
 import { useMascotName } from "./MascotName";
 import { FortuneMascot } from "./FortuneMascot";
 import { MASCOT_SHEETS, type MascotState } from "@/config/mascot-assets";
-import { idleReactionFor, introFor, mascotStateFor, nextIdleReactionDelay, outfitFor, resolveSheet, tapReactionFor, type Outfit } from "@/lib/mascot";
+import { aboveHead, idleReactionFor, introFor, mascotStateFor, nextIdleReactionDelay, outfitFor, resolveSheet, tapReactionFor, type Outfit } from "@/lib/mascot";
 
 const SHEET_NAMES: ReadonlySet<string> = new Set(Object.keys(MASCOT_SHEETS));
 /** 의상에 맞는 시트 이름 */
@@ -78,6 +78,12 @@ export function CharacterStage({
   const [reaction, setReaction] = useState<{ state: MascotState; id: number } | null>(null);
   const is3d = character === "mascot3d";
   const outfit = outfitFor(pose);
+  // 장면(의상)이 바뀌면 하던 반응은 그만두고 새 의상의 등장 동작부터 (이전 반응을 새 의상으로 이어 하면 한 번 더 바뀌어 어수선함)
+  const [reactionPose, setReactionPose] = useState(pose);
+  if (reactionPose !== pose) {
+    setReactionPose(pose);
+    setReaction(null);
+  }
   const expression = temp?.expression ?? fixedExpression ?? base.expression;
 
   const actorRef = useRef<HTMLDivElement>(null);
@@ -252,7 +258,12 @@ export function CharacterStage({
       {!is3d && <div className="absolute inset-[12%] rounded-full bg-[radial-gradient(circle,rgba(177,140,255,0.45),transparent_70%)] blur-2xl animate-glow" />}
       {orbs && <Orbs size={size} />}
       {showBubble && (
-        <div key={bubble.id} className="char-bubble bubble-soft pointer-events-none absolute left-1/2 top-0 z-10 w-max max-w-[min(240px,80vw)] rounded-[18px] px-3.5 py-2 text-center text-[14px] font-semibold leading-snug">
+        <div
+          key={bubble.id}
+          // 3D 별이는 머리(모자) 바로 위, SVG 별토끼는 무대 맨 위
+          style={is3d ? { bottom: aboveHead(outfit, size) } : undefined}
+          className={`char-bubble bubble-soft pointer-events-none absolute left-1/2 ${is3d ? "" : "top-0"} z-10 w-max max-w-[min(240px,80vw)] rounded-[18px] px-3.5 py-2 text-center text-[14px] font-semibold leading-snug`}
+        >
           {bubble.text}
           <span className="absolute -bottom-[6.5px] left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-b border-r border-[rgba(124,92,201,0.18)] bg-[#f7f4fc]" aria-hidden />
         </div>

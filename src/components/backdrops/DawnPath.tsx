@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
-import { Glint, Nebula, Scene, StarField, cos, sin, rng, v } from "./common";
+import { Baked, Glint, Nebula, Scene, StarField, cos, rng, sin, v } from "./common";
 import { CrescentMoon } from "./art";
 
 /**
@@ -137,7 +137,9 @@ function Sky() {
           return <path key={i} d={`M${sx} ${sy} L${sx + cos(a) * 160} ${sy + sin(a) * 160} L${sx + cos(a2) * 160} ${sy + sin(a2) * 160} Z`} fill="#fff1c9" opacity={i % 2 ? 0.25 : 0.45} />;
         })}
       </g>
-      <circle cx={sx} cy={sy} r={34} fill="#fff6d8" filter={`url(#${ID}-glow)`} />
+      <Baked id={`${ID}-sunGlow`} pad={22}>
+        <circle cx={sx} cy={sy} r={34} fill="#fff6d8" filter={`url(#${ID}-glow)`} />
+      </Baked>
       <circle cx={sx} cy={sy} r={30} fill="#fffbee" />
       {/* 날아가는 새 몇 마리 */}
       {[

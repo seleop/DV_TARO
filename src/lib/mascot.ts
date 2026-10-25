@@ -91,6 +91,17 @@ export function outfitFor(scene: Scene): Outfit {
   return "default";
 }
 
+/**
+ * 휴식 자세에서 머리(모자) 꼭대기 높이 = 시트 칸 위에서부터, 칸 높이 대비 비율.
+ * 시트 알파를 재서 정했다 (2026-10-25: 기본·갓·베레모 ≈ 0.26, 마법사 모자 ≈ 0.12). 말풍선을 머리 바로 위에 붙일 때 쓴다
+ */
+export const HEAD_TOP: Record<Outfit, number> = { default: 0.26, saju: 0.26, tarot: 0.12, star: 0.26 };
+
+/** 마스코트 무대(size×size, 바닥 맞춤) 바닥에서 머리 꼭대기 조금 위까지의 높이(px) */
+export function aboveHead(outfit: Outfit, size: number, gap = 6) {
+  return Math.round(size * (1 - HEAD_TOP[outfit]) + gap);
+}
+
 /** 의상별 대표 동작 (기본 의상의 reveal·celebrate 자리에 쓴다) */
 export const SIGNATURE: Record<Exclude<Outfit, "default">, string> = { saju: "read", tarot: "draw", star: "stargaze" };
 

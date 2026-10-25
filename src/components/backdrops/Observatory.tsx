@@ -5,7 +5,7 @@
  * 산 아래 달빛 받은 구름바다(운해) · 바위 정상과 등불.
  * 좌표계·움직임 규칙은 ./common (장면 375×520, 아래 기준으로 잘라 맞춤).
  */
-import { Fireflies, Glint, Mist, Nebula, Scene, ShootingStar, StarField, cos, polar, rng, sin, v } from "./common";
+import { Fireflies, Glint, Glow, Mist, Nebula, Scene, ShootingStar, StarField, cos, polar, rng, sin, v } from "./common";
 import { CrescentMoon } from "./art";
 
 const ID = "ob";
@@ -80,7 +80,7 @@ export function ObservatoryBackdrop() {
 
       {/* 황도 12궁 고리 (천천히 돈다) */}
       <g className="hb-spin" style={v({ "--d": "360s", transformOrigin: `${CX}px ${CY}px` })} opacity=".85">
-        <g filter={`url(#${ID}-glow)`}>
+        <Glow id={`${ID}-zodiac`}>
           <circle cx={CX} cy={CY} r={156} fill="none" stroke={GOLD} strokeWidth="1.2" opacity=".6" />
           <circle cx={CX} cy={CY} r={124} fill="none" stroke={GOLD} strokeWidth=".7" opacity=".45" strokeDasharray="2 5" />
           {Array.from({ length: 12 }, (_, i) => {
@@ -88,7 +88,7 @@ export function ObservatoryBackdrop() {
             const [x2, y2] = polar(CX, CY, 156, i * 30);
             return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={GOLD} strokeWidth=".7" opacity=".5" />;
           })}
-        </g>
+        </Glow>
         {marks.map((pts, i) => (
           <g key={i}>
             <polyline points={pts.map((p) => p.join(",")).join(" ")} fill="none" stroke="#cfe0ff" strokeWidth=".6" opacity=".75" />

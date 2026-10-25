@@ -4,8 +4,11 @@
  *  - 말풍선은 위쪽(약 y 40~110), 별이는 가운데 아래(약 y 300~480)에 서므로 주인공 그림은 y 120~330 띠에 둔다
  *  - 성운은 feTurbulence 잡음으로 만든 구름, 빛나는 것은 가우스 흐림 빛 번짐
  *  - 움직임은 CSS(반짝임·회전·떠다님·흔들림·촛불·안개·물빛·별똥별·떠오름). '동작 줄이기' 설정이면 모두 멈춘다
+ *  - 성능 (2026-10-25 최적화): 잡음·흐림 필터는 근처에서 무엇이든 움직이면(별 반짝임 등) 매 프레임 다시 계산된다.
+ *    그래서 움직이지 않는 필터 그림은 처음 그린 뒤 한 번만 비트맵으로 구워 둔다(Baked). 빛 번짐은 흐린 빛만 굽고
+ *    또렷한 원본은 벡터로 그대로 둔다(Glow). 별 반짝임은 별마다 따로가 아니라 몇 묶음으로 나눠 움직인다
  */
-import type { CSSProperties, ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 export function rng(seed: number) {
   let s = seed % 2147483647 || 1;
@@ -28,6 +31,15 @@ export function Scene({ id, children }: { id: string; children: ReactNode }) {
             <feMergeNode in="b2" />
             <feMergeNode in="b1" />
             <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        {/* 빛 번짐의 흐린 빛만 (원본 없음): Glow 가 이것만 굽고 원본은 벡터로 위에 그린다 */}
+        <filter id={`${id}-halo`} x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="2.2" result="b1" />
+          <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="b2" />
+          <feMerge>
+            <feMergeNode in="b2" />
+            <feMergeNode in="b1" />
           </feMerge>
         </filter>
         <filter id={`${id}-soft`} x="-50%" y="-50%" width="200%" height="200%">
@@ -121,6 +133,7 @@ export function Nebula({
   const [r, g, b] = hex(color);
   return (
     <g className={className} style={{ mixBlendMode: blend, ...style }} opacity={opacity}>
+      <Baked id={id} maxScale={1.25}>
       <defs>
         <radialGradient id={`${id}-m`}>
           <stop offset="0" stopColor="#fff" />
@@ -134,6 +147,7 @@ export function Nebula({
         </filter>
       </defs>
       <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill={`url(#${id}-m)`} filter={`url(#${id}-f)`} transform={`rotate(${rotate} ${cx} ${cy})`} />
+      </Baked>
     </g>
   );
 }
@@ -144,6 +158,16 @@ function hex(c: string): [number, number, number] {
 }
 
 /* ───────── 별: 크기·색·깜빡임이 제각각인 별밭 ───────── */
+
+/** 별 반짝임 묶음: [주기(초), 시작 지연(초)] — 주기·박자가 서로 어긋나 묶음이어도 제각각 반짝이는 것처럼 보인다 */
+const TWINKLE: Array<[number, number]> = [
+  [2.3, 0],
+  [3.1, 1.4],
+  [3.9, 0.6],
+  [4.6, 2.7],
+  [5.4, 1.9],
+  [6.2, 3.8],
+];
 
 const STAR_COLORS = ["#ffffff", "#ffffff", "#e8e2ff", "#fff1d0", "#cfe4ff", "#ffd6f0"];
 
@@ -181,14 +205,26 @@ export function StarField({
     }
     return { sx, sy, s: size[0] + Math.pow(r(), 2.2) * (size[1] - size[0]), c: STAR_COLORS[Math.floor(r() * STAR_COLORS.length)], d: 2 + r() * 4.5, delay: r() * 6, h: r() < halo, tw: r() < 0.7 };
   });
+  // 별마다 애니메이션을 두면 수백 개가 매 프레임 계산되므로, 반짝이는 별을 TWINKLE 묶음으로 나눠 묶음째 깜빡인다
+  const groups: Array<typeof stars> = [[], ...TWINKLE.map(() => [])];
+  stars.forEach((st) => groups[st.tw ? 1 + Math.min(TWINKLE.length - 1, Math.floor(((st.d - 2) / 4.5) * TWINKLE.length)) : 0].push(st));
+  const dot = (st: (typeof stars)[number], i: number) => (
+    <g key={i}>
+      {st.h && <circle cx={st.sx} cy={st.sy} r={st.s * 4} fill={st.c} opacity=".12" />}
+      <circle cx={st.sx} cy={st.sy} r={st.s} fill={st.c} />
+    </g>
+  );
   return (
     <g>
-      {stars.map((st, i) => (
-        <g key={i} className={st.tw ? "hb-tw" : undefined} style={v({ "--d": `${st.d}s`, animationDelay: `${st.delay}s` })}>
-          {st.h && <circle cx={st.sx} cy={st.sy} r={st.s * 4} fill={st.c} opacity=".12" />}
-          <circle cx={st.sx} cy={st.sy} r={st.s} fill={st.c} />
-        </g>
-      ))}
+      {groups.map((g, k) =>
+        k === 0 ? (
+          <g key={k}>{g.map(dot)}</g>
+        ) : (
+          <g key={k} className="hb-tw" style={v({ "--d": `${TWINKLE[k - 1][0]}s`, animationDelay: `${TWINKLE[k - 1][1]}s` })}>
+            {g.map(dot)}
+          </g>
+        ),
+      )}
     </g>
   );
 }
@@ -257,10 +293,14 @@ export function Fireflies({ seed, n, x, y, color = "#fff3a8", size = 1.4 }: { se
 /** 낮게 깔려 흐르는 안개 띠 */
 export function Mist({ id, y, color = "#b9a6ff", opacity = 0.35, d = 34 }: { id: string; y: number; color?: string; opacity?: number; d?: number }) {
   return (
-    <g className="hb-drift" style={v({ "--d": `${d}s` })} opacity={opacity} filter={`url(#${id}-haze)`}>
-      <ellipse cx="60" cy={y} rx="120" ry="16" fill={color} />
-      <ellipse cx="230" cy={y + 6} rx="140" ry="14" fill={color} />
-      <ellipse cx="380" cy={y - 4} rx="110" ry="15" fill={color} />
+    <g className="hb-drift" style={v({ "--d": `${d}s` })} opacity={opacity}>
+      <Baked id={`${id}-mist${y}`} pad={44}>
+        <g filter={`url(#${id}-haze)`}>
+          <ellipse cx="60" cy={y} rx="120" ry="16" fill={color} />
+          <ellipse cx="230" cy={y + 6} rx="140" ry="14" fill={color} />
+          <ellipse cx="380" cy={y - 4} rx="110" ry="15" fill={color} />
+        </g>
+      </Baked>
     </g>
   );
 }
@@ -275,3 +315,148 @@ export const sin = (a: number) => Math.round(Math.sin(a) * 1e6) / 1e6;
 /** 극좌표 점 */
 export const polar = (cx: number, cy: number, r: number, deg: number): [number, number] => [cx + r * cos(((deg - 90) * Math.PI) / 180), cy + r * sin(((deg - 90) * Math.PI) / 180)];
 
+/* ───────── 굽기: 움직이지 않는 필터 그림을 한 번만 비트맵으로 ───────── */
+
+type BakedImage = { url: string; x: number; y: number; w: number; h: number };
+/** 구운 그림 (key → 결과). 같은 배경을 다시 그려도 다시 굽지 않는다. 몇십 장뿐이라 지우지 않는다 */
+const bakedDone = new Map<string, BakedImage>();
+const bakeQueue: Array<() => Promise<void>> = [];
+let baking = false;
+/** 한 번에 하나씩, 브라우저가 한가할 때 굽는다 (처음 화면 그리기를 방해하지 않게) */
+function enqueue(job: () => Promise<void>) {
+  bakeQueue.push(job);
+  if (!baking) void drain();
+}
+async function drain() {
+  baking = true;
+  while (bakeQueue.length) {
+    await idle();
+    await bakeQueue.shift()!();
+  }
+  baking = false;
+}
+const idle = () =>
+  new Promise<void>((r) => {
+    if (typeof requestIdleCallback === "function") requestIdleCallback(() => r(), { timeout: 800 });
+    else setTimeout(r, 60); // iOS Safari 등
+  });
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+/** 한 장 최대 픽셀 수 (메모리: 0.6M px ≈ 2.4MB). 큰 성운은 해상도를 낮춰 맞춘다 — 흐린 그림이라 티가 나지 않는다 */
+const MAX_PIXELS = 600_000;
+
+/** g 를 그대로 떼어 SVG 이미지로 그린 뒤 PNG 로 굽는다. 숨겨져 있으면(display:none) 잴 수 없어 "hidden" */
+async function bake(g: SVGGElement, pad: number, maxScale: number): Promise<BakedImage | "hidden" | null> {
+  const svg = g.ownerSVGElement;
+  const ctm = g.getScreenCTM();
+  if (!svg || !ctm) return "hidden";
+  const bb = g.getBBox();
+  if (!bb.width || !bb.height) return "hidden";
+  const x = Math.floor(bb.x - pad);
+  const y = Math.floor(bb.y - pad);
+  const w = Math.ceil(bb.width + pad * 2);
+  const h = Math.ceil(bb.height + pad * 2);
+  // 화면 배율 × 기기 픽셀 배율 (넘치면 픽셀 수 한도에 맞춰 낮춘다)
+  const screen = Math.hypot(ctm.a, ctm.b) * (window.devicePixelRatio || 1);
+  const scale = Math.max(0.5, Math.min(maxScale, screen, Math.sqrt(MAX_PIXELS / (w * h))));
+  const W = Math.round(w * scale);
+  const H = Math.round(h * scale);
+  // 안에서 쓰지 않고 장면 defs 에 있는 그라데이션·필터·마스크를 함께 담는다
+  const body = new XMLSerializer().serializeToString(g);
+  const defs: string[] = [];
+  const seen = new Set<string>();
+  const collect = (text: string) => {
+    for (const m of text.matchAll(/url\(#([^)"']+)\)|href="#([^"]+)"/g)) {
+      const ref = m[1] ?? m[2];
+      if (seen.has(ref)) continue;
+      seen.add(ref);
+      if (g.querySelector(`[id="${ref}"]`)) continue;
+      const el = svg.querySelector(`[id="${ref}"]`);
+      if (!el) continue;
+      const str = new XMLSerializer().serializeToString(el);
+      defs.push(str);
+      collect(str);
+    }
+  };
+  collect(body);
+  const markup = `<svg xmlns="${SVG_NS}" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="${x} ${y} ${w} ${h}"><defs>${defs.join("")}</defs>${body}</svg>`;
+  const img = new Image();
+  img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(markup);
+  await (typeof img.decode === "function" ? img.decode() : new Promise((res, rej) => ((img.onload = res), (img.onerror = rej))));
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.drawImage(img, 0, 0, W, H);
+  const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/png"));
+  canvas.width = canvas.height = 0; // 캔버스 메모리 바로 돌려주기 (iOS)
+  if (!blob) return null;
+  return { url: URL.createObjectURL(blob), x, y, w, h };
+}
+
+/**
+ * 움직이지 않는 필터 그림(잡음 성운·흐림·빛 번짐)을 처음 그린 뒤 한 번만 비트맵으로 굽는다.
+ * - 바깥에서 움직이게(회전·흐름·떠다님) 해도 된다: 구운 그림을 통째로 옮기므로 매 프레임 필터를 다시 계산하지 않는다
+ * - 안에 움직이는 것(hb-* 애니메이션)을 넣지 않는다 (구우면 멈춘다)
+ * - id: 장면 안에서 유일한 이름 (같은 그림이면 같은 id 로 한 장을 함께 쓴다)
+ * - pad: 필터가 그림 밖으로 번지는 너비 (흐림 σ의 3배쯤)
+ * - maxScale: 장면 1단위당 최대 픽셀 (흐린 그림은 낮아도 티가 안 난다. 작고 또렷한 그림만 크게)
+ * - 굽기 전·실패하면(오래된 브라우저 등) 원래 SVG 를 그대로 그린다
+ */
+export function Baked({ id, pad = 0, maxScale = 2, children }: { id: string; pad?: number; maxScale?: number; children: ReactNode }) {
+  const ref = useRef<SVGGElement>(null);
+  const [img, setImg] = useState<BakedImage | null>(null);
+  useEffect(() => {
+    const done = bakedDone.get(id);
+    if (done) {
+      // 이미 구운 그림: 바로 쓴다 (첫 렌더는 서버와 같아야 해서 효과에서 바꾼다)
+      const t = setTimeout(() => setImg(done), 0);
+      return () => clearTimeout(t);
+    }
+    let alive = true;
+    let retry: ReturnType<typeof setTimeout>;
+    const job = async () => {
+      const g = ref.current;
+      if (!alive || !g) return;
+      const hit = bakedDone.get(id);
+      if (hit) return setImg(hit);
+      let r: BakedImage | "hidden" | null = null;
+      try {
+        r = await bake(g, pad, maxScale);
+      } catch {
+        r = null; // 그리기 실패: 원래 SVG 를 그대로 둔다
+      }
+      if (r === "hidden") {
+        // 숨겨진 배경 층: 다시 보일 때쯤 다시 시도
+        if (alive) retry = setTimeout(() => enqueue(job), 2000);
+        return;
+      }
+      if (!r) return;
+      bakedDone.set(id, r);
+      if (alive) setImg(r);
+    };
+    enqueue(job);
+    return () => {
+      alive = false;
+      clearTimeout(retry);
+    };
+  }, [id, pad, maxScale]);
+  if (img) return <image href={img.url} x={img.x} y={img.y} width={img.w} height={img.h} preserveAspectRatio="none" />;
+  return <g ref={ref}>{children}</g>;
+}
+
+/**
+ * 빛 번짐(장면 glow 필터와 같은 모양): 흐린 빛만 구워 두고, 또렷한 원본은 벡터로 위에 그린다
+ * (원본까지 구우면 고해상도 화면에서 금테·선이 흐려진다). id: "<장면 id>-<이름>"
+ */
+export function Glow({ id, children }: { id: string; children: ReactNode }) {
+  return (
+    <>
+      <Baked id={id} pad={22}>
+        <g filter={`url(#${id.split("-")[0]}-halo)`}>{children}</g>
+      </Baked>
+      {children}
+    </>
+  );
+}

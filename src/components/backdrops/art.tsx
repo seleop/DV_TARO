@@ -1,5 +1,5 @@
 /** 밤 장면 SVG 배경에 쓰는 그림 부품 (달·타로 카드·촛불·휘장) */
-import { cos, rng, sin, v } from "./common";
+import { Baked, Glow, cos, rng, sin, v } from "./common";
 
 const GOLD = "#f4d38a";
 
@@ -25,11 +25,13 @@ export function CrescentMoon({ id, x, y, r, glow = true }: { id: string; x: numb
           <circle cx={x} cy={y} r={r * 1.9} fill="#fff1c9" opacity=".1" />
         </g>
       )}
-      <g mask={`url(#${id}-cmask)`} filter={`url(#${id.split("-")[0]}-glow)`}>
-        <circle cx={x} cy={y} r={r} fill={`url(#${id}-cm)`} />
-        <circle cx={x - r * 0.45} cy={y + r * 0.2} r={r * 0.14} fill="#e3cd98" opacity=".6" />
-        <circle cx={x - r * 0.25} cy={y + r * 0.55} r={r * 0.1} fill="#e3cd98" opacity=".5" />
-      </g>
+      <Baked id={`${id}-body`} pad={22} maxScale={5}>
+        <g mask={`url(#${id}-cmask)`} filter={`url(#${id.split("-")[0]}-glow)`}>
+          <circle cx={x} cy={y} r={r} fill={`url(#${id}-cm)`} />
+          <circle cx={x - r * 0.45} cy={y + r * 0.2} r={r * 0.14} fill="#e3cd98" opacity=".6" />
+          <circle cx={x - r * 0.25} cy={y + r * 0.55} r={r * 0.1} fill="#e3cd98" opacity=".5" />
+        </g>
+      </Baked>
     </g>
   );
 }
@@ -61,11 +63,13 @@ export function FullMoon({ id, x, y, r }: { id: string; x: number; y: number; r:
       <circle cx={x} cy={y} r={r * 3.4} fill={`url(#${id}-halo)`} className="hb-pulse" style={v({ "--d": "9s" })} />
       <circle cx={x} cy={y} r={r * 2.2} fill="#fff6dc" opacity=".08" />
       <circle cx={x} cy={y} r={r * 1.45} fill="#fff6dc" opacity=".14" />
-      <g filter={`url(#${id.split("-")[0]}-glow)`}>
+      <Glow id={`${id}-glow`}>
         <circle cx={x} cy={y} r={r} fill={`url(#${id}-fm)`} />
-      </g>
+      </Glow>
       <g clipPath={`url(#${id}-fmc)`}>
-        <rect x={x - r} y={y - r} width={r * 2} height={r * 2} filter={`url(#${id}-maria)`} opacity=".7" />
+        <Baked id={`${id}-maria`} maxScale={5}>
+          <rect x={x - r} y={y - r} width={r * 2} height={r * 2} filter={`url(#${id}-maria)`} opacity=".7" />
+        </Baked>
         {[
           [-0.35, -0.2, 0.16],
           [0.3, 0.25, 0.12],
@@ -105,7 +109,9 @@ export function TarotCard({ id, x, y, w = 56, rot = 0, art, numeral, title, dela
           </linearGradient>
         </defs>
         {/* 카드 뒤 빛 */}
-        <rect x={x - 6} y={y - 6} width={w + 12} height={h + 12} rx={10 * s} fill={GOLD} opacity=".14" filter={`url(#${id.split("-")[0]}-soft)`} />
+        <Baked id={`${id}-back`} pad={18}>
+          <rect x={x - 6} y={y - 6} width={w + 12} height={h + 12} rx={10 * s} fill={GOLD} opacity=".14" filter={`url(#${id.split("-")[0]}-soft)`} />
+        </Baked>
         <rect x={x} y={y} width={w} height={h} rx={6 * s} fill={`url(#${id}-bg)`} stroke={GOLD} strokeWidth={1.6 * s} />
         <rect x={x + 4 * s} y={y + 4 * s} width={w - 8 * s} height={h - 8 * s} rx={3.5 * s} fill="none" stroke={GOLD} strokeWidth={0.6 * s} opacity=".85" />
         <rect x={x + 7 * s} y={y + 15 * s} width={w - 14 * s} height={h - 33 * s} rx={2 * s} fill="#170c45" stroke={GOLD} strokeWidth={0.5 * s} opacity=".9" />
@@ -132,9 +138,9 @@ export function TarotCard({ id, x, y, w = 56, rot = 0, art, numeral, title, dela
         <text x={cx} y={y + h - 6.5 * s} textAnchor="middle" fontSize={5.6 * s} fill={GOLD} fontWeight="700">
           {title}
         </text>
-        <g filter={`url(#${id.split("-")[0]}-glow)`}>
+        <Glow id={`${id}-sym`}>
           <CardSymbol art={art} cx={cx} cy={cy} s={s} />
-        </g>
+        </Glow>
       </g>
     </g>
   );
@@ -264,7 +270,9 @@ export function Candle({ id, x, y, h = 26, w = 8, delay = 0 }: { id: string; x: 
       <ellipse cx={x} cy={y - h} rx={w / 2} ry={1.2} fill="#f3e6d4" />
       <line x1={x} y1={y - h} x2={x} y2={y - h - 2.5} stroke="#3a2a20" strokeWidth=".8" />
       <g className="hb-flicker" style={v({ "--d": `${1.1 + (delay % 0.6)}s`, animationDelay: `${delay}s` })}>
-        <path d={`M${x} ${y - h - 13}C${x + 3.6} ${y - h - 7} ${x + 3} ${y - h - 2} ${x} ${y - h - 1.5}C${x - 3} ${y - h - 2} ${x - 3.6} ${y - h - 7} ${x} ${y - h - 13}Z`} fill={`url(#${id}-fl)`} filter={`url(#${id.split("-")[0]}-glow)`} />
+        <Glow id={`${id}-flame`}>
+          <path d={`M${x} ${y - h - 13}C${x + 3.6} ${y - h - 7} ${x + 3} ${y - h - 2} ${x} ${y - h - 1.5}C${x - 3} ${y - h - 2} ${x - 3.6} ${y - h - 7} ${x} ${y - h - 13}Z`} fill={`url(#${id}-fl)`} />
+        </Glow>
       </g>
       <ellipse cx={x} cy={y} rx={w * 0.9} ry={1.6} fill="#000" opacity=".3" />
     </g>

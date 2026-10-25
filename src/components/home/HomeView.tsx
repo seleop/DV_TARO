@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Screen } from "@/components/app/Screen";
 import { useMascotNamed } from "@/components/MascotName";
 import { MASCOT_SHEETS } from "@/config/mascot-assets";
+import type { HomeDay } from "@/lib/home-day";
 import { HOME_MENUS } from "@/lib/home-menu";
 import { thanksForName } from "@/lib/mascot-name";
 import { HomeGreeting } from "./HomeGreeting";
@@ -13,6 +14,8 @@ import { ASK_NAME_LINE, NamingOverlay } from "./NamingOverlay";
 
 /** 메뉴를 넘기는 중에 의상이 마구 바뀌지 않게, 멈춘 뒤 잠깐 있다가 갈아입는다 */
 const POSE_DELAY_MS = 320;
+/** 배경은 카드가 반쯤 넘어가 고른 카드가 바뀌면 거의 바로 바꾼다 (2026-10-25 사용자 요청: 더 빠르게) */
+const BACKDROP_DELAY_MS = 60;
 /** 이름을 아직 짓지 않았으면 마스코트가 인사한 뒤 묻는다 */
 const ASK_NAME_DELAY_MS = 1500;
 /** 이름을 지어 주면 잠깐 기뻐하며 고맙다고 말한다 */
@@ -20,23 +23,31 @@ const THANKS_MS = 4200;
 
 /**
  * 홈 화면: 장면(마스코트·말풍선) + 시트(좌우로 넘기는 메뉴)를 한 상태로 묶는다.
- *  - 메뉴를 넘기면 마스코트가 그 메뉴 의상으로 갈아입고 말풍선이 메뉴 이야기를 한다
+ *  - 메뉴를 넘기면 마스코트가 그 메뉴 의상으로 갈아입고, 배경도 그 기능의 배경으로 바뀌고, 말풍선이 메뉴 이야기를 한다
  *  - 마스코트 이름을 아직 짓지 않은 사용자에게는 한 번 이름을 묻는다(NamingOverlay)
  */
-export function HomeView({ displayName, hasPrimary, viewedToday }: { displayName: string; hasPrimary: boolean; viewedToday: boolean }) {
+export function HomeView({ displayName, hasPrimary, viewedToday, days }: { displayName: string; hasPrimary: boolean; viewedToday: boolean; days: HomeDay[] }) {
   const router = useRouter();
   const named = useMascotNamed();
   const [index, setIndex] = useState(0);
   const [swiped, setSwiped] = useState(false);
   const [pose, setPose] = useState(HOME_MENUS[0].pose);
+  const [backdrop, setBackdrop] = useState(HOME_MENUS[0].backdrop);
   const [asking, setAsking] = useState(false);
   const [thanks, setThanks] = useState<string | null>(null);
   const menu = HOME_MENUS[index];
 
   useEffect(() => {
+    // 마스코트 의상은 카드가 멈춘 뒤 잠깐 있다가 갈아입는다 (넘기는 중에 마구 바뀌지 않게)
     const t = setTimeout(() => setPose(thanks ? "happy" : menu.pose), POSE_DELAY_MS);
     return () => clearTimeout(t);
   }, [menu.pose, thanks]);
+
+  useEffect(() => {
+    // 배경은 바로 (여러 장을 빠르게 넘길 때 지나가는 카드마다 바뀌지 않을 만큼만 기다린다)
+    const t = setTimeout(() => setBackdrop(menu.backdrop), BACKDROP_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [menu.backdrop]);
 
   useEffect(() => {
     if (named) return;
@@ -63,7 +74,7 @@ export function HomeView({ displayName, hasPrimary, viewedToday }: { displayName
 
   return (
     <>
-      <Screen scene={<HomeGreeting name={displayName} pose={pose} menu={swiped ? menu : null} viewedToday={viewedToday} special={asking && !named ? ASK_NAME_LINE : thanks} />}>
+      <Screen backdrop={backdrop} scene={<HomeGreeting name={displayName} days={days} pose={pose} menu={swiped ? menu : null} viewedToday={viewedToday} special={asking && !named ? ASK_NAME_LINE : thanks} />}>
         <HomeMenu
           index={index}
           onIndexChange={(i) => {

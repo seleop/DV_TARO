@@ -404,3 +404,6 @@ body {
     background: linear-gradient(180deg, rgba(36, 26, 92, 0.88), rgba(16, 12, 46, 0.94));
   }
 }
+
+/* 장면 배경 전환: 새 배경이 이전 배경 위에서 나타난다 (src/components/backdrops) */
+@keyframes scene-fade-in { from { opacity: 0; } to { opacity: 1; } }

@@ -27,7 +27,10 @@
     - 근거 검사: 사주·운세 대사도 입력에 없는 간지 차단, 타로 대사는 위치 순서 일치·뽑히지 않은 카드 언급 차단(`findForeignCards`)
     - 예전에 저장된 해석(대사 없음)·모의 응답은 해석 내용으로 대사를 만들어 붙임(`*DialogueFallback`). 오늘의 운세 캐시 키에 프롬프트 버전이 들어 있어 배포 당일 이미 본 운세는 한 번 새로 생성됨
     - 타로 직접 고르기: `POST /api/tarot`에 `picks`(펼친 78장 중 고른 자리, 위치 순서대로) — 서버가 덱을 새로 섞고 그 자리 카드를 줌(분포는 그냥 뽑기와 같음). 화면은 아직 고르기 UI 없음
-    - 별이 새 동작(talk·point·listen·anticipate·sit)은 별도 세션 제안함(캐릭터 영역)
+    - 별이 새 동작(talk·point·listen·anticipate·sit): 사용자 요청으로 이 세션에서 진행 중 (`scripts/mascot/build_fox.py`, `public/mascot/*`, `src/config/mascot-assets.ts`, `docs/MASCOT.md`)
+- **홈 위쪽 오늘 줄 (main 반영, 2026-10-25 사용자 결정: 상단 여백 1안)**: 왼쪽 위(MY 맞은편)에 달 모양 아이콘 + "10월 25일 일요일 / 음력 9.15 보름 · 임신일 壬申". 음력은 KASI 기준 manseryeok, 일진은 오늘의 운세와 같은 두 엔진 교차검증(`verifiedDateGanji`, 다르면 빼고 표시). 서버가 오늘·내일을 계산해 넘기고(`homeDays`, lib/home.ts) 브라우저는 한국 날짜로 골라 자정에 바뀜(lib/home-day.ts). 누르면 별이가 일진 뜻·오늘 밤 달 모양을 말함
+- **홈 말풍선·별이 겹침·배경 전환·배경 최적화 (main 반영, 2026-10-25)**: 말풍선은 별이 머리(의상 모자) 바로 위에 붙음(`HEAD_TOP`·`aboveHead`, lib/mascot.ts — 시트 알파로 잰 의상별 머리 높이, 터치 말풍선도 같음). 의상이 바뀌면 이전 의상이 먼저 사라지고 새 의상이 이어서 나타남(`FortuneMascot` swap, 두 벌 겹쳐 보이던 문제), 이전 층은 새 층이 다 나타난 뒤 치움(늦게 그려질 때 잠깐 비던 문제). 배경은 카드가 반쯤 넘어가면 0.06초 뒤 0.3초에 바뀌고, 한 번 그린 배경은 숨겨 두었다 다시 씀. 최적화: 움직이지 않는 잡음·흐림·빛 번짐을 처음 한 번 비트맵으로 구움(`Baked`·`Glow`, backdrops/common.tsx), 별 반짝임은 6묶음. 배경 층은 `isolate`로 감쌈(z-index가 마스코트 위로 올라가지 않게). 실기기(iOS·Android) 성능·메모리는 아직 확인 안 함
+- **홈 메뉴 카드마다 배경 (main 반영, 2026-10-25 사용자 결정: 처음부터 카드 배경)**: 홈 배경 = 고른 카드의 기능 배경(오늘=새벽 언덕길·사주=한옥 서재·타로=성소·별자리=천문대), 마스코트 의상과 함께 카드가 멈춘 뒤 0.3초에 0.6초 겹쳐 바뀜(`SceneBackdrop` 층 전환, `Screen`의 `backdrop`). 점집 입구(`Porch`)는 삭제
 - **의상 다시 만들기·기능별 밤 장면 배경·가입 화면 별이 (main 반영, 2026-10-25 사용자 결정)**: 브랜치 `claude/vigilant-hopper-402c8c`
   - 배경(디테일 SVG, `src/components/backdrops/`, 장면 종류 `lib/scene.ts`): 홈=점집 입구(`Porch`) · 타로=성소, 수정구를 제단 위로(`Sanctum`) · 오늘의 운세=새벽빛 언덕길, 걸음에 맞춰 흐름(`DawnPath`, 예전 `StarlitPath` 대체) · 사주 목록=달빛 한옥 서재(`Study`) · 별자리=산꼭대기 천문대(`Observatory`). 모두 밤 장면(밝은 글씨 + 어두운 유리 시트). `Screen`이 `SceneBackdrop`으로 그림
   - 주의: 깜빡임 클래스(hb-candle·hb-tw·hb-pulse)는 opacity 를 애니메이션하므로, 은은한 빛 덮개는 투명도를 감싼 `<g opacity>`에 둔다

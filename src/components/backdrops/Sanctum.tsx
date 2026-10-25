@@ -4,7 +4,7 @@
  * 수정구 양옆에 떠 있는 타로 네 장 · 마법진 무대 바닥과 펼친 카드 · 촛불 · 향 연기 · 금빛 먼지.
  * 주인공(수정구)은 말풍선 아래·별이 머리 위에 둔다. 좌표계·움직임 규칙은 ./common.
  */
-import { Fireflies, Glint, Nebula, Scene, ShootingStar, StarField, cos, polar, sin, v } from "./common";
+import { Baked, Fireflies, Glint, Glow, Nebula, Scene, ShootingStar, StarField, cos, polar, sin, v } from "./common";
 import { Candle, Drape, TarotCard } from "./art";
 
 const ID = "hs";
@@ -88,12 +88,14 @@ export function SanctumBackdrop() {
           <ellipse key={i} cx={BX} cy={BY} rx={70 + i * 14} ry={60 + i * 12} fill="none" stroke={i % 2 ? "#ffc6f0" : "#b9a6ff"} strokeWidth={0.6 + (i % 3) * 0.3} strokeDasharray={`${8 + i * 6} ${10 + i * 4}`} transform={`rotate(${i * 27} ${BX} ${BY})`} />
         ))}
       </g>
-      <g className="hb-spin-r" style={v({ "--d": "140s", transformOrigin: `${BX}px ${BY}px` })} filter={`url(#${ID}-glow)`}>
-        {Array.from({ length: 48 }, (_, i) => {
-          const [x, y] = polar(BX, BY, 140, i * 7.5);
-          return <circle key={i} cx={x} cy={y} r={i % 4 === 0 ? 2.1 : 1} fill={i % 4 === 0 ? "#fff6d8" : GOLD} />;
-        })}
-        <circle cx={BX} cy={BY} r={130} fill="none" stroke={GOLD} strokeWidth=".7" strokeDasharray="2 4" />
+      <g className="hb-spin-r" style={v({ "--d": "140s", transformOrigin: `${BX}px ${BY}px` })}>
+        <Glow id={`${ID}-ring`}>
+          {Array.from({ length: 48 }, (_, i) => {
+            const [x, y] = polar(BX, BY, 140, i * 7.5);
+            return <circle key={i} cx={x} cy={y} r={i % 4 === 0 ? 2.1 : 1} fill={i % 4 === 0 ? "#fff6d8" : GOLD} />;
+          })}
+          <circle cx={BX} cy={BY} r={130} fill="none" stroke={GOLD} strokeWidth=".7" strokeDasharray="2 4" />
+        </Glow>
       </g>
 
       {/* 흑백 기둥 (왼쪽 어둠·오른쪽 빛) */}
@@ -112,7 +114,7 @@ export function SanctumBackdrop() {
           {[176, 300, 440].map((y) => (
             <rect key={y} x={x} y={y} width={34} height={3} fill={GOLD} opacity=".85" />
           ))}
-          <g filter={`url(#${ID}-glow)`}>
+          <Glow id={`${ID}-mark${x}`}>
             {mark === "moon" ? (
               <path d={`M${x + 20} ${222}a9 9 0 1 0 6 15a7 7 0 1 1 -6 -15Z`} fill={GOLD} />
             ) : (
@@ -125,7 +127,7 @@ export function SanctumBackdrop() {
                 })}
               </g>
             )}
-          </g>
+          </Glow>
         </g>
       ))}
 
@@ -158,8 +160,11 @@ export function SanctumBackdrop() {
               [-13, -24, 16, "#ffd08a"],
             ] as const
           ).map(([dx, dy, r, c], i) => (
-            <circle key={i} cx={BX + dx} cy={BY + dy} r={r} fill={c} opacity=".6" filter={`url(#${ID}-haze)`} />
+            <Baked key={i} id={`${ID}-blob${i}`} pad={44}>
+              <circle cx={BX + dx} cy={BY + dy} r={r} fill={c} opacity=".6" filter={`url(#${ID}-haze)`} />
+            </Baked>
           ))}
+          <Baked id={`${ID}-swirl`} pad={18}>
           {Array.from({ length: 3 }, (_, k) => (
             <path
               key={k}
@@ -175,9 +180,12 @@ export function SanctumBackdrop() {
               filter={`url(#${ID}-soft)`}
             />
           ))}
+          </Baked>
         </g>
         <StarField seed={91} n={36} x={[BX - BR, BX + BR]} y={[BY - BR, BY + BR]} size={[0.3, 1.1]} halo={0.15} />
-        <circle cx={BX} cy={BY} r={13} fill="#fff6ff" opacity=".55" filter={`url(#${ID}-soft)`} />
+        <Baked id={`${ID}-core`} pad={18}>
+          <circle cx={BX} cy={BY} r={13} fill="#fff6ff" opacity=".55" filter={`url(#${ID}-soft)`} />
+        </Baked>
         <ellipse cx={BX} cy={BY + BR * 0.7} rx={BR * 0.7} ry={BR * 0.25} fill="#c9a8ff" opacity=".25" />
       </g>
       {/* 유리 반사광 */}
@@ -206,7 +214,7 @@ export function SanctumBackdrop() {
         <line key={y} x1="0" y1={y} x2="375" y2={y} stroke="#4a2a7a" strokeWidth=".8" opacity=".6" />
       ))}
       <ellipse cx={BX} cy={470} rx={170} ry={36} fill={`url(#${ID}-floorGlow)`} />
-      <g filter={`url(#${ID}-glow)`}>
+      <Glow id={`${ID}-circle`}>
         <ellipse cx={BX} cy={470} rx={128} ry={22} fill="none" stroke={GOLD} strokeWidth="1.4" />
         <ellipse cx={BX} cy={470} rx={108} ry={17} fill="none" stroke={GOLD} strokeWidth=".7" strokeDasharray="3 3" />
         <ellipse cx={BX} cy={470} rx={70} ry={11} fill="none" stroke={GOLD} strokeWidth="1" />
@@ -214,7 +222,7 @@ export function SanctumBackdrop() {
           const a = (i / 12) * Math.PI * 2;
           return <circle key={i} cx={BX + cos(a) * 118} cy={470 + sin(a) * 19.5} r="1.6" fill="#fff6d8" />;
         })}
-      </g>
+      </Glow>
       <path d="M0 440 Q187 418 375 440" stroke={GOLD} strokeWidth="1.2" fill="none" opacity=".7" />
       {(
         [
@@ -237,9 +245,13 @@ export function SanctumBackdrop() {
       <g>
         <ellipse cx="338" cy="478" rx="10" ry="3" fill="#6a4018" />
         <path d="M330 478 Q338 490 346 478Z" fill={`url(#${ID}-gold)`} />
-        <g className="hb-drift" style={v({ "--d": "7s" })} filter={`url(#${ID}-soft)`} opacity=".5">
-          <path d="M338 474 C332 454 346 440 338 422 C330 404 344 390 338 370" stroke="#d8c8ff" strokeWidth="4" fill="none" />
-          <path d="M340 472 C348 456 334 444 342 428 C350 412 336 400 344 384" stroke="#f0d8ff" strokeWidth="2.5" fill="none" />
+        <g className="hb-drift" style={v({ "--d": "7s" })} opacity=".5">
+          <Baked id={`${ID}-smoke`} pad={18}>
+            <g filter={`url(#${ID}-soft)`}>
+              <path d="M338 474 C332 454 346 440 338 422 C330 404 344 390 338 370" stroke="#d8c8ff" strokeWidth="4" fill="none" />
+              <path d="M340 472 C348 456 334 444 342 428 C350 412 336 400 344 384" stroke="#f0d8ff" strokeWidth="2.5" fill="none" />
+            </g>
+          </Baked>
         </g>
       </g>
       <Fireflies seed={7} n={26} x={[20, 355]} y={[250, 470]} color="#ffd98a" size={1.1} />
@@ -252,13 +264,13 @@ function Hanging({ x, len, kind, delay }: { x: number; len: number; kind: "star"
   return (
     <g className="hb-sway" style={v({ "--d": `${5 + delay}s`, animationDelay: `${-delay}s`, transformOrigin: `${x}px 0px`, transformBox: "view-box" })}>
       <line x1={x} y1={0} x2={x} y2={len} stroke={GOLD} strokeWidth=".7" opacity=".8" />
-      <g filter={`url(#${ID}-glow)`}>
+      <Glow id={`${ID}-hang${x}`}>
         {kind === "star" ? (
           <path d={`M${x} ${len}l2.6 5.6l6 .6l-4.6 4l1.4 6l-5.4 -3.2l-5.4 3.2l1.4 -6l-4.6 -4l6 -.6Z`} fill={GOLD} />
         ) : (
           <path d={`M${x + 2} ${len}a8 8 0 1 0 5 14a6.4 6.4 0 1 1 -5 -14Z`} fill="#fff1c9" />
         )}
-      </g>
+      </Glow>
     </g>
   );
 }
@@ -332,7 +344,9 @@ function Altar() {
         <path key={i} d={`M${x} ${y - 3}L${x + 0.9} ${y - 0.9}L${x + 3} ${y}L${x + 0.9} ${y + 0.9}L${x} ${y + 3}L${x - 0.9} ${y + 0.9}L${x - 3} ${y}L${x - 0.9} ${y - 0.9}Z`} fill={GOLD} opacity=".85" />
       ))}
       {/* 제단 위에 비친 수정구 빛 */}
-      <ellipse cx={BX} cy={top + 4} rx={40} ry={6} fill="#d9b8ff" opacity=".35" filter={`url(#${ID}-soft)`} />
+      <Baked id={`${ID}-altarGlow`} pad={18}>
+        <ellipse cx={BX} cy={top + 4} rx={40} ry={6} fill="#d9b8ff" opacity=".35" filter={`url(#${ID}-soft)`} />
+      </Baked>
     </g>
   );
 }
