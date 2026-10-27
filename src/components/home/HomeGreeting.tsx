@@ -14,6 +14,8 @@ import { aboveHead, outfitFor } from "@/lib/mascot";
 
 /** 들어온 뒤 마스코트가 손을 흔드는 동안 잠깐 두었다가 말풍선을 띄운다 */
 const FIRST_BUBBLE_DELAY_MS = 900;
+/** 말풍선을 눌러 새 말을 들을 때 별이가 입을 움직이는 시간: 글자 수에 비례 (2026-10-28 사용자 결정: 말하기 동작) */
+const talkMs = (text: string) => Math.min(3800, Math.max(1600, text.length * 85));
 /** 마스코트를 누르면 마스코트 자체 말풍선이 뜨므로 그동안 홈 말풍선을 숨긴다 (CharacterStage BUBBLE_MS) */
 const TAP_HIDE_MS = 2400;
 
@@ -74,6 +76,15 @@ export function HomeGreeting({
   const topic = special ? `special:${special}` : dayActive ? `day:${day.date}` : menu ? `menu:${menu.id}` : "greet";
   const [turn, setTurn] = useState({ topic, n: 0 });
   const n = turn.topic === topic ? turn.n : 0;
+  // 사용자가 눌러서 새 말을 할 때만 말하기 동작 (처음 인사·메뉴 넘김처럼 저절로 바뀌는 말은 그대로)
+  const [talking, setTalking] = useState(false);
+  const talkTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const speak = (text: string | null | undefined) => {
+    if (!text) return;
+    setTalking(true);
+    clearTimeout(talkTimer.current);
+    talkTimer.current = setTimeout(() => setTalking(false), talkMs(text));
+  };
   const next = () => setTurn({ topic, n: n + 1 });
   const [shown, setShown] = useState(false);
   const [hiddenUntilTap, setHiddenUntilTap] = useState(false);
@@ -84,6 +95,7 @@ export function HomeGreeting({
     return () => {
       clearTimeout(t);
       clearTimeout(hideTimer.current);
+      clearTimeout(talkTimer.current);
     };
   }, []);
 
@@ -94,6 +106,7 @@ export function HomeGreeting({
     setHiddenUntilTap(false);
     if (dayActive) next();
     else setDayAsk({ menu: menu?.id ?? null, date: day.date });
+    speak(talk[dayActive ? (n + 1) % talk.length : 0]);
   };
   // 메뉴를 넘기거나 특별한 말이 생기면 기다리지 않고 바로 말한다
   const visible = (shown || topic !== "greet") && !hiddenUntilTap && line;
@@ -129,7 +142,10 @@ export function HomeGreeting({
             {/* 말풍선은 마스코트 머리(의상 모자) 바로 위에 붙는다. 꼬리(아래 가운데)에서 톡 튀어나오듯 커지며 나타난다 */}
             <button
               type="button"
-              onClick={next}
+              onClick={() => {
+                next();
+                speak(line);
+              }}
               aria-label={`${mascot}의 다음 말 듣기`}
               tabIndex={visible ? 0 : -1}
               style={{ bottom: aboveHead(outfitFor(pose), size, 8) }}
@@ -156,7 +172,7 @@ export function HomeGreeting({
                 }, TAP_HIDE_MS);
               }}
             >
-              <CharacterStage size={size} pose={pose} quietIntro />
+              <CharacterStage size={size} pose={pose} quietIntro talking={talking} />
             </div>
           </div>
         )}

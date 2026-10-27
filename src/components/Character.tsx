@@ -51,8 +51,11 @@ export function CharacterStage({
   character = BRAND.character.renderer,
   zoom = BRAND.character.mascotZoom,
   quietIntro = false,
+  talking = false,
   className = "",
 }: {
+  /** 말하는 중: 바탕 동작을 말하기(talk)로 (화면 말풍선이 새 말을 할 때. 반응 동작이 있으면 반응이 먼저) */
+  talking?: boolean;
   /** 등장 인사 말풍선을 띄우지 않는다 (화면이 따로 말풍선을 보여 줄 때, 지금은 홈). 등장 동작은 그대로 */
   quietIntro?: boolean;
   /** 3D 마스코트 확대 배율 (기본값은 brand.ts). 무대 전체(레이아웃 크기 포함)를 키워 주변과 겹치지 않는다 */
@@ -236,7 +239,7 @@ export function CharacterStage({
   );
   const figure = is3d ? (
     <FortuneMascot
-      state={sheetFor(outfit, reaction?.state ?? mascotStateFor(pose, mood))}
+      state={sheetFor(outfit, reaction?.state ?? (talking ? "talk" : mascotStateFor(pose, mood)))}
       playId={reaction?.id ?? 0}
       size={size}
       still={size < 120}
