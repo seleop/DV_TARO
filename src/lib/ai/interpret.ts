@@ -57,15 +57,16 @@ async function runAi<T>(a: RunArgs<T>) {
   const promptVersion = PROMPT_VERSIONS[a.kind];
   await assertAiAllowed(a.userId, worstCaseCostUsd(provider.model, a.system.length + a.user.length, a.maxTokens));
   const started = performance.now();
-  const log = (ok: boolean, usage: { inputTokens: number; outputTokens: number }, errorCode: string | null) =>
+  // model: 실제로 답한 모델 (거절 시 서버가 대체 모델로 다시 실행하면 그 모델의 단가로 기록)
+  const log = (ok: boolean, usage: { inputTokens: number; outputTokens: number }, errorCode: string | null, model = provider.model) =>
     logUsage({
       userId: a.userId,
       kind: "ai",
       provider: provider.name,
-      model: provider.model,
+      model,
       inputTokens: usage.inputTokens,
       outputTokens: usage.outputTokens,
-      costUsdEst: estimateCostUsd(provider.model, usage.inputTokens, usage.outputTokens).usd,
+      costUsdEst: estimateCostUsd(model, usage.inputTokens, usage.outputTokens).usd,
       durationMs: performance.now() - started,
       ok,
       errorCode,
@@ -82,16 +83,21 @@ async function runAi<T>(a: RunArgs<T>) {
   }
   const parsed = a.strictSchema.safeParse(res.data);
   if (!parsed.success) {
-    await log(false, res.usage, "AI_SCHEMA_INVALID");
+    await log(false, res.usage, "AI_SCHEMA_INVALID", res.model);
     throw new AiError("AI_SCHEMA_INVALID", "AI 응답이 정해진 형식을 지키지 않아 저장하지 않았습니다. 다시 시도해 주세요.", res.usage);
   }
   const problems = a.grounding?.(parsed.data) ?? [];
   if (problems.length) {
-    await log(false, res.usage, "AI_UNGROUNDED");
+    await log(false, res.usage, "AI_UNGROUNDED", res.model);
     throw new AiError("AI_UNGROUNDED", "AI 응답에 검증되지 않은 간지가 포함되어 저장하지 않았습니다. 다시 시도해 주세요.", res.usage);
   }
-  await log(true, res.usage, null);
+  await log(true, res.usage, null, res.model);
   return { content: parsed.data, provider: res.provider, model: res.model, promptVersion };
+}
+
+/** 실제 AI를 연결한 뒤에는 모의 응답으로 저장된 결과를 다시 쓰지 않는다 (같은 날 운세·예전 사주 풀이가 모의 문장으로 남지 않게) */
+export function isStaleMock(provider: string) {
+  return provider === "mock" && getAiProvider().name !== "mock";
 }
 
 // ── 근거 검사: 출력에 등장하는 간지가 입력으로 준 값인지 확인 ──
@@ -201,7 +207,8 @@ export async function generateSajuReading(
 
 export async function latestSajuReading(userId: string, calc: StoredCalculation) {
   const r = await getLatestReadingForCalculation<SajuReading>(userId, calc.id, "saju");
-  return r ? { ...r, content: withSajuDialogue(r.content, calc.result) } : null;
+  // 모의 응답 풀이는 실제 AI 연결 후에는 없는 것으로 본다 → 화면에 "풀이 듣기" 버튼이 다시 나온다
+  return r && !isStaleMock(r.provider) ? { ...r, content: withSajuDialogue(r.content, calc.result) } : null;
 }
 
 // ── 오늘의 운세 ──
@@ -221,7 +228,7 @@ export async function generateDailyReading(userId: string, calc: StoredCalculati
   const cacheKey = dailyReadingCacheKey(calc.id, today.date);
   if (!opts.regenerate) {
     const hit = await findReadingByCacheKey<DailyReading>(userId, cacheKey);
-    if (hit) return { reading: { ...hit, content: withDailyDialogue(hit.content) }, today: { ...today, tenGod }, tomorrow, cached: true };
+    if (hit && !isStaleMock(hit.provider)) return { reading: { ...hit, content: withDailyDialogue(hit.content) }, today: { ...today, tenGod }, tomorrow, cached: true };
   }
   const allowed = allowedGanji(c, [today.day, today.month, today.year]);
   const r = await runAi<DailyReading>({
@@ -349,7 +356,7 @@ export async function generateHoroscope(
   const cacheKey = hmac(`horoscope:${userId}:${sign.id}:${date}:${PROMPT_VERSIONS.horoscope}`);
   if (!opts.regenerate) {
     const hit = await findReadingByCacheKey<HoroscopeReading & { sign: unknown; date: string }>(userId, cacheKey);
-    if (hit) return { id: hit.id, content: hit.content, cached: true, provider: hit.provider };
+    if (hit && !isStaleMock(hit.provider)) return { id: hit.id, content: hit.content, cached: true, provider: hit.provider };
   }
   const r = await runAi<HoroscopeReading>({
     userId,

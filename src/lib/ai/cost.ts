@@ -4,6 +4,9 @@
  */
 export const MODEL_PRICING: Record<string, { input: number; output: number }> = {
   "claude-opus-5-5": { input: 4, output: 20 },
+  // 안전 분류기 거절 시 서버가 대신 실행할 수 있는 모델 (fallbacks: "default")
+  "claude-opus-5": { input: 5, output: 25 },
+  "claude-opus-4-8": { input: 5, output: 25 },
   "claude-sonnet-5-5": { input: 2, output: 10 },
   "claude-haiku-5-5": { input: 0.1, output: 0.5 },
   "claude-fable-5-1": { input: 10, output: 50 },
