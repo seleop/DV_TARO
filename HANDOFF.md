@@ -20,7 +20,7 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
-- **흐름(HRUM) 단일 출처로 전환 (main 미반영, 2026-10-27~28 사용자 결정)**: 브랜치 `claude/agitated-goldwasser-447da7`. 키(`HRUM_API_KEY`)를 넣기 전에는 앱 내장 엔진 + 모의 응답으로 동작
+- **흐름(HRUM) 단일 출처로 전환 (main 반영, 2026-10-27~28 사용자 결정)**: 브랜치 `claude/agitated-goldwasser-447da7`. 키(`HRUM_API_KEY`)를 넣기 전에는 앱 내장 엔진 + 모의 응답으로 동작
   - 세 엔진 교차검증 철회 → 원국은 흐름 만세력 하나(`src/lib/saju/engines/hrum.ts`). 실패·미지원 설정(23시대+midnight 관법, 시간대 미인식)이면 앱 내장 manseryeok. 판정 규칙에 `minEngines`(엔진 하나면 1). 음력은 KASI만. 규칙 버전 2026-10-27.1(캐시 분리). `docs/VERIFICATION.md` 첫 절
   - 사주·오늘의 운세 풀이: Claude 대신 흐름 AI 리딩(`src/lib/ai/hrum-reading.ts`). 리딩이 자유 문장 하나라 장마다 질문 8건(사주)·/today+분야 3건(오늘)을 동시에 받아 앱 구조·별이 대사로 정리. 추천 질문은 장별 고정 질문(답은 흐름). 흐름 풀이에는 간지 근거 검사 미적용. 타로·별자리는 계속 `AI_PROVIDER`(Claude/모의)
   - 개인정보 고지 2026-10-28(`src/config/privacy.ts`): 흐름 처리 위탁·미국 AI 회사 국외 이전. 예전 버전 동의자는 `/consent`에서 재동의해야 이용(MY 제외), 동의 전에는 흐름으로 보내지 않음(`lib/privacy-consent.ts`). 문구는 변경안 — 법률 검토 권장(`docs/DATA_POLICY.md` 고지 변경 이력)
