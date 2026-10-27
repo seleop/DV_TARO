@@ -20,7 +20,15 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
-- 진행 중: 메인 화면 세션/claude/vigilant-hopper-402c8c — 서비스 전반 UX/UI 점검·개선: 타로 화면(결과 별이·카드 금테 디자인·섞는 동작, tarot/page.tsx), 별자리 기호(HoroscopeClient), 홈 말하기 동작(HomeGreeting), MY·프로필·사주 입력 밤 테마(MeClient·ProfileClient·saju/new·lib/scene), 밤 장면 버튼(HomeButton·TopBar), 겹친 흐림 최적화(globals.css 추가만)
+- **서비스 전반 UX/UI 점검·개선 (main 미반영, 2026-10-28 사용자 결정 4건: MY 밤 테마·타로 카드 지금 바꾸기·말하기 동작·별자리 금빛 기호)**: 브랜치 `claude/vigilant-hopper-402c8c`
+  - 타로: 뽑은 카드 = 배경 성소와 같은 남색·금테 그림(`src/components/tarot/TarotCardArt.tsx` — 메이저 22장 상징, 마이너는 수트 상징을 숫자만큼·궁정은 관, 역방향은 그림만 거꾸로, 필터 없음). 대화형 타로 화면도 이 부품을 쓰면 된다. 결과·섞는 중에 별이가 안 보이던 문제(FitSize 높이 0) 수정, 카드 가운데 정렬(`CardTable`)·자리 이름 위·카드 이름은 뒤집힌 뒤 아래, 섞는 동안 별이가 카드 뽑기 동작. 시작 화면 제목 먼저·설명 한 줄
+  - 별자리: 이모지 대신 금빛 선 기호(`src/components/horoscope/ZodiacGlyph.tsx`). 결과 머리 줄 제목이 밤하늘에서 안 보이던 문제(TopBar h1 글자색 상속) 수정
+  - MY·프로필 설정·다른 사람 사주·동의 = 밤 바탕(`lib/scene.ts` night): 정지한 별 그라데이션(`.night-sky`) + 어두운 유리 카드(`.glass-night.night-page`, 카드는 별이 비치지 않게 조금 짙게). 관리자는 크림색 그대로
+  - 밤 장면 위 홈·뒤로(TopBar)·MY·사주 결과 ⋯ 버튼 = 어두운 유리 동그라미로 통일 (단청 무늬 위에서도 보이게)
+  - 홈: 말풍선·오늘 줄을 눌러 새 말을 들을 때 별이가 talk(말하기) 동작 1.6~3.8초 (`CharacterStage` `talking`). 저절로 바뀌는 인사·메뉴 말은 그대로
+  - 최적화: 시트 안 카드의 겹친 backdrop-filter 제거(`.glass-sheet .glass`), 밤 바탕 화면은 흐림 없음
+  - 확인: 375×812·360×600 홈·오늘·사주 목록·사주 결과·타로(시작·결과)·별자리·MY·프로필(이름 바꾸기 창)·다른 사람 사주 넘침 없음. 숨겨진 브라우저 창이라 requestAnimationFrame 이 멈춰 동작 전환은 타이머로 바꿔 확인함. 실기기는 아직
+  - 남은 것: 짧은 화면에서 장면 위쪽 장식(오늘의 운세 결과의 초승달, 별자리 화면 홈 버튼 옆 달)이 잘리거나 겹침 — 장면 좌표를 화면 높이에 맞춰 옮기는 작업은 하지 않음
 - **흐름(HRUM) 단일 출처로 전환 (main 반영, 2026-10-27~28 사용자 결정)**: 브랜치 `claude/agitated-goldwasser-447da7`. 키(`HRUM_API_KEY`)를 넣기 전에는 앱 내장 엔진 + 모의 응답으로 동작
   - 세 엔진 교차검증 철회 → 원국은 흐름 만세력 하나(`src/lib/saju/engines/hrum.ts`). 실패·미지원 설정(23시대+midnight 관법, 시간대 미인식)이면 앱 내장 manseryeok. 판정 규칙에 `minEngines`(엔진 하나면 1). 음력은 KASI만. 규칙 버전 2026-10-27.1(캐시 분리). `docs/VERIFICATION.md` 첫 절
   - 사주·오늘의 운세 풀이: Claude 대신 흐름 AI 리딩(`src/lib/ai/hrum-reading.ts`). 리딩이 자유 문장 하나라 장마다 질문 8건(사주)·/today+분야 3건(오늘)을 동시에 받아 앱 구조·별이 대사로 정리. 추천 질문은 장별 고정 질문(답은 흐름). 흐름 풀이에는 간지 근거 검사 미적용. 타로·별자리는 계속 `AI_PROVIDER`(Claude/모의)
