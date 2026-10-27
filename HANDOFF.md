@@ -20,7 +20,12 @@
 - 로컬 체험 모드(`LOCAL_DEV_MODE=true`): Supabase 없이 실행
 
 ## 현재 상태 (2026-10-23)
-- 진행 중: 사주 퍼널 세션/`claude/agitated-goldwasser-447da7` — 흐름(HRUM) 연결: 만세력을 교차검증 엔진으로(`src/lib/saju/**`, `src/lib/config.ts`), `/today` 결과를 오늘의 운세 근거로(`src/lib/ai/*`), 개인정보 고지 변경안(`src/config/privacy.ts`, `docs/DATA_POLICY.md`, `docs/VERIFICATION.md`, `docs/OPERATIONS.md`)
+- **흐름(HRUM) 단일 출처로 전환 (main 미반영, 2026-10-27~28 사용자 결정)**: 브랜치 `claude/agitated-goldwasser-447da7`. 키(`HRUM_API_KEY`)를 넣기 전에는 앱 내장 엔진 + 모의 응답으로 동작
+  - 세 엔진 교차검증 철회 → 원국은 흐름 만세력 하나(`src/lib/saju/engines/hrum.ts`). 실패·미지원 설정(23시대+midnight 관법, 시간대 미인식)이면 앱 내장 manseryeok. 판정 규칙에 `minEngines`(엔진 하나면 1). 음력은 KASI만. 규칙 버전 2026-10-27.1(캐시 분리). `docs/VERIFICATION.md` 첫 절
+  - 사주·오늘의 운세 풀이: Claude 대신 흐름 AI 리딩(`src/lib/ai/hrum-reading.ts`). 리딩이 자유 문장 하나라 장마다 질문 8건(사주)·/today+분야 3건(오늘)을 동시에 받아 앱 구조·별이 대사로 정리. 추천 질문은 장별 고정 질문(답은 흐름). 흐름 풀이에는 간지 근거 검사 미적용. 타로·별자리는 계속 `AI_PROVIDER`(Claude/모의)
+  - 개인정보 고지 2026-10-28(`src/config/privacy.ts`): 흐름 처리 위탁·미국 AI 회사 국외 이전. 예전 버전 동의자는 `/consent`에서 재동의해야 이용(MY 제외), 동의 전에는 흐름으로 보내지 않음(`lib/privacy-consent.ts`). 문구는 변경안 — 법률 검토 권장(`docs/DATA_POLICY.md` 고지 변경 이력)
+  - 확인: 가짜 네트워크 테스트(`tests/hrum.test.ts`), 로컬에서 재동의 이동·동의 후 복귀·360×600 넘침 없음. **실제 흐름 호출은 아직** — 키 등록 후 운영에서 처음 확인(요청 형식은 흐름 공식 문서 예시 기준)
+  - 운영: `docs/OPERATIONS.md` 8단계(흐름 키), 9단계(Claude는 타로·별자리만)
 - **운세·사주 풀이 실제 Claude 연결 준비 (main 반영, 2026-10-27)**: 브랜치 `claude/agitated-goldwasser-447da7`. 코드는 키만 넣으면 동작 — 사용자가 키 등록 중(`docs/OPERATIONS.md` 8단계)
   - 호출: `client.beta.messages.parse` + `output_config: { effort, format: betaZodOutputFormat }`, 안전 분류기 거절 시 서버가 권장 모델로 다시 실행(`fallbacks: "default"`, beta `server-side-fallback-2026-07-01`). 비용은 실제로 답한 모델(`res.model`) 단가로 기록, 대체 모델 단가(Opus 4.8·Opus 5) 추가. thinking·temperature는 보내지 않음(Opus 5.5는 항상 adaptive, 깊이는 `AI_EFFORT`, 기본 medium)
   - 모의 응답 → 실제 전환: 모의 응답으로 저장된 오늘의 운세·별자리 캐시와 사주 풀이는 실제 AI 연결 후 다시 쓰지 않음(`isStaleMock`). 홈의 "오늘 봤어요"는 그날 하루 모의 결과 기준으로 남을 수 있음

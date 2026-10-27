@@ -81,7 +81,8 @@ node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"
 | `ADMIN_EMAILS` | 관리자로 쓸 내 이메일 (예: `me@gmail.com`) | Secret |
 | `SIGNUP_MODE` | `open` (모두 가입한 뒤 `closed`로 바꾼다) | Config 또는 Secret |
 | `AI_PROVIDER` | 지금은 `mock` (Claude 키가 생기면 `anthropic` + `ANTHROPIC_API_KEY`) | Config 또는 Secret |
-| `ANTHROPIC_API_KEY` | (선택) Claude 키 | Secret |
+| `ANTHROPIC_API_KEY` | (선택) Claude 키 — 타로·별자리 풀이용 | Secret |
+| `HRUM_API_KEY` | (선택) 흐름(HRUM) 키 — 사주 계산·사주·오늘의 운세 풀이 (8단계) | Secret |
 
 > **Type 주의**: `NEXT_PUBLIC_`로 시작하는 두 값은 브라우저에 공개되는 값이라 반드시 **Type=Config**로 만든다. Secret으로 저장하면 Vercel이 "공개 접두사" 경고를 띄우고 회원가입이 "계정을 만들지 못했습니다"로 실패한다 (2026-10-23 실제 운영에서 확인된 원인). 이미 Secret으로 만들었다면 **삭제 → Type=Config로 다시 추가 → Redeploy**. 나머지 값(`SUPABASE_SECRET_KEY`, `DATABASE_URL`, `DATA_ENCRYPTION_KEY`, `CRON_SECRET`, `ANTHROPIC_API_KEY` 등)은 Secret으로 둔다.
 
@@ -109,13 +110,25 @@ node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"
 - 모두 가입했으면 `SIGNUP_MODE=closed`로 바꾸고 재배포 → 새 가입이 막힌다 (Vercel은 환경변수 변경을 새 배포부터 적용한다. 빌드를 다시 할 필요는 없어 Redeploy만 하면 된다).
 - 초대 코드 방식이 필요하면 `SIGNUP_MODE=invite` → 관리 화면 "사용자·초대"에서 코드를 만들어 전달한다 (또는 `npm run invite`).
 - Vercel Cron(`vercel.json`, 매일 03:00 KST)이 보존 기간 지난 사용량 로그·초대·감사 로그를 지운다.
-- Claude 연결: 아래 8단계.
+- 흐름 연결: 아래 8단계. Claude 연결(타로·별자리): 9단계.
 
-## 8단계. Claude(AI) 연결 — 운세·사주 풀이를 실제 Claude로
+## 8단계. 흐름(HRUM) 연결 — 사주 계산과 사주·오늘의 운세 풀이
 
-지금은 `AI_PROVIDER=mock`이라 풀이가 "모의 응답"으로 나온다. 아래를 마치면 사주 풀이·오늘의 운세(타로·별자리 포함)가 실제 Claude(기본 모델 Claude Opus 5.5)로 만들어진다. 단계마다 "성공 화면"을 확인하고, 막히면 그 화면을 캡처해 공유한다 (키는 앞부분 `sk-ant-`만 보이게 가린다).
+2026-10-27부터 사주 원국 계산과 사주·오늘의 운세 풀이는 흐름(플로트 주식회사) API가 맡는다. 키를 넣기 전에는 앱 내장 엔진 + 모의 응답으로 동작한다. 흐름 전송을 알린 개인정보 고지에 다시 동의한 사용자만 흐름을 쓴다(기존 가입자는 다음 접속 때 동의 화면이 나온다).
 
-### 8-1. Claude Console 가입·결제
+1. https://console.hrum.ai 가입 → **크레딧 충전**(선불, 부가세 10% 별도. 가입 무료 크레딧이 있을 수 있음)
+   - 성공: 콘솔에 잔액이 보인다. 요금표 금액이 비어 있으면 콘솔에서 상품별 금액을 확인해 캡처로 공유
+2. 콘솔에서 **API 키 발급** → 키는 발급 직후 **한 번만** 보인다. 바로 복사
+3. Vercel → **dvtarocard** → Settings → Environment Variables → `HRUM_API_KEY` = 키, **Secret**, **Production만** → Deployments → … → **Redeploy**
+4. 확인: 사이트에서 동의 화면(처음 한 번) → 사주 → 내 사주 → "풀이 듣기"(장마다 질문해 20~40초) → 오늘의 운세. MY → 관리자 화면 → 사용량·비용에 `hrum`이 보인다. 흐름 콘솔 사용 기록에도 같은 시각 호출이 잡힌다
+5. 비용(문서 기준, 부가세 포함): 원국 계산 ₩55(같은 입력은 저장해 다시 쓰고, 보정을 켜면 2회), 오늘의 운세 ₩11 + 분야별 풀이 3건, 사주 풀이는 장별 8건(토큰 과금, 건당 수 원~수십 원 추정). 앱 월 예산(`BUDGET_MONTHLY_USD`)에는 `HRUM_KRW_PER_USD`(기본 1400) 환율로 들어간다
+6. 문제: 흐름이 응답하지 않거나 잔액이 없으면 **원국은 앱 내장 엔진으로 계속 계산**되고, 풀이는 "풀이 서비스 잔액이 부족합니다"·"풀이 서비스 오류" 안내가 나온다. Vercel **Logs**에서 `[hrum` 검색(오류 종류·상태 코드만 남음)
+
+## 9단계. Claude(AI) 연결 — 타로·별자리 풀이
+
+사주·오늘의 운세는 8단계 흐름이 맡으므로, Claude는 타로·별자리 풀이에만 쓴다. 지금은 `AI_PROVIDER=mock`이라 타로·별자리 풀이가 "모의 응답"으로 나온다. 아래를 마치면 실제 Claude(기본 모델 Claude Opus 5.5)로 만들어진다. 단계마다 "성공 화면"을 확인하고, 막히면 그 화면을 캡처해 공유한다 (키는 앞부분 `sk-ant-`만 보이게 가린다).
+
+### 9-1. Claude Console 가입·결제
 
 1. https://platform.claude.com 접속 → 가입 또는 로그인
 2. **Billing** 화면(https://platform.claude.com/settings/billing)에서 결제 수단 등록·크레딧 충전
@@ -124,7 +137,7 @@ node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"
    - 앱 안에도 월 예산 상한(`BUDGET_MONTHLY_USD`, 기본 20달러)이 따로 있다. 콘솔 상한은 앱 계산이 틀려도 막아 주는 두 번째 안전장치다
    - 상한에 닿으면 그달 남은 기간 동안 풀이가 실패한다 (화면에 "AI 서비스 오류")
 
-### 8-2. API 키 만들기
+### 9-2. API 키 만들기
 
 1. **API keys** 화면(https://platform.claude.com/settings/keys) → **Create key**
 2. 이름: `dvtarocard-production` / Expiration: 가장 긴 기간(만료일을 달력에 적어 두고 그 전에 새 키로 바꾼다) / Linked account: 본인
@@ -132,13 +145,13 @@ node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"
 4. 만들면 `sk-ant-`로 시작하는 키가 **한 번만** 보인다 → 바로 복사해 둔다 (잃어버리면 새로 만든다)
    - 성공: API keys 목록에 `dvtarocard-production`이 보인다
 
-### 8-3. Vercel에 넣기
+### 9-3. Vercel에 넣기
 
 Vercel 대시보드 → 프로젝트 **dvtarocard** → **Settings → Environment Variables**
 
 | 이름 | 값 | Type | 환경 |
 |---|---|---|---|
-| `ANTHROPIC_API_KEY` | 8-2에서 복사한 키 | **Secret** | **Production만** (Preview에도 넣으면 미리보기 배포에서도 비용이 나간다) |
+| `ANTHROPIC_API_KEY` | 9-2에서 복사한 키 | **Secret** | **Production만** (Preview에도 넣으면 미리보기 배포에서도 비용이 나간다) |
 | `AI_PROVIDER` | `anthropic` (이미 `mock`으로 있으면 **Edit**로 값만 바꾼다) | Config 또는 Secret | Production |
 | `BUDGET_MONTHLY_USD` | 앱의 월 예산 상한(달러). 없으면 기본 20 | Config 또는 Secret | Production |
 
@@ -147,30 +160,22 @@ Vercel 대시보드 → 프로젝트 **dvtarocard** → **Settings → Environme
 
 그다음 **Deployments** → 맨 위(Production) 배포의 **…** → **Redeploy** → 1~3분 뒤 **Ready**
 
-### 8-4. 확인
+### 9-4. 확인
 
-1. https://dvtarocard.vercel.app 로그인 → 사주 → 내 사주 → **○○에게 풀이 듣기** (예전에 모의 응답으로 받은 풀이는 실제 연결 후 자동으로 감춰지고 이 버튼이 다시 나온다)
-   - 30~60초 걸릴 수 있다. 성공: 장 이름 아래 **"모의 응답" 표시가 없고**, 별이 대사가 내 원국 이야기를 한다
-2. 오늘의 운세: 오늘 이미 모의 응답으로 본 운세도 실제 연결 후 처음 열 때 새로 만든다. 성공: 아래 "모의 응답" 안내가 없다
+1. https://dvtarocard.vercel.app 로그인 → 타로 → 질문하고 카드 뽑기. 성공: "모의 응답" 안내가 없다
+2. 별자리: 별자리를 고르면 오늘의 별자리 운세가 나온다. 성공: "모의 응답" 안내가 없다
 3. MY → **관리자 화면** → 사용량·비용: 방금 호출이 `anthropic`, 추정 비용과 함께 보인다
 4. Claude Console → **Usage**에서도 같은 시각에 사용량이 잡힌다
 
 ### 비용 (추정, 실제 값은 연결 후 관리자 화면에서 확인)
 
-Claude Opus 5.5 단가: 입력 100만 토큰당 4달러, 출력 100만 토큰당 20달러 (사고 과정도 출력으로 계산).
-
-| 풀이 | 1건 추정 | 언제 호출되나 |
-|---|---|---|
-| 사주 풀이 (대사·추천 질문 포함) | 약 0.12~0.18달러 | "풀이 듣기"·"풀이 다시 받기"를 누를 때만 |
-| 오늘의 운세 | 약 0.06~0.09달러 | 사람마다 하루 첫 조회 1번 (같은 날은 저장된 결과) |
-
-예: 20명이 매일 오늘의 운세를 보면 한 달 약 36~54달러 + 사주 풀이. 기본 앱 예산(20달러)으로는 월중에 막힐 수 있으니 `BUDGET_MONTHLY_USD`와 콘솔 상한을 사용 인원에 맞춘다. 사용자별 하루 호출 한도는 `LIMIT_AI_PER_USER_PER_DAY`(기본 20회).
+Claude Opus 5.5 단가: 입력 100만 토큰당 4달러, 출력 100만 토큰당 20달러 (사고 과정도 출력으로 계산). 타로는 뽑을 때마다, 별자리는 사람·별자리마다 하루 1번(같은 날은 저장된 결과). 사주·오늘의 운세 비용은 8단계(흐름). 앱 월 예산(`BUDGET_MONTHLY_USD`)은 흐름·Claude 비용을 합쳐 본다. 사용자별 하루 호출 한도는 `LIMIT_AI_PER_USER_PER_DAY`(기본 20회).
 
 ### 문제가 생기면
 
 | 화면 | 원인 | 조치 |
 |---|---|---|
-| "AI 서비스 인증 설정에 문제가 있습니다" | 키 오타, 워크스페이스를 고르지 않은 키, 삭제·만료된 키 | 8-2를 다시 해 새 키로 바꾸고 Redeploy |
+| "AI 서비스 인증 설정에 문제가 있습니다" | 키 오타, 워크스페이스를 고르지 않은 키, 삭제·만료된 키 | 9-2를 다시 해 새 키로 바꾸고 Redeploy |
 | "AI 서비스 호출 한도에 걸렸습니다" | 분당 호출 한도 | 잠시 뒤 다시 시도 |
 | "AI 서비스 오류가 발생했습니다" | 콘솔 월 상한 도달, 잔액 부족, 일시 장애 | Billing 잔액·Spend limits 확인. Vercel **Logs**에서 `[ai anthropic]` 검색(오류 종류·상태 코드만 남김) |
 | "이번 달 서비스 전체 AI 예산을 모두 사용했습니다" | 앱 월 예산(`BUDGET_MONTHLY_USD`) 도달 | 값 올리고 Redeploy |
