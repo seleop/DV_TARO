@@ -20,7 +20,7 @@ export const GET = handler({ auth: "admin" }, async ({ req }) => {
     budget: await budgetStatus(),
     engines: await engineStats(since),
     versions: {
-      engines: defaultEngines().map((e) => e.getEngineMetadata()),
+      engines: defaultEngines(true).map((e) => e.getEngineMetadata()),
       prompts: PROMPT_VERSIONS,
       verifyRules: VERIFY_RULES_VERSION,
       aiProvider: cfg.AI_PROVIDER,

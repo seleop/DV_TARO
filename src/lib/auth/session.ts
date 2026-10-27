@@ -3,7 +3,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getProfile, touchLastSeen, type User } from "../repo/users";
 import { createSupabaseServerClient } from "../supabase/server";
-import { isBirthOptionalPath, loginHref, PATH_HEADER } from "./next-path";
+import { needsPrivacyConsent } from "../privacy-consent";
+import { isBirthOptionalPath, isConsentExemptPath, loginHref, PATH_HEADER } from "./next-path";
 
 /**
  * 현재 사용자. Supabase JWT를 getClaims()로 검증하고, 프로필이 활성 상태일 때만 반환한다.
@@ -21,6 +22,7 @@ export async function getCurrentUser(): Promise<User | null> {
 
 /**
  * 서버 컴포넌트용: 로그인하지 않았으면 /login?next=<지금 경로>로 보낸다.
+ * 지금 버전의 개인정보 고지에 동의하지 않았으면 /consent 로 보낸다(MY는 예외: 로그아웃·계정 삭제).
  * 생년월일을 아직 입력하지 않았으면 /start(우주 배경의 출생 정보 단계)로 보낸다(가입에 이어지는 필수 단계).
  * 경로는 proxy.ts가 넣는 요청 헤더에서 읽고, 없으면(프록시 미적용) 생년월일 검사를 건너뛴다.
  */
@@ -28,6 +30,8 @@ export async function requirePageUser(): Promise<User> {
   const path = (await headers()).get(PATH_HEADER);
   const u = await getCurrentUser();
   if (!u) redirect(loginHref(path ?? "/"));
+  // 개인정보 고지가 바뀌었으면(흐름 전송 등) 다시 동의해야 쓸 수 있다 (2026-10-27 사용자 결정)
+  if (needsPrivacyConsent(u) && path && !isConsentExemptPath(path)) redirect(`/consent?next=${encodeURIComponent(path)}`);
   if (!u.primaryCalculationId && path && !isBirthOptionalPath(path)) redirect("/start");
   return u;
 }

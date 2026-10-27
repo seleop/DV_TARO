@@ -57,7 +57,7 @@ export const fakeAuthAdmin: AuthAdmin & { banned: Set<string>; passwords: Map<st
 };
 
 /** 매 테스트마다 데이터를 비우고 설정을 다시 읽는다. */
-const RESET_KEYS = ["SIGNUP_MODE", "ADMIN_EMAILS"];
+const RESET_KEYS = ["SIGNUP_MODE", "ADMIN_EMAILS", "HRUM_API_KEY"];
 
 export async function freshEnv(env: Record<string, string> = {}) {
   // 테스트 사이에 가입 방식 설정이 남지 않도록 기본값으로 되돌린다

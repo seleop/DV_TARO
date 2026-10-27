@@ -52,7 +52,18 @@ function dayPillarOf(s: { year: number; month: number; day: number }) {
 }
 
 /**
- * 음력 → 양력 변환 검증.
+ * 음력 → 양력 변환 (단일 출처: 한국천문연구원 KASI 정본, manseryeok 내장 표).
+ * 2026-10-27 교차검증 철회 후의 기본 경로. 존재하지 않는 날짜(없는 윤달 등)만 걸러 낸다.
+ */
+export function kasiLunarConversion(l: LunarDate): LunarConversionResult {
+  const kasi = kasiConvert(l);
+  const candidates = { kasi: kasi ? ymd(kasi) : null, chinese: null };
+  if (!kasi) return { status: "INVALID_DATE", solar: null, candidates, notes: ["존재하지 않는 음력 날짜입니다(윤달 여부를 확인하세요)."] };
+  return { status: "VERIFIED", solar: kasi, candidates, notes: ["한국천문연구원(KASI) 음력 기준으로 변환했어요."] };
+}
+
+/**
+ * 음력 → 양력 변환 검증 (예전 세 엔진 교차검증용).
  * 기본은 KASI 정본(manseryeok)과 중국 음력 계산(lunar-javascript)의 일치 여부를 본다.
  * 다르면(한·중 음력 차이 가능) 점봄 API의 음력 입력 일주로 어느 쪽이 맞는지 독립 확인한다.
  * 다수결이 아니라 "KASI 날짜를 독립 출처가 뒷받침하는가"로 판정한다.

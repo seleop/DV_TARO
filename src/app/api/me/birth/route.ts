@@ -16,7 +16,7 @@ export const maxDuration = 30;
  */
 export const PUT = handler({ auth: "user" }, async ({ user, body }) => {
   const b = Body.parse(body);
-  const id = await computeAndSaveSaju(user.id, parseBirthInput(b.birth), null);
+  const id = await computeAndSaveSaju(user, parseBirthInput(b.birth), null);
   await setPrimaryCalculation(user.id, id);
   const previous = user.primaryCalculationId;
   if (previous && previous !== id) await deleteCalculation(user.id, previous);

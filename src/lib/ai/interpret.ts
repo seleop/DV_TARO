@@ -11,6 +11,7 @@ import { verifiedDateGanji, type SajuComputation } from "../saju/service";
 import { signById, signFor, type ZodiacSign } from "../horoscope/zodiac";
 import { DECK, drawCards, SPREADS, type DrawnCard, type SpreadId } from "../tarot/deck";
 import { dailyDialogueFallback, sajuDialogueFallback, tarotDialogueFallback, tomorrowTeaser } from "../dialogue";
+import { hrumDailyReading, hrumSajuReading } from "./hrum-reading";
 import { estimateCostUsd, worstCaseCostUsd } from "./cost";
 import {
   buildDailyPayload,
@@ -96,8 +97,8 @@ async function runAi<T>(a: RunArgs<T>) {
 }
 
 /** 실제 AI를 연결한 뒤에는 모의 응답으로 저장된 결과를 다시 쓰지 않는다 (같은 날 운세·예전 사주 풀이가 모의 문장으로 남지 않게) */
-export function isStaleMock(provider: string) {
-  return provider === "mock" && getAiProvider().name !== "mock";
+export function isStaleMock(provider: string, useHrum = false) {
+  return provider === "mock" && (useHrum || getAiProvider().name !== "mock");
 }
 
 // ── 근거 검사: 출력에 등장하는 간지가 입력으로 준 값인지 확인 ──
@@ -168,7 +169,8 @@ function mockSaju(c: SajuComputation, targetYear: number, yearGanji: string | nu
 export async function generateSajuReading(
   userId: string,
   calc: StoredCalculation,
-  opts: { focus: Focus[]; targetYear: number },
+  /** useHrum: 흐름 AI 리딩으로 풀이 (키가 있고 새 개인정보 고지에 동의한 사용자, lib/privacy-consent.ts) */
+  opts: { focus: Focus[]; targetYear: number; useHrum?: boolean; fetchImpl?: typeof fetch },
 ): Promise<StoredReading<SajuReading>> {
   const c = calc.result;
   if (!c.canonical.pillars.day) {
@@ -176,6 +178,12 @@ export async function generateSajuReading(
   }
   const yearG = await verifiedDateGanji(new Date(Date.UTC(opts.targetYear, 6, 1, 3)));
   const yearGanji = yearG?.year ?? null;
+  if (opts.useHrum) {
+    const h = await hrumSajuReading(userId, c, { focus: opts.focus, targetYear: opts.targetYear, yearGanji, fetchImpl: opts.fetchImpl });
+    const saved = { kind: "saju" as const, calculationId: calc.id, cacheKey: null, provider: "hrum", model: "hrum-reading", promptVersion: h.promptVersion, content: h.content };
+    const id = await saveReading(userId, saved);
+    return { id, ...saved, createdAt: Date.now() };
+  }
   const user = buildSajuPayload(c, {
     gender: calc.input.gender,
     dayBoundary: calc.input.settings.dayBoundary,
@@ -205,10 +213,10 @@ export async function generateSajuReading(
   return { id, kind: "saju", calculationId: calc.id, provider: r.provider, model: r.model, promptVersion: r.promptVersion, content, createdAt: Date.now() };
 }
 
-export async function latestSajuReading(userId: string, calc: StoredCalculation) {
+export async function latestSajuReading(userId: string, calc: StoredCalculation, useHrum = false) {
   const r = await getLatestReadingForCalculation<SajuReading>(userId, calc.id, "saju");
   // 모의 응답 풀이는 실제 AI 연결 후에는 없는 것으로 본다 → 화면에 "풀이 듣기" 버튼이 다시 나온다
-  return r && !isStaleMock(r.provider) ? { ...r, content: withSajuDialogue(r.content, calc.result) } : null;
+  return r && !isStaleMock(r.provider, useHrum) ? { ...r, content: withSajuDialogue(r.content, calc.result) } : null;
 }
 
 // ── 오늘의 운세 ──
@@ -217,7 +225,7 @@ export function dailyReadingCacheKey(calculationId: string, date: string) {
   return hmac(`daily:${calculationId}:${date}:${PROMPT_VERSIONS.daily}`);
 }
 
-export async function generateDailyReading(userId: string, calc: StoredCalculation, opts: { regenerate: boolean; now?: Date }) {
+export async function generateDailyReading(userId: string, calc: StoredCalculation, opts: { regenerate: boolean; now?: Date; useHrum?: boolean; fetchImpl?: typeof fetch }) {
   const c = calc.result;
   const dm = c.canonical.dayMaster;
   if (!dm) throw new AiError("AI_UNGROUNDED", "일간이 확정되지 않아 오늘의 운세를 만들 수 없습니다.");
@@ -228,7 +236,16 @@ export async function generateDailyReading(userId: string, calc: StoredCalculati
   const cacheKey = dailyReadingCacheKey(calc.id, today.date);
   if (!opts.regenerate) {
     const hit = await findReadingByCacheKey<DailyReading>(userId, cacheKey);
-    if (hit && !isStaleMock(hit.provider)) return { reading: { ...hit, content: withDailyDialogue(hit.content) }, today: { ...today, tenGod }, tomorrow, cached: true };
+    if (hit && !isStaleMock(hit.provider, opts.useHrum)) return { reading: { ...hit, content: withDailyDialogue(hit.content) }, today: { ...today, tenGod }, tomorrow, cached: true };
+  }
+  if (opts.useHrum) {
+    // 흐름 /today 는 생년월일시가 필요하다 (음력 입력이면 변환한 양력 날짜, 시각은 입력한 그대로)
+    const i = calc.input;
+    const birth = { ...c.solarDate, hour: i.timeKnown ? i.hour : null, minute: i.timeKnown ? i.minute : null, gender: i.gender };
+    const h = await hrumDailyReading(userId, c, birth, today.date, opts.fetchImpl);
+    const saved = { kind: "daily" as const, calculationId: calc.id, cacheKey, provider: "hrum", model: "hrum-reading", promptVersion: h.promptVersion, content: h.content };
+    const id = await saveReading(userId, saved);
+    return { reading: { id, ...saved, createdAt: Date.now() }, today: { ...today, tenGod }, tomorrow, cached: false };
   }
   const allowed = allowedGanji(c, [today.day, today.month, today.year]);
   const r = await runAi<DailyReading>({

@@ -2,11 +2,11 @@ import "server-only";
 import { getConfig } from "../config";
 import { hmac } from "../crypto";
 import { countElements, parsePillar, pillarToHanja, STEM_ELEMENT, zodiacAnimal, type Element, type Pillar } from "./ganji";
-import { jeombomEngine } from "./engines/jeombom";
+import { hrumEngine } from "./engines/hrum";
 import { lunarJavascriptEngine } from "./engines/lunar-javascript";
 import { manseryeokEngine } from "./engines/manseryeok";
 import { EngineError, type EngineContext, type SajuEngine } from "./engines/types";
-import { verifyLunarConversion, type LunarConversionResult } from "./lunar";
+import { kasiLunarConversion, verifyLunarConversion, type LunarConversionResult } from "./lunar";
 import { normalizeBirthTime, type TimeNormalization } from "./time";
 import type { BirthInput, CoreField, EngineInput, EngineMetadata, WallTime } from "./types";
 import { crossValidate, VERIFY_RULES_VERSION, type EngineOutcome, type VerificationReport } from "./verify";
@@ -56,13 +56,18 @@ export interface SajuDeps {
   engines?: SajuEngine[];
   ctx?: Partial<EngineContext>;
   jeombomEnabled?: boolean;
+  /** 흐름 API를 쓸지 (키가 있고, 사용자가 흐름 전송을 포함한 개인정보 고지에 동의했을 때만 true) */
+  useHrum?: boolean;
+  /** 값을 확정하는 데 필요한 엔진 수. 기본: 엔진이 하나면 1(단일 출처), 둘 이상이면 2(교차검증) */
+  minEngines?: number;
 }
 
-export function defaultEngines(): SajuEngine[] {
-  const cfg = getConfig();
-  const list: SajuEngine[] = [manseryeokEngine as SajuEngine, lunarJavascriptEngine as SajuEngine];
-  if (cfg.JEOMBOM_ENABLED) list.push(jeombomEngine as SajuEngine);
-  return list;
+/**
+ * 원국 계산 엔진 (2026-10-27 사용자 결정: 세 엔진 교차검증 철회, 흐름 단일 출처).
+ * 흐름을 쓸 수 있으면 흐름 하나, 아니면 앱 내장 manseryeok 하나. 흐름이 실패하면 calculateSaju 가 내장 엔진으로 다시 계산한다.
+ */
+export function defaultEngines(useHrum = false): SajuEngine[] {
+  return useHrum && getConfig().HRUM_API_KEY ? [hrumEngine as SajuEngine] : [manseryeokEngine as SajuEngine];
 }
 
 /**
@@ -143,9 +148,10 @@ const at = (d: { year: number; month: number; day: number }, hour: number, minut
 
 export async function calculateSaju(userId: string, input: BirthInput, deps: SajuDeps = {}): Promise<SajuComputation> {
   const cfg = getConfig();
-  const engines = deps.engines ?? defaultEngines();
-  const metas = engines.map((e) => e.getEngineMetadata());
-  const cacheKey = computeCacheKey(userId, input, metas);
+  let engines = deps.engines ?? defaultEngines(deps.useHrum);
+  let metas = engines.map((e) => e.getEngineMetadata());
+  let cacheKey = computeCacheKey(userId, input, metas);
+  const minEngines = deps.minEngines ?? (engines.length >= 2 ? 2 : 1);
 
   const ctx: EngineContext = {
     fetchImpl: deps.ctx?.fetchImpl ?? fetch,
@@ -160,10 +166,9 @@ export async function calculateSaju(userId: string, input: BirthInput, deps: Saj
   let lunar: LunarConversionResult | null = null;
   let solarDate = { year: input.year, month: input.month, day: input.day };
   if (input.calendar === "lunar") {
-    lunar = await verifyLunarConversion(
-      { year: input.year, month: input.month, day: input.day, isLeapMonth: input.isLeapMonth },
-      { jeombomEnabled, ctx },
-    );
+    const l = { year: input.year, month: input.month, day: input.day, isLeapMonth: input.isLeapMonth };
+    // 단일 출처면 KASI 정본으로만 변환, 교차검증이면 예전처럼 독립 출처까지 확인
+    lunar = minEngines === 1 ? kasiLunarConversion(l) : await verifyLunarConversion(l, { jeombomEnabled, ctx });
     if (lunar.status === "INVALID_DATE" || !lunar.solar) throw new SajuInputError(lunar.notes[0] ?? "존재하지 않는 음력 날짜입니다.");
     solarDate = lunar.solar;
     resolutionLog.push(`음력 변환: ${lunar.status} (KASI ${lunar.candidates.kasi ?? "없음"}, 중국 ${lunar.candidates.chinese ?? "없음"})`);
@@ -215,14 +220,29 @@ export async function calculateSaju(userId: string, input: BirthInput, deps: Saj
       hasGender: !!input.gender,
       lunarStatus: lunar?.status ?? null,
       ambiguousFields: [...ambiguous],
+      minEngines,
     });
     return { outcomes, report };
   };
 
   let { outcomes, report } = evaluate(perEngine);
 
-  // 4) 불일치·실패 시 해소 절차
-  if (report.status === "MISMATCH" || report.status === "UNVERIFIABLE") {
+  // 4) 단일 출처: 흐름이 응답하지 못하면 앱 내장 엔진으로 계산한다 (흐름 호출은 hrumPost 가 이미 한 번 더 시도함)
+  if (minEngines === 1 && engines[0]?.getEngineMetadata().id === "hrum" && !outcomes.some((o) => o.ok && !(o.validationErrors?.length ?? 0))) {
+    const failed = outcomes[0];
+    resolutionLog.push(`흐름 계산 실패(${failed?.errorCode ?? (failed?.validationErrors?.length ? "VALIDATION_FAILED" : "알 수 없음")}) → 앱 내장 엔진(manseryeok)으로 계산`);
+    const fallback = [manseryeokEngine as SajuEngine];
+    const rerun = await runAll(fallback);
+    perEngine = [...perEngine, ...rerun];
+    engines = [...engines, ...fallback];
+    ({ outcomes, report } = evaluate(perEngine));
+    metas = engines.map((e) => e.getEngineMetadata());
+    // 대체 결과는 흐름 기준 캐시에 넣지 않는다 → 같은 입력을 다시 계산할 때 흐름을 다시 시도
+    cacheKey = computeCacheKey(userId, input, fallback.map((e) => e.getEngineMetadata()));
+  }
+
+  // 5) 교차검증(엔진 2개 이상)일 때만: 불일치·실패 시 해소 절차
+  if (minEngines >= 2 && (report.status === "MISMATCH" || report.status === "UNVERIFIABLE")) {
     resolutionLog.push(`1차 판정 ${report.status}: ${report.reasons.join(", ")}`);
     resolutionLog.push(
       `입력 재확인: termTime=${JSON.stringify(probes[0].termTime)}, pillarTime=${JSON.stringify(probes[0].pillarTime)}, 관법=${input.settings.dayBoundary}, 보정=${input.settings.correction}`,

@@ -15,6 +15,8 @@ export interface User {
   primaryCalculationId: string | null;
   /** 사용자가 지어 준 마스코트 이름. null = 아직 짓지 않음 (화면에는 기본 이름) */
   mascotName: string | null;
+  /** 동의한 개인정보 수집·이용 문구 버전 (src/config/privacy.ts). 지금 버전과 다르면 다시 동의를 받는다 */
+  privacyVersion: string | null;
   createdAt: number;
 }
 
@@ -39,6 +41,7 @@ interface ProfileRow {
   status: "active" | "disabled";
   primary_calculation_id: string | null;
   mascot_name: string | null;
+  privacy_version: string | null;
   created_at: Date;
 }
 
@@ -50,6 +53,7 @@ const toUser = (r: ProfileRow): User => ({
   status: r.status,
   primaryCalculationId: r.primary_calculation_id,
   mascotName: r.mascot_name,
+  privacyVersion: r.privacy_version,
   createdAt: toMs(r.created_at),
 });
 
@@ -154,7 +158,7 @@ export async function signUp(
     await release();
     throw e;
   }
-  return { id: userId, email, displayName: input.displayName, role, status: "active", primaryCalculationId: null, mascotName: null, createdAt: Date.now() };
+  return { id: userId, email, displayName: input.displayName, role, status: "active", primaryCalculationId: null, mascotName: null, privacyVersion: input.privacyVersion ?? null, createdAt: Date.now() };
 }
 
 /** ADMIN_EMAILS 에 있는데 아직 일반 사용자라면 관리자로 올린다 (로그인 시 호출). */
@@ -168,6 +172,11 @@ export async function updateDisplayName(userId: string, displayName: string) {
   await asService((q) => q.query("update public.profiles set display_name = $1 where id = $2", [displayName, userId]));
 }
 
+/** 개인정보 수집·이용 동의(새 버전) 기록 */
+export async function recordPrivacyConsent(userId: string, version: string) {
+  await asService((q) => q.query("update public.profiles set privacy_agreed_at = now(), privacy_version = $1 where id = $2", [version, userId]));
+}
+
 /** 마스코트 이름 짓기·바꾸기 (검사는 lib/mascot-name.ts 의 MascotNameSchema) */
 export async function updateMascotName(userId: string, mascotName: string) {
   await asService((q) => q.query("update public.profiles set mascot_name = $1 where id = $2", [mascotName, userId]));
@@ -179,7 +188,7 @@ export async function getProfile(userId: string): Promise<User | null> {
   const select = (mascot: string) =>
     asService((q) =>
       q.query<ProfileRow>(
-        `select p.id, u.email, p.display_name, p.role, p.status, p.primary_calculation_id, ${mascot} as mascot_name, p.created_at
+        `select p.id, u.email, p.display_name, p.role, p.status, p.primary_calculation_id, ${mascot} as mascot_name, p.privacy_version, p.created_at
          from public.profiles p join auth.users u on u.id = p.id where p.id = $1`,
         [userId],
       ),

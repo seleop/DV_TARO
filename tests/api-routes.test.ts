@@ -45,6 +45,7 @@ const recordsRoute = await import("@/app/api/me/records/route");
 const meRoute = await import("@/app/api/me/route");
 const cronRoute = await import("@/app/api/cron/purge/route");
 const birthRoute = await import("@/app/api/me/birth/route");
+const consentRoute = await import("@/app/api/me/consent/route");
 const { freshEnv, makeUser, rawPg } = await import("./helpers/db");
 const { PRIVACY_CONSENT } = await import("@/config/privacy");
 
@@ -150,6 +151,16 @@ describe("API 라우트", () => {
     expect((await tarotRoute.POST(req("POST", { question: "질문입니다", spread: "three", picks: [1, 2] }), ctx())).status).toBe(400);
     expect((await tarotRoute.POST(req("POST", { question: "질문입니다", spread: "one", picks: [78] }), ctx())).status).toBe(400);
     expect((await tarotRoute.POST(req("POST", { question: "질문입니다", spread: "three", picks: [5, 5, 6] }), ctx())).status).toBe(400);
+  });
+
+  it("개인정보 고지 재동의: 화면에 보여 준 버전이 지금 버전과 같을 때만 기록한다", async () => {
+    const u = await makeUser();
+    loginAs(u.id);
+    expect((await consentRoute.POST(req("POST", { version: "2026-10-24" }), ctx())).status).toBe(400);
+    const ok = await consentRoute.POST(req("POST", { version: PRIVACY_CONSENT.version }), ctx());
+    expect(ok.status).toBe(200);
+    const row = (await (await rawPg()).query<{ privacy_version: string }>("select privacy_version from public.profiles where id = $1", [u.id])).rows[0];
+    expect(row.privacy_version).toBe(PRIVACY_CONSENT.version);
   });
 
   it("전체 기록 삭제 API", async () => {

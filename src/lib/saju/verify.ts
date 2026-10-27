@@ -23,7 +23,7 @@ import { CORE_FIELDS, type CoreField, type NormalizedSaju, type VerificationStat
  * 신강·신약, 용신 같은 해석 값의 차이는 판정에 쓰지 않고 interpretiveDifferences에만 남긴다.
  * 오행 개수 차이는 집계 방식(지장간 포함 여부 등)이 다를 수 있어 경고로만 남긴다.
  */
-export const VERIFY_RULES_VERSION = "2026-10-23.1";
+export const VERIFY_RULES_VERSION = "2026-10-27.1";
 
 export type FieldStatus = "MATCH" | "MISMATCH" | "CONDITIONAL" | "UNVERIFIED" | "NOT_APPLICABLE";
 
@@ -87,6 +87,11 @@ export interface VerifyOptions {
   ambiguousFields?: CoreField[];
   /** 대운 시작 시점 허용 차이(개월). 이 범위 안의 차이는 관법 차이로 본다. */
   daewoonStartToleranceMonths?: number;
+  /**
+   * 값을 확정하는 데 필요한 엔진 수 (기본 2 = 교차검증).
+   * 1이면 단일 출처: 한 엔진이 낸 값을 그대로 확정한다 (2026-10-27 흐름 단일 출처, 실패 시 앱 내장 엔진)
+   */
+  minEngines?: number;
 }
 
 function verdictForField(field: CoreField, usable: EngineOutcome[], opts: VerifyOptions): FieldVerdict {
@@ -105,7 +110,7 @@ function verdictForField(field: CoreField, usable: EngineOutcome[], opts: Verify
   if (opts.ambiguousFields?.includes(field)) return { status: "UNVERIFIED", agreedValue: null, values, compared, excluded };
   const distinct = new Set(compared.map((e) => values[e]));
   if (distinct.size > 1) return { status: "MISMATCH", agreedValue: null, values, compared, excluded };
-  if (compared.length >= 2) return { status: "MATCH", agreedValue: values[compared[0]], values, compared, excluded };
+  if (compared.length >= (opts.minEngines ?? 2)) return { status: "MATCH", agreedValue: values[compared[0]], values, compared, excluded };
   if (compared.length === 1 && excluded.length > 0 && excluded.every((x) => x.reason === "SETTING_UNSUPPORTED")) {
     return { status: "CONDITIONAL", agreedValue: values[compared[0]], values, compared, excluded };
   }
@@ -120,7 +125,7 @@ function verdictForDaewoon(usable: EngineOutcome[], opts: VerifyOptions): Daewoo
   if (!opts.timeKnown) return { status: "NOT_APPLICABLE", ...empty, compared: [], note: "출생 시각 미상으로 대운 시작 시점을 정할 수 없음" };
   const providers = usable.filter((o) => o.result!.comparability.daewoon.comparable && o.result!.daewoon);
   const compared = providers.map((o) => o.engine);
-  if (providers.length < 2) return { status: "UNVERIFIED", ...empty, compared, note: "대운을 제공한 엔진이 2개 미만" };
+  if (providers.length < (opts.minEngines ?? 2)) return { status: "UNVERIFIED", ...empty, compared, note: "대운을 제공한 엔진이 부족" };
   const dws = providers.map((o) => o.result!.daewoon!);
   const sameDir = dws.every((d) => d.forward === dws[0].forward);
   const samePillars = dws.every((d) => d.pillars.join() === dws[0].pillars.join());
@@ -158,7 +163,7 @@ export function crossValidate(outcomes: EngineOutcome[], opts: VerifyOptions): V
   // 천간 십신: 일간과 각 천간으로 결정되는 값이라 원국이 같으면 반드시 같아야 한다.
   const tgProviders = usable.filter((o) => o.result!.comparability.tenGods.comparable && o.result!.stemTenGods);
   let tenGods: VerificationReport["tenGods"] = { status: "UNVERIFIED", agreed: null };
-  if (tgProviders.length >= 2) {
+  if (tgProviders.length >= (opts.minEngines ?? 2)) {
     const tgs = tgProviders.map((o) => o.result!.stemTenGods!);
     const corePillarsAgree = fields.year.status === "MATCH" && fields.month.status === "MATCH" && fields.day.status === "MATCH";
     const ymSame = tgs.every((t) => t.year === tgs[0].year && t.month === tgs[0].month);
@@ -190,7 +195,7 @@ export function crossValidate(outcomes: EngineOutcome[], opts: VerifyOptions): V
 
   const applicable = CORE_FIELDS.filter((f) => fields[f].status !== "NOT_APPLICABLE");
   let status: VerificationStatus;
-  if (usable.length < 2) {
+  if (usable.length < (opts.minEngines ?? 2)) {
     reasons.add("INSUFFICIENT_ENGINES");
     status = "UNVERIFIABLE";
   } else if (

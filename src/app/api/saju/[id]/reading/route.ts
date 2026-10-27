@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { handler, HttpError, json } from "@/lib/api";
 import { FOCUS_OPTIONS, generateSajuReading } from "@/lib/ai/interpret";
+import { hrumAllowedFor } from "@/lib/privacy-consent";
 import { getCalculation } from "@/lib/repo/records";
 
 const Body = z
@@ -18,6 +19,6 @@ export const POST = handler({ auth: "user" }, async ({ user, params, body }) => 
   const calc = await getCalculation(user.id, params.id);
   if (!calc) throw new HttpError(404, "NOT_FOUND", "기록을 찾을 수 없습니다.");
   const year = b.targetYear ?? new Date(Date.now() + 9 * 3600_000).getUTCFullYear();
-  const reading = await generateSajuReading(user.id, calc, { focus: b.focus, targetYear: year });
+  const reading = await generateSajuReading(user.id, calc, { focus: b.focus, targetYear: year, useHrum: hrumAllowedFor(user) });
   return json({ reading }, 201);
 });

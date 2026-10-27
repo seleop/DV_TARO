@@ -44,6 +44,18 @@ const EnvSchema = z.object({
   AI_TIMEOUT_MS: num(120_000),
   AI_MAX_RETRIES: num(2),
 
+  /**
+   * 흐름(HRUM, 플로트 주식회사) API. 키가 있으면 사주 원국 계산과 사주·오늘의 운세 풀이를 흐름으로 한다(2026-10-27 사용자 결정).
+   * 흐름이 응답하지 못하면 원국은 앱 내장 엔진(manseryeok)으로 계산한다. 새 개인정보 고지에 동의한 사용자에게만 쓴다.
+   */
+  HRUM_API_KEY: z.string().optional(),
+  HRUM_BASE_URL: z.string().url().default("https://api.hrum.ai/api/v1/partners/v1"),
+  HRUM_TIMEOUT_MS: num(15_000),
+  HRUM_READING_TIMEOUT_MS: num(60_000),
+  /** 흐름 요금(원)을 사용량 기록·월 예산(달러)에 넣을 때 쓰는 환율 */
+  HRUM_KRW_PER_USD: num(1400),
+
+  /** 점봄 API: 예전 세 엔진 교차검증용. 흐름 단일 출처로 바꾼 뒤에는 쓰지 않는다 (예전 기록 화면의 출처 표기만 남음) */
   JEOMBOM_ENABLED: bool(true),
   JEOMBOM_BASE_URL: z.string().url().default("https://jeombom.kr/api/manse"),
   ENGINE_TIMEOUT_MS: num(8_000),
