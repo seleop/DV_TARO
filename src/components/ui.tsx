@@ -150,7 +150,12 @@ export function TopBar({ title, back = "/", right }: { title?: string; back?: st
   return (
     <header className="sticky top-0 z-20 -mx-5 flex h-14 shrink-0 items-center bg-[var(--bg)] px-3 [.scene-dark_&]:bg-transparent [.scene-light_&]:bg-transparent">
       {back ? (
-        <Link href={back} aria-label="뒤로" className="flex h-10 w-10 items-center justify-center rounded-full text-ink active:bg-black/5">
+        <Link
+          href={back}
+          aria-label="뒤로"
+          // 밤 장면 위에서는 홈 버튼과 같은 어두운 유리 동그라미 (무늬가 화려한 배경에서도 보이게)
+          className="flex h-10 w-10 items-center justify-center rounded-full text-ink active:bg-black/5 [.scene-dark_&]:bg-[rgba(20,12,56,0.42)] [.scene-dark_&]:text-white [.scene-dark_&]:shadow-none [.scene-dark_&]:ring-1 [.scene-dark_&]:ring-white/25 [.glass-night_&]:bg-[rgba(20,12,56,0.42)] [.glass-night_&]:text-white [.glass-night_&]:shadow-none [.glass-night_&]:ring-1 [.glass-night_&]:ring-white/25"
+        >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
             <path d="M15 18l-6-6 6-6" />
           </svg>
@@ -158,7 +163,8 @@ export function TopBar({ title, back = "/", right }: { title?: string; back?: st
       ) : (
         <span className="w-10" />
       )}
-      <h1 className="flex-1 text-center text-[16px] font-semibold">{title}</h1>
+      {/* 글자색을 직접 준다 (물려받으면 밤 장면에서도 크림색 화면의 진한 글씨가 되어 안 보였다) */}
+      <h1 className="flex-1 text-center text-[16px] font-semibold text-ink">{title}</h1>
       <span className="flex w-10 justify-end">{right}</span>
     </header>
   );

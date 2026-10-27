@@ -68,7 +68,14 @@ export function MeClient({
       </div>
       <div className={`grid shrink-0 gap-2 ${user.role === "admin" ? "grid-cols-2" : "grid-cols-1"}`}>
         <Link href="/me/profile" className="glass flex items-center justify-between rounded-[20px] px-4 py-3 text-[15px] font-semibold">
-          👤 프로필 설정 <span className="text-ink-2">›</span>
+          {/* 이모지 대신 선 아이콘 (기기마다 모양이 달라 밤 화면과 어긋났다) */}
+          <span className="flex items-center gap-2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent" aria-hidden>
+              <path d="M12 12a4 4 0 100-8 4 4 0 000 8zm-8 9a8 8 0 0116 0" />
+            </svg>
+            프로필 설정
+          </span>
+          <span className="text-ink-2">›</span>
         </Link>
         {user.role === "admin" && (
           <Link href="/admin" className="glass flex items-center justify-between rounded-[20px] px-4 py-3 text-[15px] font-semibold">
@@ -92,7 +99,7 @@ export function MeClient({
             role="tab"
             aria-selected={tab === k}
             onClick={() => setTab(k)}
-            className={`h-10 rounded-xl text-[13px] font-semibold transition ${tab === k ? "bg-white text-[#2a2440]" : "text-ink-2"}`}
+            className={`h-10 rounded-xl text-[13px] font-semibold transition ${tab === k ? "bg-white text-[#2a2440] [.glass-night_&]:text-ink" : "text-ink-2"}`}
           >
             {label}
           </button>

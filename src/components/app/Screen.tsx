@@ -43,8 +43,8 @@ export function Screen({
   const path = sceneForPath(usePathname());
   const kind = backdrop && path !== "plain" ? backdrop : path;
   if (scene !== undefined && kind !== "plain") {
-    // 기능별 밤 장면은 어두운 보랏빛 유리 시트
-    const dark = isBackdropKind(kind);
+    // 기능별 밤 장면·밤 바탕(night)은 어두운 보랏빛 유리 시트
+    const dark = isBackdropKind(kind) || kind === "night";
     return (
       <div className="flex min-h-0 flex-1 flex-col">
         <div className={`relative -mx-5 -mt-[env(safe-area-inset-top)] flex min-h-0 flex-1 flex-col px-5 pt-[env(safe-area-inset-top)] ${SCENE_INK[kind]}`}>
@@ -52,7 +52,7 @@ export function Screen({
             <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
               <SceneBackdrop kind={kind} walking={sceneWalking} />
             </div>
-          ) : (
+          ) : kind === "night" ? null : (
             <SceneArt kind={kind} className="absolute inset-0 h-full w-full" />
           )}
           <div className="relative flex min-h-0 flex-1 flex-col pb-6">

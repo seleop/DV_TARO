@@ -118,7 +118,8 @@ export function HomeGreeting({
           </span>
         </button>
       )}
-      <MyButton className="[.scene-dark_&]:bg-white/12 [.scene-dark_&]:text-white [.scene-dark_&]:ring-1 [.scene-dark_&]:ring-white/25" />
+      {/* 밤하늘 배경(scene-dark)에서는 어두운 유리 버튼 (MyButton 기본) */}
+      <MyButton />
 
       {/* 말풍선 높이(4.4rem)는 늘 잡아 두어 문구가 떠도 마스코트 크기가 바뀌지 않게 한다 (패딩은 크기 계산에서 빠짐).
           마스코트는 뒤 배경이 보이게 작게: 최대 230, 낮은 화면일수록 더 작게 (2026-10-25 사용자 요청) */}

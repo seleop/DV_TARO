@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Mood } from "@/lib/character";
 import { api, errorText } from "@/lib/client";
 import { HomeButton } from "./app/HomeButton";
+import { ZodiacGlyph } from "./horoscope/ZodiacGlyph";
 import { FitCharacter, Pager, Screen } from "./app/Screen";
 import { ShareBar } from "./ShareBar";
 import { Button, Card, Disclaimer, ErrorBox, MockNotice, TopBar } from "./ui";
@@ -62,7 +63,7 @@ export function HoroscopeClient({ signs, profileSignId }: { signs: Sign[]; profi
         scene={
           <div className="flex min-h-0 flex-1 flex-col items-center text-center">
             <p className="shrink-0 text-[14px] text-ink-2">
-              {r.date} · {r.sign.symbol} {r.sign.nameKo}
+              {r.date} · <ZodiacGlyph id={selected ?? ""} className="inline-block h-[1.05em] w-[1.05em] -translate-y-px align-middle text-[#f4d38a]" /> {r.sign.nameKo}
             </p>
             <h1 className="mt-0.5 shrink-0 text-[clamp(20px,3.2dvh,25px)] font-extrabold leading-tight text-ink">{r.headline}</h1>
             <FitCharacter pose="star" mood={r.mood} min={80} max={260} className="w-full items-end" />
@@ -76,7 +77,7 @@ ${r.overall}`} />}
             {/* 1장: 요약 (공유 이미지로 저장되는 부분) */}
             <div ref={captureRef} className="flex flex-col gap-2 bg-[var(--bg)] pb-1">
               <p className="text-center text-xs text-ink-2">
-                {r.sign.symbol} {r.sign.nameKo} · {r.headline}
+                <ZodiacGlyph id={selected ?? ""} className="inline-block h-[1.1em] w-[1.1em] -translate-y-px align-middle text-[#f4d38a]" /> {r.sign.nameKo} · {r.headline}
               </p>
               <Card className="text-left">
                 <p className="text-[15px] leading-relaxed">{r.overall}</p>
@@ -122,8 +123,9 @@ ${r.overall}`} />}
       scene={
         <div className="flex min-h-0 flex-1 flex-col items-center pt-[clamp(0.5rem,3dvh,2rem)] text-center">
           <HomeButton />
-          <p className="shrink-0 text-[clamp(15px,2.4dvh,18px)] font-semibold text-ink">오늘 별들이 전하는 이야기</p>
-          <h1 className="text-gradient mt-1 shrink-0 text-[clamp(28px,4.6dvh,36px)] font-extrabold">별자리 운세</h1>
+          {/* 제목 먼저, 설명은 아래 (타로·사주와 같은 순서) */}
+          <h1 className="text-gradient shrink-0 text-[clamp(28px,4.6dvh,36px)] font-extrabold [filter:drop-shadow(0_2px_10px_rgba(10,6,40,0.7))]">별자리 운세</h1>
+          <p className="mt-1 shrink-0 text-[clamp(13px,2.1dvh,15px)] font-medium text-ink-2 [text-shadow:0_1px_8px_rgba(10,6,40,0.85)]">오늘 별들이 전하는 이야기</p>
           <FitCharacter pose="star" min={70} max={240} className="w-full items-end" />
         </div>
       }
@@ -146,7 +148,8 @@ ${r.overall}`} />}
             aria-pressed={selected === s.id}
             className={`flex flex-col items-center rounded-[16px] py-[clamp(0.3rem,1dvh,0.6rem)] transition active:scale-95 ${selected === s.id ? "bg-white ring-2 ring-accent" : "bg-tile"}`}
           >
-            <span className="text-[20px] leading-none text-accent">{s.symbol}</span>
+            {/* 기호는 금빛 선 그림 (이모지는 기기마다 보라 네모로 그려져 장면과 어울리지 않음) */}
+            <ZodiacGlyph id={s.id} className={`h-[clamp(18px,2.8dvh,22px)] w-[clamp(18px,2.8dvh,22px)] ${selected === s.id ? "text-[#ffe9b0]" : "text-[#f4d38a]"}`} />
             <span className="mt-0.5 text-[12px] font-semibold">{s.nameKo}</span>
             <span className="text-[9px] text-ink-2">{s.range}</span>
           </button>

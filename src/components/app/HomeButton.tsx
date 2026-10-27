@@ -9,7 +9,8 @@ export function HomeButton({ floating = true, className = "" }: { floating?: boo
     <Link
       href="/"
       aria-label="홈으로"
-      className={`z-20 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/75 text-[#4a2f75] shadow-[0_4px_12px_-4px_rgba(60,30,80,0.45)] outline-none backdrop-blur-sm transition focus-visible:ring-2 focus-visible:ring-accent active:scale-90 ${
+      // 밤 장면·밤 바탕 위에서는 어두운 유리 버튼 (흰 버튼이 장면에서 튀지 않게, 2026-10-28)
+      className={`z-20 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/75 text-[#4a2f75] shadow-[0_4px_12px_-4px_rgba(60,30,80,0.45)] outline-none backdrop-blur-sm transition focus-visible:ring-2 focus-visible:ring-accent active:scale-90 [.scene-dark_&]:bg-[rgba(20,12,56,0.42)] [.scene-dark_&]:text-white [.scene-dark_&]:shadow-none [.scene-dark_&]:ring-1 [.scene-dark_&]:ring-white/25 [.glass-night_&]:bg-[rgba(20,12,56,0.42)] [.glass-night_&]:text-white [.glass-night_&]:shadow-none [.glass-night_&]:ring-1 [.glass-night_&]:ring-white/25 ${
         floating ? "absolute left-0 top-2" : ""
       } ${className}`}
     >
@@ -26,7 +27,7 @@ export function MyButton({ className = "" }: { className?: string }) {
     <Link
       href="/me"
       aria-label="MY (기록·프로필)"
-      className={`absolute right-0 top-2 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/75 text-[#4a2f75] shadow-[0_4px_12px_-4px_rgba(60,30,80,0.45)] outline-none backdrop-blur-sm transition focus-visible:ring-2 focus-visible:ring-accent active:scale-90 ${className}`}
+      className={`absolute right-0 top-2 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/75 text-[#4a2f75] shadow-[0_4px_12px_-4px_rgba(60,30,80,0.45)] outline-none backdrop-blur-sm transition focus-visible:ring-2 focus-visible:ring-accent active:scale-90 [.scene-dark_&]:bg-[rgba(20,12,56,0.42)] [.scene-dark_&]:text-white [.scene-dark_&]:shadow-none [.scene-dark_&]:ring-1 [.scene-dark_&]:ring-white/25 [.glass-night_&]:bg-[rgba(20,12,56,0.42)] [.glass-night_&]:text-white [.glass-night_&]:shadow-none [.glass-night_&]:ring-1 [.glass-night_&]:ring-white/25 ${className}`}
     >
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
         <path d="M12 12a4 4 0 100-8 4 4 0 000 8zm-8 9a8 8 0 0116 0" />

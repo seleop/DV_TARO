@@ -407,3 +407,42 @@ body {
 
 /* 장면 배경 전환: 새 배경이 이전 배경 위에서 나타난다 (src/components/backdrops) */
 @keyframes scene-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* 밤 바탕 화면(MY·프로필·사주 입력·동의, lib/scene.ts night): 움직이지 않는 별 바탕 (2026-10-28 사용자 결정: 밤 테마로 통일).
+   그림 대신 그라데이션 몇 겹이라 가볍고, 애니메이션이 없어 한 번만 그린다 */
+.night-sky {
+  background:
+    radial-gradient(1.2px 1.2px at 14% 9%, rgba(255, 255, 255, 0.9) 99%, transparent),
+    radial-gradient(1px 1px at 31% 22%, rgba(255, 255, 255, 0.7) 99%, transparent),
+    radial-gradient(1.4px 1.4px at 72% 7%, rgba(255, 241, 214, 0.9) 99%, transparent),
+    radial-gradient(1px 1px at 88% 18%, rgba(255, 255, 255, 0.6) 99%, transparent),
+    radial-gradient(1px 1px at 56% 31%, rgba(207, 228, 255, 0.7) 99%, transparent),
+    radial-gradient(1.2px 1.2px at 9% 41%, rgba(255, 255, 255, 0.6) 99%, transparent),
+    radial-gradient(1px 1px at 93% 47%, rgba(255, 214, 240, 0.7) 99%, transparent),
+    radial-gradient(1px 1px at 40% 58%, rgba(255, 255, 255, 0.45) 99%, transparent),
+    radial-gradient(1.2px 1.2px at 78% 66%, rgba(255, 255, 255, 0.5) 99%, transparent),
+    radial-gradient(1px 1px at 18% 77%, rgba(255, 255, 255, 0.4) 99%, transparent),
+    radial-gradient(1px 1px at 62% 86%, rgba(207, 228, 255, 0.45) 99%, transparent),
+    radial-gradient(110% 55% at 85% 0%, rgba(122, 90, 214, 0.32), transparent 62%),
+    radial-gradient(90% 50% at 0% 100%, rgba(255, 122, 208, 0.12), transparent 60%),
+    linear-gradient(180deg, #140d3a 0%, #100b30 55%, #0b0924 100%);
+}
+/* 밤 바탕의 입력칸: 날짜 고르개 아이콘 등이 어두운 바탕에서 보이게 */
+.night-page input,
+.night-page select {
+  color-scheme: dark;
+}
+/* 최적화: 시트(glass-sheet)가 이미 뒤를 흐리므로 그 안의 카드는 다시 흐리지 않는다 (겹친 backdrop-filter 는 휴대폰 GPU에 무겁고, 흐린 위를 또 흐려도 거의 같아 보인다).
+   밤 바탕 화면은 뒤가 움직이지 않는 그라데이션이라 흐림이 필요 없다 */
+.glass-sheet .glass,
+.night-page .glass {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* 밤 바탕 화면의 카드·타일은 조금 더 짙게: 뒤의 별이 카드 안으로 비쳐 먼지처럼 보이지 않게 */
+.night-page {
+  --surface: rgba(32, 24, 82, 0.78);
+  --surface-2: rgba(32, 24, 82, 0.6);
+  --tile: rgba(32, 24, 82, 0.66);
+}

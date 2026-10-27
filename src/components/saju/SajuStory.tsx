@@ -291,7 +291,7 @@ export function SajuStory({
           <TopBar
             back="/saju"
             right={
-              <button type="button" onClick={() => setMenu(true)} aria-label="목차와 메뉴" className="flex h-10 w-10 items-center justify-center rounded-full text-[20px] active:bg-white/10">
+              <button type="button" onClick={() => setMenu(true)} aria-label="목차와 메뉴" className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(20,12,56,0.42)] text-[20px] text-white ring-1 ring-white/25 active:bg-white/10">
                 ⋯
               </button>
             }

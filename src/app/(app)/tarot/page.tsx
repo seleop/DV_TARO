@@ -10,6 +10,7 @@ import { Button, Card, Disclaimer, ErrorBox, MockNotice } from "@/components/ui"
 import { moodFromTarot } from "@/lib/character";
 import { api, errorText } from "@/lib/client";
 import { josa } from "@/lib/josa";
+import { TarotCardBack, TarotCardFace } from "@/components/tarot/TarotCardArt";
 
 type Drawn = { id: string; position: string; nameKo: string; nameEn: string; reversed: boolean; keywords: string[] };
 type Result = {
@@ -24,30 +25,16 @@ const SPREADS = [
   { id: "choice", label: "선택", desc: "A·B·조언", n: 3 },
 ] as const;
 
-function TarotCard({ card, flipped, delay }: { card: Drawn | null; flipped: boolean; delay: number }) {
+/** 뒤집히는 카드 한 장: 뒷면(달·별 문장) → 앞면(금테 카드 그림). 그림은 배경 성소의 카드와 같은 그림체 */
+function FlipCard({ card, flipped, delay }: { card: Drawn | null; flipped: boolean; delay: number }) {
   return (
-    <div className="flip aspect-[2/3] w-full">
+    <div className="flip aspect-[3/5] w-full">
       <div className={`flip-inner h-full w-full ${flipped ? "is-flipped" : ""}`} style={{ transitionDelay: `${delay}ms` }}>
-        {/* 뒷면 */}
-        <div className="flip-face flex items-center justify-center rounded-2xl border border-white/20 bg-[linear-gradient(135deg,#3b2b7a,#1d1650)] shadow-xl">
-          <div className="flex h-[86%] w-[82%] items-center justify-center rounded-xl border border-[#c9b3ff]/40">
-            <span className="text-3xl text-[#c9b3ff]/80">✦</span>
-          </div>
+        {/* 그림자는 box-shadow (뒤집는 동안 filter 를 쓰면 매 프레임 다시 그려 무겁다) */}
+        <div className="flip-face rounded-[10%/6%] shadow-[0_10px_22px_-10px_rgba(255,206,130,0.55)]">
+          <TarotCardBack className="h-full w-full" />
         </div>
-        {/* 앞면 */}
-        <div className="flip-face flip-back flex flex-col items-center justify-center rounded-2xl bg-[linear-gradient(160deg,#f5f0ff,#d9ccff)] p-2 text-center text-[#2a2440] shadow-xl">
-          {card && (
-            <>
-              <span className="text-[10px] text-[#6b5fa0]">{card.position}</span>
-              <span className={`my-2 text-3xl ${card.reversed ? "rotate-180" : ""}`} aria-hidden>
-                ✦
-              </span>
-              <span className="text-[13px] font-bold leading-tight">{card.nameKo}</span>
-              <span className="mt-0.5 text-[9px] text-[#6b5fa0]">{card.nameEn}</span>
-              {card.reversed && <span className="mt-1 rounded-full bg-[#2a2440]/10 px-2 text-[10px]">역방향</span>}
-            </>
-          )}
-        </div>
+        <div className="flip-face flip-back rounded-[10%/6%] shadow-[0_10px_24px_-8px_rgba(255,206,130,0.7)]">{card && <TarotCardFace card={card} className="h-full w-full" />}</div>
       </div>
     </div>
   );
@@ -93,16 +80,27 @@ export default function TarotPage() {
         scene={
           <div className="flex min-h-0 flex-1 flex-col items-center pt-[clamp(3rem,7dvh,4.25rem)] text-center">
             <HomeButton />
-            <p className="shrink-0 text-sm text-ink-2">“{c.question}”</p>
-            <h1 className="mt-0.5 shrink-0 text-[clamp(20px,3.2dvh,24px)] font-extrabold text-ink">카드가 답했어요</h1>
-            <div className="flex min-h-0 w-full flex-1 items-end justify-center gap-1">
-              <FitCharacter pose="tarot" mood={moodFromTarot(c.drawn)} min={70} max={180} className="max-w-[40%] items-end" />
-              <div className={`mb-2 grid shrink-0 gap-2 ${c.drawn.length === 1 ? "w-[min(6rem,12dvh)] grid-cols-1" : "w-[min(58%,calc(32dvh+16px))] grid-cols-3"}`}>
-                {c.drawn.map((d, i) => (
-                  <TarotCard key={d.id} card={d} flipped={flipped} delay={i * 250} />
-                ))}
-              </div>
-            </div>
+            <p className="line-clamp-1 max-w-[calc(100%-6rem)] shrink-0 text-sm text-ink-2 [text-shadow:0_1px_8px_rgba(10,6,40,0.8)]">“{c.question}”</p>
+            <h1 className="mt-0.5 shrink-0 text-[clamp(20px,3.2dvh,24px)] font-extrabold text-ink [text-shadow:0_2px_10px_rgba(10,6,40,0.75)]">카드가 답했어요</h1>
+            <CardTable n={c.drawn.length}
+              mascot={<FitCharacter pose="tarot" mood={moodFromTarot(c.drawn)} min={64} max={170} className="w-full items-end" />}
+              cards={c.drawn.map((d, i) => (
+                <figure key={d.id} className="flex min-w-0 flex-1 flex-col items-center">
+                  <figcaption className="flex min-h-[2.3em] items-end justify-center text-center text-[10.5px] font-medium leading-tight text-ink-2 [text-shadow:0_1px_6px_rgba(10,6,40,0.9)]">{d.position}</figcaption>
+                  <div className="mt-1 w-full">
+                    <FlipCard card={d} flipped={flipped} delay={i * 250} />
+                  </div>
+                  {/* 카드 이름은 뒤집힌 뒤에 나타난다 */}
+                  <p
+                    className={`mt-1.5 min-h-[2.4em] text-center text-[11px] font-bold leading-tight text-ink transition-opacity duration-500 [text-shadow:0_1px_6px_rgba(10,6,40,0.9)] motion-reduce:transition-none ${flipped ? "opacity-100" : "opacity-0"}`}
+                    style={{ transitionDelay: `${i * 250 + 450}ms` }}
+                  >
+                    {d.nameKo}
+                    {d.reversed && <span className="block text-[9.5px] font-medium text-ink-2">역방향</span>}
+                  </p>
+                </figure>
+              ))}
+            />
           </div>
         }
         footer={<ShareBar targetRef={captureRef} fileName="타로" shareTitle={`타로 · ${c.question}`} shareText={`${c.drawn.map((d) => d.nameKo).join(", ")}
@@ -156,20 +154,22 @@ ${c.overall}`} />}
         scene={
           <div className="flex min-h-0 flex-1 flex-col items-center pt-[clamp(3.25rem,8dvh,4.75rem)] text-center">
             <HomeButton />
-            <p className="shrink-0 text-[clamp(15px,2.4dvh,18px)] font-semibold leading-snug text-ink">
-              마음속 질문을 떠올리면 {josa(mascot, "이/가")} 카드를 펼쳐 줄게요
+            <h1 className="text-gradient shrink-0 text-[clamp(28px,4.6dvh,36px)] font-extrabold [filter:drop-shadow(0_2px_10px_rgba(10,6,40,0.7))]">타로</h1>
+            <p className="mt-1 shrink-0 text-[clamp(13px,2.1dvh,15px)] font-medium leading-snug text-ink-2 [text-shadow:0_1px_8px_rgba(10,6,40,0.85)]">
+              질문을 떠올리면 {josa(mascot, "이/가")} 카드를 펼쳐 줄게요
             </p>
-            <h1 className="text-gradient mt-1 shrink-0 text-[clamp(28px,4.6dvh,36px)] font-extrabold">타로</h1>
             {busy ? (
-              <div className="flex min-h-0 w-full flex-1 items-end justify-center pb-4">
-                <div className="grid w-[min(100%,calc(30dvh+24px))] grid-cols-3 gap-3">
-                  {Array.from({ length: n }, (_, i) => (
-                    <div key={i} className="animate-float" style={{ animationDelay: `${i * 200}ms` }}>
-                      <TarotCard card={null} flipped={false} delay={0} />
+              // 섞는 동안: 별이가 카드를 뽑고(등장 동작), 옆에 뒷면 카드가 떠 있다. 결과가 오면 같은 자리에서 뒤집힌다
+              <CardTable n={n}
+                mascot={<FitCharacter pose="tarot" min={64} max={170} className="w-full items-end" />}
+                cards={Array.from({ length: n }, (_, i) => (
+                  <div key={i} className="min-w-0 flex-1 animate-float pb-[calc(2.6em+6px)] pt-[2.3em] text-[10.5px]" style={{ animationDelay: `${i * 200}ms` }}>
+                    <div className="mt-1">
+                      <FlipCard card={null} flipped={false} delay={0} />
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
+                ))}
+              />
             ) : (
               <FitCharacter pose="tarot" min={80} max={260} className="w-full items-end" />
             )}
@@ -211,5 +211,18 @@ ${c.overall}`} />}
         <p className="mt-1 w-full shrink-0 text-right text-[11px] text-ink-2">{question.length}/300 · 질문은 암호화되어 내 기록에만 저장돼요</p>
       </Screen>
     </SafeForm>
+  );
+}
+
+/**
+ * 카드 탁자: 왼쪽에 별이, 오른쪽에 카드 줄. 섞는 중·결과가 같은 배치라 카드가 제자리에서 뒤집힌다.
+ * 별이 자리는 줄 높이를 다 쓴다(self-stretch) — 높이가 0이면 FitSize 가 별이를 그리지 않는다
+ */
+function CardTable({ n, mascot, cards }: { n: number; mascot: React.ReactNode; cards: React.ReactNode }) {
+  return (
+    <div className="flex min-h-0 w-full flex-1 items-end justify-center gap-2 pb-1">
+      <div className="flex min-h-0 w-[36%] max-w-[170px] shrink-0 self-stretch">{mascot}</div>
+      <div className={`flex shrink-0 items-start gap-2 ${n === 1 ? "w-[min(5.5rem,13dvh)]" : "w-[min(58%,calc(30dvh+16px))]"}`}>{cards}</div>
+    </div>
   );
 }

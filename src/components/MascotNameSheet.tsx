@@ -32,7 +32,7 @@ export function MascotNameSheet({ current, onSave, onClose }: { current: string;
         role="dialog"
         aria-modal="true"
         aria-labelledby="mascot-sheet-title"
-        className="relative animate-rise rounded-t-[28px] bg-[var(--bg)] px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 shadow-[0_-16px_32px_-18px_rgba(60,30,80,0.55)] outline-none motion-reduce:animate-none"
+        className="relative animate-rise rounded-t-[28px] bg-[var(--bg)] [.glass-night_&]:border-t [.glass-night_&]:border-white/15 [.glass-night_&]:bg-[#1a1240] px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 shadow-[0_-16px_32px_-18px_rgba(60,30,80,0.55)] outline-none motion-reduce:animate-none"
       >
         <div className="mb-3 flex items-center justify-between">
           <h2 id="mascot-sheet-title" className="text-[17px] font-bold">
